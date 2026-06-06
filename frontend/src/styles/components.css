@@ -862,6 +862,16 @@
   color: currentColor;
 }
 
+.event-card.full {
+  opacity: 0.7;
+  filter: grayscale(0.3);
+  background: #f5f5f5;
+  border-color: #d1d5db;
+}
+.event-card.full .event-cover {
+  filter: grayscale(0.4);
+}
+
 @media (min-width: 760px) {
   .scan-result-summary {
     grid-template-columns: minmax(0, 1fr) 280px;
