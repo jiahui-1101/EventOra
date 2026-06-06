@@ -1,488 +1,137 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EventOra - Student Society Event Platform</title>
-    <link rel="stylesheet" href="./src/styles/tokens.css" />
-    <link rel="stylesheet" href="./src/styles/base.css" />
-    <link rel="stylesheet" href="./src/styles/components.css" />
-    <link rel="stylesheet" href="./src/styles/responsive.css" />
-  </head>
-  <body>
-    <header class="site-header">
-      <a class="brand" href="#home" aria-label="EventOra home">
-        <span class="brand-mark">E</span>
-        <span>EventOra</span>
-      </a>
-      <nav class="desktop-nav" aria-label="Main navigation">
-        <a href="#home">Events</a>
-        <a href="#event-detail">Register</a>
-        <a href="#tickets">My Tickets</a>
-        <a href="#check-in">QR Check-in</a>
-      </nav>
-      <a class="header-action" href="#event-detail">View Demo</a>
-    </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Discover Events</title>
+  <link rel="stylesheet" href="src/styles/tokens.css" />
+  <link rel="stylesheet" href="src/styles/base.css" />
+  <link rel="stylesheet" href="src/styles/components.css" />
+  <link rel="stylesheet" href="src/styles/responsive.css" />
+</head>
 
-    <main class="app-shell" id="home">
-      <section class="hero-section">
-        <div>
-          <p class="eyebrow">Discover events</p>
-          <h1>What's happening at UTM?</h1>
-          <p class="hero-copy">Browse society workshops, cultural nights, tournaments, and talks. Register in minutes and keep every ticket ready for check-in.</p>
-          <div class="search-panel" role="search">
-            <input aria-label="Search events" value="AI workshop, sports, cultural night" readonly />
-            <a class="button button-primary" href="#events">Search</a>
-          </div>
-        </div>
-        <aside class="hero-card" aria-label="EventOra product highlights">
-          <span>This month</span>
-          <strong>24 events live</strong>
-          <p>12 active societies are publishing approved activities with QR ticketing and organiser check-in support.</p>
-        </aside>
-      </section>
+<script src="src/js/index.js"></script>
 
-      <section class="stats-grid" aria-label="Campus event stats">
-        <article class="stat-card"><span>Upcoming Events</span><strong>24</strong></article>
-        <article class="stat-card"><span>Active Societies</span><strong>12</strong></article>
-        <article class="stat-card"><span>This Week</span><strong>6</strong></article>
-        <article class="stat-card"><span>Free Events</span><strong>18</strong></article>
-      </section>
-
-      <section class="toolbar" id="events" aria-label="Event filters">
-        <div>
-          <p class="eyebrow">Featured calendar</p>
-          <h2>Upcoming society activities</h2>
-        </div>
-        <div class="filter-row">
-          <span class="filter-chip active">All</span>
-          <span class="filter-chip">Academic</span>
-          <span class="filter-chip">Sports</span>
-          <span class="filter-chip">Cultural</span>
-          <span class="filter-chip">Workshop</span>
-        </div>
-      </section>
-
-      <section class="event-grid" aria-label="Event listing cards">
-        <article class="event-card">
-          <div class="event-cover academic-cover">
-            <span class="badge badge-blue">Academic</span>
-            <span class="badge badge-gray">12 seats left</span>
-          </div>
-          <div class="event-card-body">
-            <span class="event-date">12 Jun 2026 · 7:30 PM</span>
-            <h3>Build Your First AI App</h3>
-            <p>N28A Innovation Lab · UTM Computing Society · Faculty approved</p>
-            <div class="card-meta">
-              <span>Paid ticket</span>
-              <strong>RM 8</strong>
-            </div>
-            <a class="button button-primary" href="#event-detail">View registration</a>
-          </div>
-        </article>
-
-        <article class="event-card">
-          <div class="event-cover culture-cover">
-            <span class="badge badge-purple">Cultural</span>
-            <span class="badge badge-gray">54 seats left</span>
-          </div>
-          <div class="event-card-body">
-            <span class="event-date">20 Jun 2026 · 6:30 PM</span>
-            <h3>Campus Cultural Night</h3>
-            <p>Dewan Sultan Iskandar · Campus Culture Club · Public listing</p>
-            <div class="card-meta">
-              <span>Open registration</span>
-              <strong>Free</strong>
-            </div>
-            <a class="button button-secondary" href="#free-registration">Free event</a>
-          </div>
-        </article>
-
-        <article class="event-card">
-          <div class="event-cover sports-cover">
-            <span class="badge badge-green">Sports</span>
-            <span class="badge badge-yellow">Full</span>
-          </div>
-          <div class="event-card-body">
-            <span class="event-date">28 Jun 2026 · 9:00 AM</span>
-            <h3>Interfaculty Futsal Cup</h3>
-            <p>UTM Sports Hall · Computing Society · Waitlist enabled</p>
-            <div class="card-meta">
-              <span>Capacity reached</span>
-              <strong>Waitlist</strong>
-            </div>
-            <a class="button button-secondary" href="#waitlist-state">Join waitlist</a>
-          </div>
-        </article>
-      </section>
-
-      <section id="event-detail" class="detail-layout page-section">
-        <article class="event-detail-copy">
-          <div class="event-banner">
-            <span class="badge badge-blue">UTM Computing Society</span>
-            <h2>Build Your First AI App</h2>
-            <p>A practical evening workshop for students who want to build and present a small AI-powered application before semester break.</p>
-          </div>
-          <dl class="detail-list">
-            <div><dt>Date and time</dt><dd>12 June 2026, 7:30 PM</dd></div>
-            <div><dt>Venue</dt><dd>N28A Innovation Lab, Faculty of Computing</dd></div>
-            <div><dt>Organiser</dt><dd>UTM Computing Society</dd></div>
-            <div><dt>Registration closes</dt><dd>10 June 2026, 11:59 PM</dd></div>
-          </dl>
-        </article>
-
-        <aside class="registration-panel">
-          <div class="registration-header">
-            <div>
-              <span class="badge badge-blue">Paid ticket</span>
-              <h3>Reserve your seat</h3>
-            </div>
-            <strong>RM 8.00</strong>
-          </div>
-          <div class="steps" aria-label="Registration steps">
-            <span class="step active">Details</span>
-            <span class="step active">Register</span>
-            <span class="step">Ticket</span>
-          </div>
-          <div class="capacity-labels">
-            <span>28 registered</span>
-            <strong>12 seats left</strong>
-          </div>
-          <div class="capacity-bar" aria-label="70 percent capacity used">
-            <span style="width: 70%"></span>
-          </div>
-          <div class="checkout-list">
-            <div><span>Capacity</span><strong>40 attendees</strong></div>
-            <div><span>Ticket type</span><strong>Student early bird</strong></div>
-            <div><span>Status after payment</span><strong>Confirmed with QR ticket</strong></div>
-          </div>
-          <a class="button button-primary full-width" href="#payment-modal">Open mock payment</a>
-          <div class="registration-alert">
-            <strong>Duplicate registration protected</strong>
-            <p>If you already hold an active ticket, EventOra keeps your current booking instead of issuing another one.</p>
-          </div>
-        </aside>
-      </section>
-
-      <section id="free-registration" class="state-grid">
-        <article class="state-card success-state">
-          <span class="status-dot"></span>
-          <div>
-            <h3>Free event confirmed</h3>
-            <p>For free events, the attendee is confirmed immediately and a QR ticket is generated.</p>
-          </div>
-        </article>
-        <article class="state-card warning-state">
-          <span class="status-dot"></span>
-          <div>
-            <h3>Duplicate registration blocked</h3>
-            <p>The UI warns the attendee that they already have an active registration for this event.</p>
-          </div>
-        </article>
-      </section>
-
-      <section id="payment-modal" class="mock-modal page-section" aria-label="Mock payment modal">
-        <div class="modal-card">
-          <div class="modal-header">
-            <div>
-              <p class="eyebrow">Secure checkout</p>
-              <h2>Complete ticket payment</h2>
-            </div>
-            <span class="badge badge-yellow">Pending</span>
-          </div>
-          <p>Confirm the event pass, review the amount, and issue a QR ticket once the mock payment is approved.</p>
-          <div class="payment-method">
-            <span>Payment method</span>
-            <strong>Campus Card ending 4242</strong>
-          </div>
-          <label class="input-label">
-            Mock card number
-            <input value="4242 4242 4242 4242" readonly />
-          </label>
-          <div class="payment-summary checkout-receipt">
-            <div>
-              <span>Event pass</span>
-              <strong>Build Your First AI App</strong>
-            </div>
-            <div>
-              <span>Ticket price</span>
-              <strong>RM 8.00</strong>
-            </div>
-            <div>
-              <span>Processing fee</span>
-              <strong>RM 0.00</strong>
-            </div>
-            <div class="receipt-total">
-              <span>Total due</span>
-              <strong>RM 8.00</strong>
-            </div>
-          </div>
-          <div class="modal-actions">
-            <span class="button button-primary">Approve payment</span>
-            <span class="button button-ghost">Decline</span>
-          </div>
-        </div>
-        <div class="payment-states">
-          <article class="state-card warning-state">
-            <span class="status-dot"></span>
-            <div>
-              <h3>Payment pending</h3>
-              <p>The seat is held while payment is being confirmed, but no QR ticket is issued yet.</p>
-            </div>
-          </article>
-          <article class="state-card success-state">
-            <span class="status-dot"></span>
-            <div>
-              <h3>Payment approved</h3>
-              <p>The registration becomes confirmed and the attendee receives an active QR ticket in My Tickets.</p>
-            </div>
-          </article>
-          <article class="state-card danger-state">
-            <span class="status-dot"></span>
-            <div>
-              <h3>Payment declined</h3>
-              <p>The booking stays unpaid, and EventOra prevents ticket generation until the attendee retries successfully.</p>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section id="waitlist-state" class="page-section">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Booking lifecycle</p>
-            <h2>Waitlist and cancellation experience</h2>
-          </div>
-          <span class="badge badge-yellow">0 seats left</span>
-        </div>
-        <div class="waitlist-layout">
-          <article class="queue-card">
-            <div class="queue-header">
-              <div>
-                <span class="badge badge-yellow">Waitlisted</span>
-                <h3>Interfaculty Futsal Cup</h3>
-              </div>
-              <strong>#3</strong>
-            </div>
-            <p>You are third in line. EventOra will confirm your booking automatically when a seat opens.</p>
-            <div class="queue-meter" aria-label="40 of 40 seats filled">
-              <span style="width: 100%"></span>
-            </div>
-            <div class="queue-meta">
-              <span>40 / 40 seats filled</span>
-              <strong>2 people ahead</strong>
-            </div>
-          </article>
-          <article class="state-card warning-state">
-            <span class="status-dot"></span>
-            <div>
-              <h3>Added to waitlist</h3>
-              <p>The attendee receives a waitlist position, but no QR ticket is generated until a seat becomes available.</p>
-            </div>
-          </article>
-          <article class="state-card success-state">
-            <span class="status-dot"></span>
-            <div>
-              <h3>Waitlist promoted</h3>
-              <p>A cancellation releases one seat, the first waitlisted attendee becomes confirmed, and a QR ticket is issued.</p>
-            </div>
-          </article>
-          <article class="state-card neutral-state">
-            <span class="status-dot"></span>
-            <div>
-              <h3>Registration cancelled</h3>
-              <p>The attendee can cancel from My Tickets. The old ticket becomes inactive and the seat returns to the queue.</p>
-            </div>
-          </article>
-          <article class="notification-card">
-            <span class="badge badge-green">Notification sent</span>
-            <h3>Seat confirmed for Aina Rahman</h3>
-            <p>You have been promoted from the waitlist. Your QR ticket is now active in My Tickets.</p>
-          </article>
-        </div>
-      </section>
-
-      <section id="tickets" class="page-section">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Ticket wallet</p>
-            <h2>My Tickets</h2>
-          </div>
-          <span class="badge badge-blue">Attendee view</span>
-        </div>
-        <h3 class="subsection-title">Upcoming Tickets</h3>
-        <div class="ticket-grid">
-          <article class="ticket-card ticket-pass">
-            <div class="ticket-info">
-              <div class="ticket-topline">
-                <span class="badge badge-green">Active</span>
-                <span>Admit one</span>
-              </div>
-              <h3>Build Your First AI App</h3>
-              <p>12 Jun 2026 · 7:30 PM · N28A Innovation Lab</p>
-              <div class="ticket-meta">
-                <span>Seat type <strong>Student</strong></span>
-                <span>Gate <strong>Lab Entrance</strong></span>
-              </div>
-              <code>EVT-9F4K-2Q8M-X7P1</code>
-              <div class="ticket-actions">
-                <span>Cancel registration</span>
-                <span>Add to calendar</span>
-              </div>
-            </div>
-            <div class="ticket-divider" aria-hidden="true"></div>
-            <div class="qr-pattern" aria-label="QR ticket code">
-              <span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span>
-            </div>
-          </article>
-        </div>
-
-        <h3 class="subsection-title">Past Tickets</h3>
-        <div class="ticket-grid">
-          <article class="ticket-card muted-ticket">
-            <div class="ticket-info">
-              <div class="ticket-topline">
-                <span class="badge badge-gray">Used</span>
-                <span>Checked in</span>
-              </div>
-              <h3>Vue 3 Crash Course</h3>
-              <p>18 May 2026 · 2:00 PM · Seminar Room 2</p>
-              <div class="ticket-meta">
-                <span>Attendance <strong>Present</strong></span>
-                <span>Certificate <strong>Ready</strong></span>
-              </div>
-              <code>EVT-6B1P-8Q2N-R4Z9</code>
-            </div>
-            <div class="ticket-divider" aria-hidden="true"></div>
-            <div class="qr-pattern used" aria-label="Used QR ticket code">
-              <span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section id="check-in" class="scanner-layout page-section">
-        <article class="scanner-copy">
-          <p class="eyebrow">QR check-in</p>
-          <h2>Mobile check-in for organisers</h2>
-          <p>Scan attendee tickets and manage check-ins on mobile, with a manual fallback for low-light or camera issues.</p>
-
-          <div class="permission-card">
-            <span class="badge badge-blue">Camera permission</span>
-            <h3>Request Android camera access</h3>
-            <p>Organisers enable camera access before validating attendee QR tickets for their own society events.</p>
-          </div>
-          <div class="scan-control-card">
-            <span class="badge badge-gray">Organiser mode</span>
-            <h3>UTM Computing Society</h3>
-            <p>Scanner is scoped to approved events created by this society.</p>
-            <div class="scan-control-row">
-              <span>Event</span>
-              <strong>Build Your First AI App</strong>
-            </div>
-            <div class="scan-control-row">
-              <span>Fallback</span>
-              <strong>Manual ticket code</strong>
-            </div>
-          </div>
-        </article>
-
-        <aside class="mobile-frame" aria-label="Mobile QR check-in screen">
-          <div class="mobile-status">
-            <span>9:41</span>
-            <span>5G 100%</span>
-          </div>
-          <div class="mobile-appbar">
-            <strong>EventOra Scan</strong>
-            <p>Build Your First AI App</p>
-          </div>
-          <div class="mobile-content">
-            <div class="scanner-window">
-              <span class="scan-corner tl"></span>
-              <span class="scan-corner tr"></span>
-              <span class="scan-corner bl"></span>
-              <span class="scan-corner br"></span>
-              <span class="scan-line"></span>
-              <div class="camera-label">
-                <strong>Camera scanner</strong>
-                <span>Ready to scan ticket QR</span>
-              </div>
-            </div>
-            <div class="scanner-stats">
-              <div><span>Checked in</span><strong>18</strong></div>
-              <div><span>Registered</span><strong>28</strong></div>
-            </div>
-            <label class="input-label">
-              Manual ticket code
-              <input value="EVT-9F4K-2Q8M-X7P1" readonly />
-            </label>
-            <span class="button button-primary full-width">Check in attendee</span>
-            <p class="helper-text">Use manual fallback when the camera is unavailable.</p>
-          </div>
-        </aside>
-      </section>
-
-      <section class="page-section">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Check-in results</p>
-            <h2>QR check-in result panels</h2>
-          </div>
-          <span class="badge badge-gray">Scan outcomes</span>
-        </div>
-        <div class="scan-result-summary">
-          <article class="scan-receipt success-receipt">
-            <span class="badge badge-green">Checked in</span>
-            <h3>Aina Rahman</h3>
-            <p>Build Your First AI App · 12 Jun 2026 · N28A Innovation Lab</p>
-            <div class="receipt-meta">
-              <span>Ticket <strong>EVT-9F4K-2Q8M-X7P1</strong></span>
-              <span>Scanned by <strong>Nurul Admin</strong></span>
-              <span>Time <strong>7:18 PM</strong></span>
-            </div>
-          </article>
-          <article class="attendance-panel">
-            <span class="badge badge-blue">Live attendance</span>
-            <div class="attendance-rate">64%</div>
-            <p>18 checked in from 28 confirmed registrations.</p>
-          </article>
-        </div>
-        <div class="result-grid">
-          <article class="result-card success-state">
-            <span class="result-label">Success</span>
-            <strong>Check-in successful</strong>
-            <p>Aina Rahman has been marked present for Build Your First AI App.</p>
-          </article>
-          <article class="result-card danger-state">
-            <span class="result-label">Blocked</span>
-            <strong>Invalid ticket</strong>
-            <p>Ticket code was not found or has been cancelled.</p>
-          </article>
-          <article class="result-card warning-state">
-            <span class="result-label">Permission mismatch</span>
-            <strong>Wrong society</strong>
-            <p>This ticket belongs to another society and cannot be scanned here.</p>
-          </article>
-          <article class="result-card neutral-state">
-            <span class="result-label">Duplicate scan</span>
-            <strong>Already checked in</strong>
-            <p>This ticket was already checked in earlier and cannot be used twice.</p>
-          </article>
-        </div>
-      </section>
-    </main>
-
-    <nav class="mobile-nav" aria-label="Mobile navigation">
-      <a href="#home">Events</a>
-      <a href="#event-detail">Register</a>
-      <a href="#tickets">Tickets</a>
-      <a href="#check-in">Scan</a>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="EventOra home">
+      <span class="brand-mark">E</span>
+      <span>EventOra</span>
+    </a>
+    <nav class="desktop-nav">
+      <a href="index.html">Events</a>
+      <a href="src/pages/event-detail.html?event=1">Register</a>
+      <a href="src/pages/tickets.html">My Tickets</a>
+      <a href="src/pages/check-in.html">QR Check-in</a>
+      <a href="src/pages/checkout-demo.html">Checkout Demo</a>
+      <a href="src/pages/waitlist-demo.html">Waitlist Demo</a>
     </nav>
-  </body>
+    <a class="header-action" href="src/pages/event-detail.html?event=1">View Demo</a>
+  </header>
+
+  <main class="app-shell" id="home">
+    <section class="hero-section">
+      <div>
+        <p class="eyebrow">Discover events</p>
+        <h1>What's happening at UTM?</h1>
+        <p class="hero-copy">Browse society workshops, cultural nights, tournaments, and talks. Register in minutes and keep every ticket ready for check-in.</p>
+        <div class="search-panel" role="search">
+          <input type="text" id="searchInput" placeholder="Search by title or society..." aria-label="Search events" />
+          <button class="button button-primary" id="searchBtn">Search</button>
+        </div>
+      </div>
+      <aside class="hero-card" aria-label="EventOra product highlights">
+        <span>This month</span>
+        <strong id="eventCount">24 events live</strong>
+        <p>12 active societies are publishing approved activities with QR ticketing and organiser check-in support.</p>
+      </aside>
+    </section>
+
+    <section class="stats-grid" aria-label="Campus event stats">
+      <article class="stat-card"><span>Upcoming Events</span><strong id="upcomingStat">24</strong></article>
+      <article class="stat-card"><span>Active Societies</span><strong>12</strong></article>
+      <article class="stat-card"><span>This Week</span><strong id="thisWeekStat">6</strong></article>
+      <article class="stat-card"><span>Free Events</span><strong id="freeStat">18</strong></article>
+    </section>
+
+    <section class="toolbar" id="events" aria-label="Event filters">
+      <div>
+        <p class="eyebrow">Featured calendar</p>
+        <h2>Upcoming society activities</h2>
+      </div>
+      <div class="filter-row" id="categoryFilters">
+        <span class="filter-chip active" data-cat="all">All</span>
+        <span class="filter-chip" data-cat="academic">Academic</span>
+        <span class="filter-chip" data-cat="sports">Sports</span>
+        <span class="filter-chip" data-cat="cultural">Cultural</span>
+        <span class="filter-chip" data-cat="religious">Religious</span>
+      </div>
+      <div class="filter-row" id="priceFilters">
+        <span class="filter-chip active" data-price="all">All</span>
+        <span class="filter-chip" data-price="free">Free</span>
+        <span class="filter-chip" data-price="paid">Paid</span>
+      </div>
+      <div class="filter-row" id="dateFilters">
+        <span class="filter-chip active" data-date="all">Any time</span>
+        <span class="filter-chip" data-date="week">This week</span>
+        <span class="filter-chip" data-date="month">This month</span>
+      </div>
+    </section>
+
+    <section class="event-grid" id="eventGrid" aria-label="Event listing cards">
+      <article class="event-card">
+        <div class="event-cover academic-cover">
+          <span class="badge badge-blue">Academic</span>
+          <span class="badge badge-gray">12 seats left</span>
+        </div>
+        <div class="event-card-body">
+          <span class="event-date">12 Jun 2026 · 7:30 PM</span>
+          <h3>Build Your First AI App</h3>
+          <p>N28A Innovation Lab · UTM Computing Society · Faculty approved</p>
+          <div class="card-meta"><span>Paid ticket</span><strong>RM 8</strong></div>
+          <a class="button button-primary" href="src/pages/event-detail.html?event=1">View registration</a>
+        </div>
+      </article>
+      <article class="event-card">
+        <div class="event-cover culture-cover">
+          <span class="badge badge-purple">Cultural</span>
+          <span class="badge badge-gray">54 seats left</span>
+        </div>
+        <div class="event-card-body">
+          <span class="event-date">20 Jun 2026 · 6:30 PM</span>
+          <h3>Campus Cultural Night</h3>
+          <p>Dewan Sultan Iskandar · Campus Culture Club · Public listing</p>
+          <div class="card-meta">
+            <span>Open registration</span>
+            <strong>Free</strong>
+          </div>
+          <a class="button button-secondary" href="#free-registration">Free event</a>
+        </div>
+      </article>
+      <article class="event-card">
+        <div class="event-cover sports-cover">
+          <span class="badge badge-green">Sports</span>
+          <span class="badge badge-yellow">Full</span>
+        </div>
+        <div class="event-card-body">
+          <span class="event-date">28 Jun 2026 · 9:00 AM</span>
+          <h3>Interfaculty Futsal Cup</h3>
+          <p>UTM Sports Hall · Computing Society · Waitlist enabled</p>
+          <div class="card-meta">
+            <span>Capacity reached</span>
+            <strong>Waitlist</strong>
+          </div>
+          <a class="button button-secondary" href="#waitlist-state">Join waitlist</a>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <a href="index.html">Events</a>
+    <a href="src/pages/event-detail.html?event=1">Register</a>
+    <a href="src/pages/tickets.html">Tickets</a>
+    <a href="src/pages/check-in.html">Scan</a>
+  </nav>
+</body>
 </html>

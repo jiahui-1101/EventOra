@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Waitlist & Cancellation Demo</title>
+  <link rel="stylesheet" href="../styles/tokens.css" />
+  <link rel="stylesheet" href="../styles/base.css" />
+  <link rel="stylesheet" href="../styles/components.css" />
+  <link rel="stylesheet" href="../styles/responsive.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../../index.html" aria-label="EventOra home">
+      <span class="brand-mark">E</span>
+      <span>EventOra</span>
+    </a>
+    <nav class="desktop-nav" aria-label="Main navigation">
+      <a href="../../index.html">Events</a>
+      <a href="event-detail.html?event=1">Register</a>
+      <a href="tickets.html">My Tickets</a>
+      <a href="check-in.html">QR Check-in</a>
+      <a href="checkout-demo.html">Checkout Demo</a>
+      <a href="waitlist-demo.html" class="active">Waitlist Demo</a>
+    </nav>
+    <a class="header-action" href="event-detail.html?event=1">View Demo</a>
+  </header>
+
+  <main class="app-shell">
+    <div class="page-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Booking lifecycle</p>
+          <h2>Waitlist and cancellation experience</h2>
+        </div>
+        <span class="badge badge-yellow">0 seats left</span>
+      </div>
+      <div class="waitlist-layout">
+        <article class="queue-card">
+          <div class="queue-header">
+            <div><span class="badge badge-yellow">Waitlisted</span><h3>Interfaculty Futsal Cup</h3></div>
+            <strong>#3</strong>
+          </div>
+          <p>You are third in line. EventOra will confirm your booking automatically when a seat opens.</p>
+          <div class="queue-meter"><span style="width: 100%"></span></div>
+          <div class="queue-meta"><span>40 / 40 seats filled</span><strong>2 people ahead</strong></div>
+        </article>
+        <article class="state-card warning-state">
+          <span class="status-dot"></span>
+          <div><h3>Added to waitlist</h3><p>The attendee receives a waitlist position, but no QR ticket is generated until a seat becomes available.</p></div>
+        </article>
+        <article class="state-card success-state">
+          <span class="status-dot"></span>
+          <div><h3>Waitlist promoted</h3><p>A cancellation releases one seat, the first waitlisted attendee becomes confirmed, and a QR ticket is issued.</p></div>
+        </article>
+        <article class="state-card neutral-state">
+          <span class="status-dot"></span>
+          <div><h3>Registration cancelled</h3><p>The attendee can cancel from My Tickets. The old ticket becomes inactive and the seat returns to the queue.</p></div>
+        </article>
+        <article class="notification-card">
+          <span class="badge badge-green">Notification sent</span>
+          <h3>Seat confirmed for Aina Rahman</h3>
+          <p>You have been promoted from the waitlist. Your QR ticket is now active in My Tickets.</p>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <nav class="mobile-nav">
+    <a href="../../index.html">Events</a>
+    <a href="event-detail.html?event=1">Register</a>
+    <a href="tickets.html">Tickets</a>
+    <a href="check-in.html">Scan</a>
+  </nav>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Organiser Dashboard</title>
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/styles/base.css" />
+  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../../src/styles/responsive.css" />
+  <style>
+    .dashboard-layout { display: flex; gap: 24px; align-items: start; }
+    .sidebar-nav { width: 240px; flex-shrink: 0; background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); padding: 1rem; }
+    .sidebar-nav a { display: block; padding: 10px 12px; margin: 4px 0; border-radius: var(--radius-sm); color: var(--muted); text-decoration: none; font-weight: 500; }
+    .sidebar-nav a.active { background: var(--primary-soft); color: var(--primary); }
+    .dashboard-main { flex: 1; }
+    @media (max-width: 760px) { .dashboard-layout { flex-direction: column; } .sidebar-nav { width: 100%; } }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../../index.html" aria-label="EventOra home">
+      <span class="brand-mark">E</span>
+      <span>EventOra</span>
+    </a>
+    <nav class="desktop-nav">
+      <a href="../../index.html">Events</a>
+      <a href="event-detail.html?event=1">Register</a>
+      <a href="tickets.html">My Tickets</a>
+      <a href="check-in.html">QR Check-in</a>
+      <a href="checkout-demo.html">Checkout Demo</a>
+      <a href="waitlist-demo.html">Waitlist Demo</a>
+    </nav>
+    <a class="header-action" href="event-detail.html?event=1">View Demo</a>
+  </header>
+
+  <main class="app-shell">
+    <div class="dashboard-layout">
+      <aside class="sidebar-nav">
+        <a href="#" class="active" data-tab="events">📅 Events</a>
+        <a href="#" data-tab="registrations">📋 Registrations</a>
+        <a href="#" data-tab="attendance">✅ Attendance</a>
+        <a href="#" data-tab="feedback">⭐ Feedback</a>
+      </aside>
+      <div class="dashboard-main" id="dashboardContent">
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/organiser-dashboard.js"> </script>
+</body>
+</html>

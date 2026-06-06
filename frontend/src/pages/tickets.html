@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - My Tickets</title>
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/styles/base.css" />
+  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../../src/styles/responsive.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../../index.html" aria-label="EventOra home">
+      <span class="brand-mark">E</span>
+      <span>EventOra</span>
+    </a>
+    <nav class="desktop-nav">
+      <a href="../../index.html">Events</a>
+      <a href="event-detail.html?event=1">Register</a>
+      <a href="tickets.html">My Tickets</a>
+      <a href="check-in.html">QR Check-in</a>
+      <a href="checkout-demo.html">Checkout Demo</a>
+      <a href="waitlist-demo.html">Waitlist Demo</a>
+    </nav>
+    <a class="header-action" href="event-detail.html?event=1">View Demo</a>
+  </header>
+
+  <main class="app-shell">
+    <section id="tickets" class="page-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Ticket wallet</p>
+          <h2>My Tickets</h2>
+        </div>
+        <span class="badge badge-blue">Attendee view</span>
+      </div>
+      <h3 class="subsection-title">Upcoming Tickets</h3>
+      <div class="ticket-grid">
+        <article class="ticket-card ticket-pass">
+          <div class="ticket-info">
+            <div class="ticket-topline">
+              <span class="badge badge-green">Active</span>
+              <span>Admit one</span>
+            </div>
+            <h3>Build Your First AI App</h3>
+            <p>12 Jun 2026 · 7:30 PM · N28A Innovation Lab</p>
+            <div class="ticket-meta">
+              <span>Seat type <strong>Student</strong></span>
+              <span>Gate <strong>Lab Entrance</strong></span>
+            </div>
+            <code>EVT-9F4K-2Q8M-X7P1</code>
+            <div class="ticket-actions">
+              <span>Cancel registration</span>
+              <span>Add to calendar</span>
+            </div>
+          </div>
+          <div class="ticket-divider" aria-hidden="true"></div>
+          <div class="qr-pattern" aria-label="QR ticket code">
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+          </div>
+        </article>
+      </div>
+
+      <h3 class="subsection-title">Past Tickets</h3>
+      <div class="ticket-grid">
+        <article class="ticket-card muted-ticket">
+          <div class="ticket-info">
+            <div class="ticket-topline">
+              <span class="badge badge-gray">Used</span>
+              <span>Checked in</span>
+            </div>
+            <h3>Vue 3 Crash Course</h3>
+            <p>18 May 2026 · 2:00 PM · Seminar Room 2</p>
+            <div class="ticket-meta">
+              <span>Attendance <strong>Present</strong></span>
+              <span>Certificate <strong>Ready</strong></span>
+            </div>
+            <code>EVT-6B1P-8Q2N-R4Z9</code>
+          </div>
+          <div class="ticket-divider" aria-hidden="true"></div>
+          <div class="qr-pattern used" aria-label="Used QR ticket code">
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <a href="../../index.html">Events</a>
+    <a href="event-detail.html?event=1">Register</a>
+    <a href="tickets.html">Tickets</a>
+    <a href="check-in.html">Scan</a>
+  </nav>
+</body>
+</html>

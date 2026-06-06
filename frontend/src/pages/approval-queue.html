@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Admin Approval Queue</title>
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/styles/base.css" />
+  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../../src/styles/responsive.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../../index.html" aria-label="EventOra home">
+      <span class="brand-mark">E</span>
+      <span>EventOra</span>
+    </a>
+    <nav class="desktop-nav">
+      <a href="../../index.html">Events</a>
+      <a href="event-detail.html?event=1">Register</a>
+      <a href="tickets.html">My Tickets</a>
+      <a href="check-in.html">QR Check-in</a>
+      <a href="checkout-demo.html">Checkout Demo</a>
+      <a href="waitlist-demo.html">Waitlist Demo</a>
+    </nav>
+    <a class="header-action" href="event-detail.html?event=1">View Demo</a>
+  </header>
+
+  <main class="app-shell">
+    <section class="page-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">Faculty Admin</p><h2>Event Approval Queue</h2></div>
+        <span class="badge badge-yellow">3 pending</span>
+      </div>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead><tr style="border-bottom:2px solid var(--border);"><th>Society</th><th>Event Title</th><th>Date</th><th>Category</th><th>Capacity</th><th>Actions</th></tr></thead>
+        <tbody id="pendingEventsList">
+        </tbody>
+      </table>
+    </section>
+
+    <section class="page-section">
+      <h2>Activity Monitoring</h2>
+      <div class="stats-grid" style="margin-top:1rem;">
+        <div class="stat-card"><span>Total Events (This Month)</span><strong>18</strong></div>
+        <div class="stat-card"><span>Active Societies</span><strong>12</strong></div>
+        <div class="stat-card"><span>Total Registrations</span><strong>342</strong></div>
+        <div class="stat-card"><span>Attendance Rate</span><strong>74%</strong></div>
+      </div>
+      <div class="capacity-bar" style="margin: 1rem 0;"><span style="width:74%"></span></div>
+      <p>Most popular category: <strong>Academic</strong> (42% of registrations)</p>
+    </section>
+  </main>
+
+  <script src="../js/approval-queue.js"></script>
+</body>
+</html>

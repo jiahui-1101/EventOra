@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Payment & Registration Demo</title>
+  <link rel="stylesheet" href="../styles/tokens.css" />
+  <link rel="stylesheet" href="../styles/base.css" />
+  <link rel="stylesheet" href="../styles/components.css" />
+  <link rel="stylesheet" href="../styles/responsive.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../../index.html" aria-label="EventOra home">
+      <span class="brand-mark">E</span>
+      <span>EventOra</span>
+    </a>
+    <nav class="desktop-nav" aria-label="Main navigation">
+      <a href="../../index.html">Events</a>
+      <a href="event-detail.html?event=1">Register</a>
+      <a href="tickets.html">My Tickets</a>
+      <a href="check-in.html">QR Check-in</a>
+      <a href="checkout-demo.html" class="active">Checkout Demo</a>
+      <a href="waitlist-demo.html">Waitlist Demo</a>
+    </nav>
+    <a class="header-action" href="event-detail.html?event=1">View Demo</a>
+  </header>
+
+  <main class="app-shell">
+    <section class="state-grid">
+      <article class="state-card success-state">
+        <span class="status-dot"></span>
+        <div>
+          <h3>Free event confirmed</h3>
+          <p>For free events, the attendee is confirmed immediately and a QR ticket is generated.</p>
+        </div>
+      </article>
+      <article class="state-card warning-state">
+        <span class="status-dot"></span>
+        <div>
+          <h3>Duplicate registration blocked</h3>
+          <p>The UI warns the attendee that they already have an active registration for this event.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="mock-modal page-section" aria-label="Mock payment modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Secure checkout</p>
+            <h2>Complete ticket payment</h2>
+          </div>
+          <span class="badge badge-yellow">Pending</span>
+        </div>
+        <p>Confirm the event pass, review the amount, and issue a QR ticket once the mock payment is approved.</p>
+        <div class="payment-method">
+          <span>Payment method</span>
+          <strong>Campus Card ending 4242</strong>
+        </div>
+        <label class="input-label">
+          Mock card number
+          <input value="4242 4242 4242 4242" readonly />
+        </label>
+        <div class="payment-summary checkout-receipt">
+          <div><span>Event pass</span><strong>Build Your First AI App</strong></div>
+          <div><span>Ticket price</span><strong>RM 8.00</strong></div>
+          <div><span>Processing fee</span><strong>RM 0.00</strong></div>
+          <div class="receipt-total"><span>Total due</span><strong>RM 8.00</strong></div>
+        </div>
+        <div class="modal-actions">
+          <span class="button button-primary">Approve payment</span>
+          <span class="button button-ghost">Decline</span>
+        </div>
+      </div>
+      <div class="payment-states">
+        <article class="state-card warning-state">
+          <span class="status-dot"></span>
+          <div><h3>Payment pending</h3><p>The seat is held while payment is being confirmed, but no QR ticket is issued yet.</p></div>
+        </article>
+        <article class="state-card success-state">
+          <span class="status-dot"></span>
+          <div><h3>Payment approved</h3><p>The registration becomes confirmed and the attendee receives an active QR ticket in My Tickets.</p></div>
+        </article>
+        <article class="state-card danger-state">
+          <span class="status-dot"></span>
+          <div><h3>Payment declined</h3><p>The booking stays unpaid, and EventOra prevents ticket generation until the attendee retries successfully.</p></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <nav class="mobile-nav">
+    <a href="../../index.html">Events</a>
+    <a href="event-detail.html?event=1">Register</a>
+    <a href="tickets.html">Tickets</a>
+    <a href="check-in.html">Scan</a>
+  </nav>
+</body>
+</html>
