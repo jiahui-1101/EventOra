@@ -3,22 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <title>Organizer Feedback Analytics</title>
-  <link rel="stylesheet" href="../../src/styles/tokens.css" />
-  <link rel="stylesheet" href="../../src/styles/base.css" />
-  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../styles/tokens.css" />
+  <link rel="stylesheet" href="../styles/base.css" />
+  <link rel="stylesheet" href="../styles/components.css" />
+  <link rel="stylesheet" href="../styles/responsive.css" />
 </head>
 <body>
-  <header class="site-header"></header>
+  <header class="site-header">
+    <a class="brand" href="../../index.html"><span class="brand-mark">E</span><span>EventOra</span></a>
+    <nav class="desktop-nav">
+      <a href="../../index.html">Events</a>
+      <a href="event-detail.html?event=1">Register</a>
+      <a href="tickets.html">My Tickets</a>
+      <a href="check-in.html">QR Check-in</a>
+      <a href="organizer-feedback.html">📊 Feedback Analytics</a>
+      <a href="organiser-dashboard.html">📋 Organiser Dashboard</a>
+      <a href="approval-queue.html">✅ Admin Queue</a>
+      <a href="my-completed-events.html">🏆 My Completed</a>
+    </nav>
+    <a class="header-action" href="event-detail.html?event=1">View Demo</a>
+  </header>
+
   <main class="app-shell">
     <section class="page-section">
-      <h2>Event Feedback Dashboard</h2>
-      <label>Select Event: </label>
-      <select id="eventSelect"></select>
-      <div id="feedbackStats"></div>
-      <button id="exportCSVBtn" class="button button-primary">Export CSV</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <h2>Event Feedback Analytics</h2>
+        <div style="display: flex; gap: 12px;">
+          <button id="exportFeedbackCsvBtn" class="button button-primary">📝 Export Feedback CSV</button>
+          <button id="exportAttendanceCsvBtn" class="button button-secondary">📊 Export Attendance CSV</button>
+        </div>
+      </div>
     </section>
   </main>
-  <script src="../js/organizer-feedback.js"> </script>
-    
+
+  <nav class="mobile-nav">
+    <a href="../../index.html">Events</a>
+    <a href="event-detail.html?event=1">Register</a>
+    <a href="tickets.html">Tickets</a>
+    <a href="check-in.html">Scan</a>
+  </nav>
+
+  <script src="../js/organizer-feedback.js"></script>
 </body>
 </html>
