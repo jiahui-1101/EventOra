@@ -66,11 +66,12 @@ const feedbackData = [
   { rating: 5, comment: "Very inspiring" }
 ];
 
-let societyEvents = JSON.parse(localStorage.getItem("eventora_society_events") || "null") || defaultEvents;
+const eventsStorageKey = "eventora_society_events_v2";
+let societyEvents = JSON.parse(localStorage.getItem(eventsStorageKey) || "null") || defaultEvents;
 let editingEventId = null;
 
 function saveEvents() {
-  localStorage.setItem("eventora_society_events", JSON.stringify(societyEvents));
+  localStorage.setItem(eventsStorageKey, JSON.stringify(societyEvents));
 }
 
 function badgeForStatus(status) {
@@ -81,41 +82,52 @@ function badgeForStatus(status) {
   return "badge-blue";
 }
 
+function statusLabel(status) {
+  return status.replace("_", " ");
+}
+
 function renderWorkflowActions(event) {
   if (event.status === "draft") {
     return `
-      <button class="button button-secondary edit-event-btn" data-id="${event.id}">Edit</button>
-      <button class="button button-secondary">Preview</button>
-      <button class="button button-primary">Submit</button>
+      <div class="flex-gap">
+        <button class="button button-secondary edit-event-btn" data-id="${event.id}">Edit</button>
+        <button class="button button-secondary">Preview</button>
+        <button class="button button-primary">Submit</button>
+      </div>
     `;
   }
 
   if (event.status === "pending_approval") {
     return `
-      <button class="button button-secondary">Preview</button>
-      <button class="button button-danger cancel-event-btn" data-id="${event.id}">Cancel</button>
+      <div class="flex-gap">
+        <button class="button button-secondary">Preview</button>
+        <button class="button button-danger cancel-event-btn" data-id="${event.id}">Cancel</button>
+      </div>
     `;
   }
 
   if (event.status === "published") {
     return `
-      <button class="button button-secondary">Preview</button>
-      <button class="button button-danger cancel-event-btn" data-id="${event.id}">Cancel</button>
+      <div class="flex-gap">
+        <button class="button button-secondary edit-event-btn" data-id="${event.id}">Edit</button>
+        <button class="button button-secondary">Report</button>
+        <button class="button button-danger cancel-event-btn" data-id="${event.id}">Cancel</button>
+      </div>
     `;
   }
 
   if (event.status === "rejected") {
     return `
-      <button class="button button-secondary edit-event-btn" data-id="${event.id}">Edit</button>
-      <button class="button button-primary">Resubmit</button>
+      <div class="flex-gap">
+        <button class="button button-secondary edit-event-btn" data-id="${event.id}">Edit</button>
+        <button class="button button-primary">Resubmit</button>
+      </div>
     `;
   }
 
-  return `<button class="button button-secondary">Preview</button>`;
-}
-
-function statusLabel(status) {
-  return status.replace("_", " ");
+  return `
+    <button class="button button-secondary" disabled>View</button>
+  `;
 }
 
 function escapeCsv(value) {
@@ -161,20 +173,18 @@ function renderEventsTab() {
   return `
     <div class="page-section">
       <div class="section-heading">
-        <h2>Manage Events</h2>
-        <button class="button button-primary" id="createEventBtn">+ Create Event</button>
+        <h2>My Events</h2>
+        <a class="button button-primary" href="create-event.html">+ Create Event</a>
       </div>
-      
+
       <div class="admin-table-wrap">
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Title</th>
-              <th>Category</th>
-              <th>Date & Time</th>
-              <th>Location</th>
-              <th>Fee</th>
+              <th>Event Name</th>
+              <th>Date</th>
               <th>Capacity</th>
+              <th>Registered</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -183,27 +193,29 @@ function renderEventsTab() {
             ${societyEvents.map(ev => `
               <tr>
                 <td>
-                  <strong>${ev.title}</strong>
-                  <br>
-                  <span style="color:var(--muted);font-size:0.78rem;">
-                    ${ev.registrations} registrations · ${ev.checkedIn} checked in
+                  <div style="font-weight:700;">${ev.title}</div>
+                  <span class="badge badge-blue" style="font-size:0.68rem;margin-top:6px;">
+                    ${ev.category || "Academic"}
                   </span>
                 </td>
-                <td>${ev.category || "-"}</td>
                 <td>
-                  ${ev.eventDate || "-"}
+                  ${ev.eventDate || "Not set"}
                   <br>
                   <span style="color:var(--muted);font-size:0.78rem;">
-                    ${ev.startTime || "-"} - ${ev.endTime || "-"}
+                    ${ev.startTime || "--"} - ${ev.endTime || "--"}
                   </span>
                 </td>
-                <td>${ev.location || "-"}</td>
-                <td>${ev.feeType === "Paid" ? `RM ${ev.feeAmount}` : "Free"}</td>
                 <td>${ev.capacity}</td>
-                <td><span class="badge ${badgeForStatus(ev.status)}">${statusLabel(ev.status)}</span></td>
                 <td>
-                ${renderWorkflowActions(ev)}
+                  ${ev.registrations}
+                  <span style="color:var(--muted);font-size:0.78rem;">
+                    (${ev.capacity ? Math.round((ev.registrations / ev.capacity) * 100) : 0}%)
+                  </span>
                 </td>
+                <td>
+                  <span class="badge ${badgeForStatus(ev.status)}">${statusLabel(ev.status)}</span>
+                </td>
+                <td>${renderWorkflowActions(ev)}</td>
               </tr>
             `).join("")}
           </tbody>
@@ -340,9 +352,14 @@ function cancelEvent(id) {
   renderCurrentTab("events");
 }
 
+function deleteEvent(id) {
+  societyEvents = societyEvents.filter(ev => ev.id !== id);
+  saveEvents();
+  renderCurrentTab("events");
+}
+
 function bindTabActions(tab) {
   if (tab === "events") {
-    document.getElementById("createEventBtn")?.addEventListener("click", () => openEventModal());
     document.querySelectorAll(".edit-event-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         const event = societyEvents.find(ev => ev.id === Number(btn.dataset.id));
@@ -351,6 +368,9 @@ function bindTabActions(tab) {
     });
     document.querySelectorAll(".cancel-event-btn").forEach(btn => {
       btn.addEventListener("click", () => cancelEvent(Number(btn.dataset.id)));
+    });
+    document.querySelectorAll(".delete-event-btn").forEach(btn => {
+      btn.addEventListener("click", () => deleteEvent(Number(btn.dataset.id)));
     });
   }
 
@@ -377,8 +397,68 @@ function renderCurrentTab(tab) {
   bindTabActions(tab);
 }
 
+function addCreatedEventToDashboard(status) {
+  const mockCreatedId = "created-event-annual-tech-symposium";
+
+  const alreadyAdded = societyEvents.some(ev => ev.mockId === mockCreatedId);
+  if (alreadyAdded) return;
+
+  societyEvents.unshift({
+    id: Date.now(),
+    mockId: mockCreatedId,
+    title: "Annual Tech Symposium 2026",
+    category: "Academic",
+    location: "Dewan Sultan Iskandar, UTM JB",
+    eventDate: "15 Jul 2026",
+    startTime: "9:00 AM",
+    endTime: "5:00 PM",
+    feeType: "Free",
+    feeAmount: 0,
+    status,
+    registrations: 0,
+    checkedIn: 0,
+    avgRating: null,
+    capacity: 120
+  });
+
+  saveEvents();
+  renderCurrentTab("events");
+}
+
+function showCreateEventToast() {
+  const params = new URLSearchParams(window.location.search);
+  const eventSaved = params.get("eventSaved");
+  if (!eventSaved) return;
+
+  const toast = document.getElementById("dashboardToast");
+  const title = document.getElementById("dashboardToastTitle");
+  const message = document.getElementById("dashboardToastMessage");
+
+  if (!toast || !title || !message) return;
+
+    if (eventSaved === "draft") {
+    title.textContent = "Draft saved successfully";
+    message.textContent = "The event is saved as a draft and can be edited before submission.";
+    addCreatedEventToDashboard("draft");
+  }
+
+  if (eventSaved === "submitted") {
+    title.textContent = "Event submitted for approval";
+    message.textContent = "Faculty Admin will review the event before it appears in the public list.";
+    addCreatedEventToDashboard("pending_approval");
+  }
+
+  toast.style.display = "block";
+
+  setTimeout(() => {
+    toast.style.display = "none";
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }, 3500);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   renderCurrentTab("events");
+  showCreateEventToast();
 
   document.querySelectorAll(".sidebar-nav a").forEach(link => {
     link.addEventListener("click", event => {
