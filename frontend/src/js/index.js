@@ -158,7 +158,96 @@ function bindFilters() {
   }
 }
 
+function applyRoleBasedNav() {
+  const session = JSON.parse(localStorage.getItem("eventora_session") || "null");
+  const role = session?.user?.role;
+
+  const mainNav = document.getElementById("mainNav");
+  const mobileNav = document.getElementById("mobileNav");
+  const headerAction = document.getElementById("headerAction");
+
+  if (!mainNav || !mobileNav || !headerAction) return;
+
+  if (!session?.isLoggedIn || !role) {
+    mainNav.innerHTML = `
+      <a href="index.html">Events</a>
+      <a href="src/pages/login.html">Login</a>
+    `;
+
+    mobileNav.innerHTML = `
+      <a href="index.html">Events</a>
+      <a href="src/pages/login.html">Login</a>
+    `;
+
+    headerAction.textContent = "Create account";
+    headerAction.href = "src/pages/register.html";
+    return;
+  }
+
+  if (role === "attendee") {
+    mainNav.innerHTML = `
+      <a href="index.html">Events</a>
+      <a href="src/pages/tickets.html">My Tickets</a>
+      <a href="src/pages/my-completed-events.html">Completed Events</a>
+      <a href="src/pages/profile.html">Profile</a>
+      <a href="src/pages/login.html">Sign out</a>
+    `;
+
+    mobileNav.innerHTML = `
+      <a href="index.html">Events</a>
+      <a href="src/pages/tickets.html">Tickets</a>
+      <a href="src/pages/profile.html">Profile</a>
+      <a href="src/pages/login.html">Sign out</a>
+    `;
+
+    headerAction.textContent = "Browse Events";
+    headerAction.href = "#events";
+  }
+
+  if (role === "organiser") {
+    mainNav.innerHTML = `
+      <a href="index.html">Events</a>
+      <a href="src/pages/organiser-dashboard.html">Organiser Dashboard</a>
+      <a href="src/pages/check-in.html">QR Check-in</a>
+      <a href="src/pages/organizer-feedback.html">Feedback Analytics</a>
+      <a href="src/pages/profile.html">Profile</a>
+      <a href="src/pages/login.html">Sign out</a>
+    `;
+
+    mobileNav.innerHTML = `
+      <a href="index.html">Events</a>
+      <a href="src/pages/organiser-dashboard.html">Dashboard</a>
+      <a href="src/pages/check-in.html">Scan</a>
+      <a href="src/pages/profile.html">Profile</a>
+    `;
+
+    headerAction.textContent = "Open Dashboard";
+    headerAction.href = "src/pages/organiser-dashboard.html";
+  }
+
+  if (role === "faculty_admin") {
+    mainNav.innerHTML = `
+      <a href="index.html">Events</a>
+      <a href="src/pages/approval-queue.html">Approval Queue</a>
+      <a href="src/pages/admin-dashboard.html">Admin Dashboard</a>
+      <a href="src/pages/profile.html">Profile</a>
+      <a href="src/pages/login.html">Sign out</a>
+    `;
+
+    mobileNav.innerHTML = `
+      <a href="index.html">Events</a>
+      <a href="src/pages/approval-queue.html">Approve</a>
+      <a href="src/pages/admin-dashboard.html">Admin</a>
+      <a href="src/pages/profile.html">Profile</a>
+    `;
+
+    headerAction.textContent = "Review Pending Events";
+    headerAction.href = "src/pages/approval-queue.html";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   renderEvents();
   bindFilters();
+  applyRoleBasedNav();
 });
