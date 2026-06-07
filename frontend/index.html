@@ -56,29 +56,41 @@
       <article class="stat-card"><span>Free Events</span><strong id="freeStat">18</strong></article>
     </section>
 
-    <section class="toolbar" id="events" aria-label="Event filters">
-      <div>
-        <p class="eyebrow">Featured calendar</p>
-        <h2>Upcoming society activities</h2>
-      </div>
-      <div class="filter-row" id="categoryFilters">
-        <span class="filter-chip active" data-cat="all">All</span>
-        <span class="filter-chip" data-cat="academic">Academic</span>
-        <span class="filter-chip" data-cat="sports">Sports</span>
-        <span class="filter-chip" data-cat="cultural">Cultural</span>
-        <span class="filter-chip" data-cat="religious">Religious</span>
-      </div>
-      <div class="filter-row" id="priceFilters">
-        <span class="filter-chip active" data-price="all">All</span>
-        <span class="filter-chip" data-price="free">Free</span>
-        <span class="filter-chip" data-price="paid">Paid</span>
-      </div>
-      <div class="filter-row" id="dateFilters">
-        <span class="filter-chip active" data-date="all">Any time</span>
-        <span class="filter-chip" data-date="week">This week</span>
-        <span class="filter-chip" data-date="month">This month</span>
-      </div>
-    </section>
+<section class="toolbar" id="events" aria-label="Event filters">
+  <div>
+    <p class="eyebrow">Featured calendar</p>
+    <h2>Upcoming society activities</h2>
+  </div>
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label for="categorySelect" class="filter-label">Category:</label>
+      <select id="categorySelect" class="filter-select">
+        <option value="all">All</option>
+        <option value="academic">Academic</option>
+        <option value="sports">Sports</option>
+        <option value="cultural">Cultural</option>
+        <option value="religious">Religious</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="priceSelect" class="filter-label">Price:</label>
+      <select id="priceSelect" class="filter-select">
+        <option value="all">All</option>
+        <option value="free">Free</option>
+        <option value="paid">Paid</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="dateSelect" class="filter-label">Time:</label>
+      <select id="dateSelect" class="filter-select">
+        <option value="all">Any time</option>
+        <option value="week">This week</option>
+        <option value="month">This month</option>
+      </select>
+    </div>
+    <button id="clearFiltersBtn" class="button button-secondary clear-filters">Clear filters</button>
+  </div>
+</section>
 
     <section class="event-grid" id="eventGrid" aria-label="Event listing cards">
       <article class="event-card">
