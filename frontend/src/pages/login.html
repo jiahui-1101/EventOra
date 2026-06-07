@@ -15,15 +15,12 @@
       <span class="brand-mark">E</span>
       <span>EventOra</span>
     </a>
-    <nav class="desktop-nav">
-      <a href="../../index.html">Events</a>
-      <a href="event-detail.html?event=1">Register</a>
-      <a href="tickets.html">My Tickets</a>
-      <a href="check-in.html">QR Check-in</a>
-      <a href="organiser-dashboard.html">📋 Organiser Dashboard</a>
-      <a href="approval-queue.html">✅ Admin Queue</a>
-    </nav>
-    <a class="header-action" href="register.html">Sign up</a>
+<nav class="desktop-nav">
+  <a href="../../index.html">Events</a>
+  <a href="tickets.html">My Tickets</a>
+  <a href="profile.html">Profile</a>
+</nav>
+<a class="header-action" href="register.html">Sign up</a>
   </header>
 
   <main class="app-shell">
@@ -59,6 +56,11 @@
           <div id="loginError" class="auth-error" style="display:none;">
             Invalid email or password. Please try again.
           </div>
+
+          <div id="loginSuccess"
+            style="display:none;margin:10px 0;padding:10px 14px;border-radius:var(--radius-sm);background:var(--success-soft);color:#065f46;font-size:0.84rem;">
+            Signed in successfully. Redirecting...
+        </div>
 
           <button class="button button-primary full-width auth-submit" id="loginBtn" aria-label="Sign in">
             Sign in
