@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Create Event Ticketing</title>
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/styles/base.css" />
+  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../../src/styles/responsive.css" />
+  <style>
+    .create-shell { padding:28px; background:var(--surface-soft); min-height:100vh; }
+    .create-header { margin-bottom:24px; }
+    .create-header a { display:inline-flex; margin-bottom:14px; color:var(--muted); text-decoration:none; font-size:0.86rem; }
+    .create-header h1 { margin:0 0 6px; font-size:1.6rem; }
+    .create-header p { margin:0; color:var(--muted); font-size:0.9rem; }
+    .stepper { display:grid; grid-template-columns:repeat(4,1fr); margin:28px 0 34px; position:relative; }
+    .stepper::before { content:""; position:absolute; top:13px; left:8%; right:8%; height:1px; background:var(--border); }
+    .step-item { position:relative; display:grid; justify-items:center; gap:8px; color:var(--muted); font-size:0.76rem; z-index:1; }
+    .step-number { width:28px; height:28px; border-radius:999px; display:grid; place-items:center; background:#e5e7eb; color:var(--muted); font-weight:700; }
+    .step-item.done .step-number { background:var(--success); color:#fff; }
+    .step-item.active { color:var(--primary); font-weight:700; }
+    .step-item.active .step-number { background:var(--primary); color:#fff; }
+    .create-card { border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--surface); box-shadow:var(--shadow); padding:24px; }
+    .create-card h2 { margin:0 0 22px; font-size:1rem; }
+    .form-label { display:grid; gap:8px; margin-bottom:18px; color:var(--muted); font-size:0.76rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; }
+    .form-label input, .form-label select { width:100%; min-height:42px; border:1px solid var(--border); border-radius:var(--radius-sm); padding:0 12px; background:#fff; color:var(--text); font-size:0.9rem; text-transform:none; letter-spacing:0; font-weight:500; }
+    .ticket-option { padding:16px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--surface); }
+    .ticket-option strong { display:block; margin-bottom:4px; color:var(--text); }
+    .ticket-option p { margin:0; color:var(--muted); font-size:0.84rem; }
+    .create-actions { display:flex; justify-content:space-between; gap:12px; margin-top:20px; }
+  </style>
+</head>
+<body>
+  <main class="create-shell">
+    <section class="create-header">
+      <a href="create-event.html">← Back to Basic Info</a>
+      <h1>Create New Event</h1>
+      <p>Set registration capacity and ticket price before adding final details.</p>
+    </section>
+
+    <section class="stepper">
+      <div class="step-item done"><span class="step-number">1</span><span>Basic Info</span></div>
+      <div class="step-item active"><span class="step-number">2</span><span>Ticketing</span></div>
+      <div class="step-item"><span class="step-number">3</span><span>Details</span></div>
+      <div class="step-item"><span class="step-number">4</span><span>Review</span></div>
+    </section>
+
+    <section class="create-card">
+      <h2>Step 2 — Ticketing</h2>
+
+      <div class="input-row-2">
+        <label class="form-label">
+          Capacity *
+          <input type="number" placeholder="80" />
+        </label>
+
+        <label class="form-label">
+          Registration deadline *
+          <input type="datetime-local" />
+        </label>
+      </div>
+
+      <label class="form-label">
+        Ticket price
+        <div class="input-row-2">
+          <div class="ticket-option">
+            <strong><input type="radio" name="ticketPrice" checked /> Free event</strong>
+            <p>Students can register without mock payment.</p>
+          </div>
+
+          <div class="ticket-option">
+            <strong><input type="radio" name="ticketPrice" /> Paid event</strong>
+            <p>Students complete mock payment before ticket confirmation.</p>
+          </div>
+        </div>
+      </label>
+
+      <div class="input-row-2">
+        <label class="form-label">
+          Fee amount (RM)
+          <input type="number" min="0" step="0.01" placeholder="0.00" />
+        </label>
+
+        <label class="form-label">
+          Waitlist
+          <select>
+            <option>Enable when event is full</option>
+            <option>Disable waitlist</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="create-actions">
+        <a class="button button-ghost" href="create-event.html">Back</a>
+        <a class="button button-primary" href="create-event-details.html">Next: Details →</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

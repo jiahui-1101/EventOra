@@ -81,31 +81,95 @@
           </div>
           <span class="badge badge-blue">Draft</span>
         </div>
-        <div class="input-label" style="margin-top:16px;">
-          Event title
-          <input type="text" id="eventTitleInput" placeholder="e.g. Vue Workshop 2026" />
-        </div>
-        <div class="input-row-2">
-          <div class="input-label">
-            Capacity
-            <input type="number" id="eventCapacityInput" min="1" placeholder="40" />
-          </div>
-          <div class="input-label">
-            Status
-            <select id="eventStatusInput">
-              <option value="draft">Draft</option>
-              <option value="pending_approval">Pending approval</option>
-              <option value="published">Published</option>
-            </select>
-          </div>
-        </div>
+<div class="input-label" style="margin-top:16px;">
+  Event title
+  <input type="text" id="eventTitleInput" placeholder="e.g. Vue Workshop 2026" />
+</div>
+
+<div class="input-row-2">
+  <div class="input-label">
+    Category
+    <select id="eventCategoryInput">
+      <option value="academic">Academic</option>
+      <option value="cultural">Cultural</option>
+      <option value="sports">Sports</option>
+      <option value="career">Career</option>
+      <option value="volunteer">Volunteer</option>
+    </select>
+  </div>
+
+  <div class="input-label">
+    Location
+    <input type="text" id="eventLocationInput" placeholder="e.g. N28A Innovation Lab" />
+  </div>
+</div>
+
+<div class="input-row-2">
+  <div class="input-label">
+    Event date
+    <input type="date" id="eventDateInput" />
+  </div>
+
+  <div class="input-label">
+    Registration deadline
+    <input type="date" id="eventDeadlineInput" />
+  </div>
+</div>
+
+<div class="input-row-2">
+  <div class="input-label">
+    Start time
+    <input type="time" id="eventStartTimeInput" />
+  </div>
+
+  <div class="input-label">
+    End time
+    <input type="time" id="eventEndTimeInput" />
+  </div>
+</div>
+
+<div class="input-row-2">
+  <div class="input-label">
+    Capacity
+    <input type="number" id="eventCapacityInput" min="1" placeholder="40" />
+  </div>
+
+  <div class="input-label">
+    Fee type
+    <select id="eventFeeTypeInput">
+      <option value="free">Free</option>
+      <option value="paid">Paid</option>
+    </select>
+  </div>
+</div>
+
+<div class="input-label">
+  Fee amount (RM)
+  <input type="number" id="eventFeeAmountInput" min="0" step="0.01" placeholder="0.00" />
+</div>
+
+<input type="hidden" id="eventStatusInput" value="draft" />
+
+<div class="registration-alert">
+  <strong>Saved as draft first</strong>
+  <p>
+    New events stay in draft until the organiser previews the details and submits them for faculty approval.
+  </p>
+</div>
+
+
         <div id="eventFormError" class="auth-error" style="display:none;"></div>
         <div class="modal-actions" style="margin-top:20px;">
-          <button class="button button-ghost" id="closeEventModalBtn">Cancel</button>
-          <button class="button button-primary" id="saveEventBtn">Save event</button>
+          <button class="button button-ghost" id="closeEventModalBtn">Discard</button>
+          <button class="button button-primary" id="saveEventBtn">Save Draft</button>
         </div>
       </div>
     </div>
+
+    <div id="dashboardToast" class="registration-alert" style="display:none;position:fixed;right:24px;bottom:24px;z-index:1200;max-width:340px;box-shadow:var(--shadow-lg);">
+    <strong id="dashboardToastTitle">Saved</strong>
+    <p id="dashboardToastMessage">Your event has been updated.</p>
+    </div>  
   </main>
 
 <script src="../js/nav.js" defer></script>
