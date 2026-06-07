@@ -4,76 +4,104 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EventOra - Edit Profile</title>
+
   <link rel="stylesheet" href="../../src/styles/tokens.css" />
   <link rel="stylesheet" href="../../src/styles/base.css" />
   <link rel="stylesheet" href="../../src/styles/components.css" />
   <link rel="stylesheet" href="../../src/styles/responsive.css" />
 </head>
+
 <body>
+
   <header class="site-header">
-    <a class="brand" href="../../index.html" aria-label="EventOra home">
+    <a class="brand" href="../../index.html">
       <span class="brand-mark">E</span>
       <span>EventOra</span>
     </a>
+
     <nav class="desktop-nav">
       <a href="../../index.html">Events</a>
-      <a href="organiser-dashboard.html">📋 Dashboard</a>
+      <a href="#" id="dashboardLink">📋 Dashboard</a>
       <a href="login.html">Sign out</a>
     </nav>
-    <a class="header-action" href="organiser-dashboard.html">Back to Dashboard</a>
+
+    <a class="header-action" href="#" id="headerDashboard">Back to Dashboard</a>
   </header>
 
   <main class="app-shell">
     <section class="page-section">
+
       <div class="section-heading">
         <div>
           <p class="eyebrow">Account settings</p>
           <h2>Edit Profile</h2>
         </div>
-        <span class="badge badge-blue">Organiser</span>
+
+        <span class="badge badge-blue" id="roleBadge">Role</span>
       </div>
 
       <div class="profile-layout">
 
-        <!-- Avatar card -->
+        <!-- Avatar -->
         <div class="profile-avatar-card">
-          <div class="avatar-circle">MS</div>
-          <strong>Lee Mei Shuet</strong>
-          <span class="badge badge-blue">Organiser</span>
+          <div class="avatar-circle" id="avatarInit">MS</div>
+
+          <strong id="profileName">User</strong>
+
+          <span class="badge badge-blue" id="roleBadge2">Role</span>
+
           <p class="profile-society">UTM Computing Society</p>
-          <button class="button button-ghost full-width" style="margin-top:8px;">Change photo</button>
+
+          <button class="button button-ghost full-width" style="margin-top:8px;">
+            Change photo
+          </button>
         </div>
 
-        <!-- Form card -->
+        <!-- Form -->
         <div class="profile-form-card">
+
           <h3>Personal Information</h3>
 
           <div class="input-row-2">
-            <div class="input-label">First name <input type="text" id="pfFirstName" value="Mei" aria-label="First name" /></div>
-            <div class="input-label">Last name <input type="text" id="pfLastName" value="Shuet" aria-label="Last name" /></div>
+            <div class="input-label">First name <input type="text" id="pfFirstName" /></div>
+            <div class="input-label">Last name <input type="text" id="pfLastName" /></div>
           </div>
-          <div class="input-label">Email address <input type="email" id="pfEmail" value="mei@utm.my" aria-label="Email" /></div>
-          <div class="input-label">Matric number <input type="text" id="pfMatric" value="A24CS0102" aria-label="Matric number" /></div>
+
+          <div class="input-label">Email <input type="email" id="pfEmail" /></div>
+
+          <div class="input-label">Matric number <input type="text" id="pfMatric" /></div>
 
           <div class="profile-divider">Security</div>
 
-          <div class="input-label">Current password <input type="password" id="pfCurrentPw" placeholder="Enter current password" aria-label="Current password" /></div>
+          <div class="input-label">
+            Current password <input type="password" id="pfCurrentPw" />
+          </div>
+
           <div class="input-row-2">
-            <div class="input-label">New password <input type="password" id="pfNewPw" placeholder="New password" aria-label="New password" /></div>
-            <div class="input-label">Confirm <input type="password" id="pfConfirmPw" placeholder="Confirm" aria-label="Confirm new password" /></div>
+            <div class="input-label">
+              New password <input type="password" id="pfNewPw" />
+            </div>
+
+            <div class="input-label">
+              Confirm <input type="password" id="pfConfirmPw" />
+            </div>
           </div>
 
           <div id="profileError" class="auth-error" style="display:none;"></div>
-          <div id="profileSuccess" style="display:none;margin-top:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--success-soft);color:#065f46;font-size:0.84rem;border:1px solid #bbf7d0;">
+
+          <div id="profileSuccess"
+            style="display:none;margin-top:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--success-soft);color:#065f46;">
             Profile updated successfully!
           </div>
 
           <div class="profile-actions">
-            <a class="button button-ghost" href="organiser-dashboard.html">Cancel</a>
+            <a class="button button-ghost" href="#" id="cancelBtn">Cancel</a>
             <button class="button button-primary" id="saveProfileBtn">Save changes</button>
           </div>
+
         </div>
       </div>
+
     </section>
   </main>
 
