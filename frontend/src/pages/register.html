@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Register</title>
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/styles/base.css" />
+  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../../src/styles/responsive.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../../index.html" aria-label="EventOra home">
+      <span class="brand-mark">E</span>
+      <span>EventOra</span>
+    </a>
+    <nav class="desktop-nav">
+      <a href="../../index.html">Events</a>
+    </nav>
+    <a class="header-action" href="login.html">Sign in</a>
+  </header>
+
+  <main class="app-shell">
+    <section class="page-section auth-section">
+      <div class="auth-shell">
+
+        <div class="auth-brand">
+          <span class="auth-brand-mark">E</span>
+          <h2>EventOra</h2>
+          <p class="auth-tagline">Join thousands of UTM students on the campus events platform.</p>
+        </div>
+
+        <div class="auth-card">
+          <p class="eyebrow">Get started</p>
+          <h3>Create your account</h3>
+
+          <div class="input-row-2">
+            <div class="input-label">
+              First name
+              <input type="text" id="firstName" placeholder="Mei" aria-label="First name" />
+            </div>
+            <div class="input-label">
+              Last name
+              <input type="text" id="lastName" placeholder="Shuet" aria-label="Last name" />
+            </div>
+          </div>
+
+          <div class="input-label">
+            Email address
+            <input type="email" id="regEmail" placeholder="e.g. mei@utm.my" aria-label="Email address" />
+          </div>
+          <div class="input-label">
+            Password
+            <input type="password" id="regPassword" placeholder="Minimum 8 characters" aria-label="Password" />
+          </div>
+          <div class="input-label">
+            Confirm password
+            <input type="password" id="regConfirm" placeholder="Re-enter password" aria-label="Confirm password" />
+          </div>
+
+          <div class="input-label">
+            I am registering as
+            <div class="role-selector">
+              <label class="role-option role-active" id="roleAttendee">
+                <input type="radio" name="role" value="attendee" checked aria-label="Attendee" />
+                <strong>Attendee</strong>
+                <span>Browse &amp; register for events</span>
+              </label>
+              <label class="role-option" id="roleOrganiser">
+                <input type="radio" name="role" value="organiser" aria-label="Society Organiser" />
+                <strong>Society Organiser</strong>
+                <span>Create &amp; manage society events</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="registerError" class="auth-error" style="display:none;"></div>
+
+          <button class="button button-primary full-width auth-submit" id="registerBtn" aria-label="Create account">
+            Create account
+          </button>
+          <p class="auth-footer-text">
+            Already have an account? <a class="auth-link" href="login.html">Sign in</a>
+          </p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <script src="../js/register.js"></script>
+</body>
+</html>
