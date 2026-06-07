@@ -48,6 +48,7 @@ function renderRoleNav() {
     mainNav.innerHTML = `
       <a href="${path.home}">Events</a>
       <a href="${path.pages}tickets.html">My Tickets</a>
+      <a href="${path.pages}notifications.html">Notifications</a>
       <a href="${path.pages}my-completed-events.html">Completed Events</a>
       <a href="${path.pages}profile.html">Profile</a>
       <a href="${path.pages}login.html?logout=1">Sign out</a>
@@ -72,6 +73,7 @@ function renderRoleNav() {
     mainNav.innerHTML = `
       <a href="${path.home}">Events</a>
       <a href="${path.pages}organiser-dashboard.html">Organiser Dashboard</a>
+      <a href="${path.pages}notifications.html">Notifications</a>
       <a href="${path.pages}check-in.html">QR Check-in</a>
       <a href="${path.pages}organizer-feedback.html">Feedback Analytics</a>
       <a href="${path.pages}profile.html">Profile</a>
@@ -98,6 +100,7 @@ function renderRoleNav() {
       <a href="${path.home}">Events</a>
       <a href="${path.pages}approval-queue.html">Approval Queue</a>
       <a href="${path.pages}admin-dashboard.html">Admin Dashboard</a>
+      <a href="${path.pages}notifications.html">Notifications</a>
       <a href="${path.pages}profile.html">Profile</a>
       <a href="${path.pages}login.html?logout=1">Sign out</a>
     `;
