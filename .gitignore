@@ -9,4 +9,5 @@ build/
 Thumbs.db
 
 .vscode/
-.idea/
+.idea/frontend/node_modules/
+node_modules/
