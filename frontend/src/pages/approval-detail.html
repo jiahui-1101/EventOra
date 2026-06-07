@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Approval Detail</title>
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/styles/base.css" />
+  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../../src/styles/responsive.css" />
+  <style>
+    .approval-shell { padding: 28px; background: var(--surface-soft); min-height: 100vh; }
+    .back-link { display:inline-flex; margin-bottom:14px; color:var(--muted); text-decoration:none; font-size:0.86rem; }
+    .approval-header { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:22px; }
+    .approval-header h1 { margin:0 0 6px; font-size:1.6rem; }
+    .approval-header p { margin:0; color:var(--muted); font-size:0.9rem; }
+    .approval-layout { display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:18px; align-items:start; }
+    .approval-card, .decision-card { border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--surface); box-shadow:var(--shadow); padding:24px; }
+    .poster-preview { min-height:220px; border-radius:var(--radius-md); background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; display:flex; align-items:end; padding:22px; margin-bottom:18px; }
+    .poster-preview h2 { color:#fff; margin:10px 0 6px; }
+    .info-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+    .info-item { padding:12px; border-radius:var(--radius-sm); background:var(--surface-soft); }
+    .info-item span { display:block; color:var(--muted); font-size:0.74rem; font-weight:700; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em; }
+    .info-item strong { display:block; color:var(--text); font-size:0.9rem; }
+    .section-title { margin:24px 0 10px; font-size:1rem; }
+    .decision-actions { display:grid; gap:10px; margin-top:18px; }
+    .full-width { width:100%; justify-content:center; }
+    .review-note { padding:14px; border-radius:var(--radius-sm); background:var(--warning-soft); border:1px solid #fde68a; color:#92400e; font-size:0.86rem; }
+    .approved-note { padding:14px; border-radius:var(--radius-sm); background:var(--success-soft); border:1px solid #bbf7d0; color:#065f46; font-size:0.86rem; }
+    .rejected-note { padding:14px; border-radius:var(--radius-sm); background:var(--danger-soft); border:1px solid #fecaca; color:#991b1b; font-size:0.86rem; }
+    @media (max-width:900px) {
+      .approval-layout { grid-template-columns:1fr; }
+      .approval-header { display:block; }
+    }
+  </style>
+</head>
+<body>
+  <main class="approval-shell">
+    <a class="back-link" href="approval-queue.html">← Back to Approval Queue</a>
+
+    <section class="approval-header">
+      <div>
+        <span id="statusBadge" class="badge badge-yellow">Pending approval</span>
+        <h1 id="eventTitle">Line Follower Workshop</h1>
+        <p id="eventMeta">Robotics Club · Submitted for Faculty Admin review</p>
+      </div>
+    </section>
+
+    <section class="approval-layout">
+      <article class="approval-card">
+        <div class="poster-preview">
+          <div>
+            <span id="eventCategoryBadge" class="badge badge-blue">Academic</span>
+            <h2 id="posterTitle">Line Follower Workshop</h2>
+            <p id="posterDescription">Hands-on robotics workshop for students to build and test autonomous line follower robots.</p>
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item"><span>Date & Time</span><strong id="eventDate">10 Jul 2026, 9:00 AM - 1:00 PM</strong></div>
+          <div class="info-item"><span>Venue</span><strong id="eventVenue">N28A Innovation Lab</strong></div>
+          <div class="info-item"><span>Registration Deadline</span><strong id="eventDeadline">8 Jul 2026, 11:59 PM</strong></div>
+          <div class="info-item"><span>Capacity</span><strong id="eventCapacity">30 attendees</strong></div>
+          <div class="info-item"><span>Ticket</span><strong id="eventTicket">Free</strong></div>
+          <div class="info-item"><span>Submitted By</span><strong id="eventSociety">Robotics Club</strong></div>
+        </div>
+
+        <h2 class="section-title">Event Description</h2>
+        <p id="eventDescription" style="color:var(--muted);line-height:1.6;">
+          This workshop introduces students to sensors, motors, and microcontroller programming.
+          Participants will work in teams to assemble and test a basic autonomous robot.
+        </p>
+      </article>
+
+      <aside class="decision-card">
+        <h2 style="margin:0 0 14px;font-size:1rem;">Approval Decision</h2>
+        <div id="decisionContent"></div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="rejectModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Reject event dialog">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Reject event</p>
+          <h3 id="rejectModalTitle">Line Follower Workshop</h3>
+          <span id="rejectModalSociety" style="color:var(--muted);font-size:0.82rem;">Robotics Club</span>
+        </div>
+        <span class="badge badge-red">Reason required</span>
+      </div>
+
+      <label class="input-label" style="margin-top:20px;">
+        Rejection reason <span style="color:var(--danger);">*</span>
+        <textarea
+          id="rejectReason"
+          rows="4"
+          placeholder="e.g. Venue booking confirmation is missing. Please upload approval document and resubmit."
+          style="padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.88rem;resize:vertical;width:100%;box-sizing:border-box;margin-top:6px;"
+        ></textarea>
+      </label>
+
+      <div class="rejection-notice">
+        <strong>The organiser will be notified</strong>
+        <p>Your reason will be saved and shown to the organiser before they resubmit.</p>
+      </div>
+
+      <div class="modal-actions" style="margin-top:20px;">
+        <button class="button button-ghost" id="cancelRejectBtn">Cancel</button>
+        <button class="button button-danger" id="confirmRejectBtn">Confirm Rejection</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const approvalEvents = {
+      "101": {
+        title: "Line Follower Workshop",
+        society: "Robotics Club",
+        status: "pending",
+        category: "Academic",
+        date: "10 Jul 2026, 9:00 AM - 1:00 PM",
+        venue: "N28A Innovation Lab",
+        deadline: "8 Jul 2026, 11:59 PM",
+        capacity: "30 attendees",
+        ticket: "Free",
+        description: "This workshop introduces students to sensors, motors, and microcontroller programming. Participants will work in teams to assemble and test a basic autonomous robot."
+      },
+      "102": {
+        title: "Startup Pitch Night",
+        society: "Entrepreneurship Society",
+        status: "approved",
+        category: "Academic",
+        date: "15 Jul 2026, 6:00 PM - 9:00 PM",
+        venue: "FAB Seminar Hall",
+        deadline: "12 Jul 2026, 11:59 PM",
+        capacity: "50 attendees",
+        ticket: "Free",
+        description: "Students pitch startup ideas to mentors and receive feedback on business models, customer validation, and presentation quality."
+      },
+      "103": {
+        title: "Acoustic Night",
+        society: "Music Club",
+        status: "rejected",
+        category: "Cultural",
+        date: "18 Jul 2026, 7:30 PM - 10:30 PM",
+        venue: "Student Activity Centre",
+        deadline: "15 Jul 2026, 11:59 PM",
+        capacity: "80 attendees",
+        ticket: "RM 8",
+        description: "An evening performance featuring student musicians, acoustic sets, and small group performances.",
+        reason: "Venue booking confirmation is missing."
+      }
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const selectedEvent = approvalEvents[params.get("event")] || approvalEvents["101"];
+
+    function badgeClass(status) {
+      if (status === "approved") return "badge badge-green";
+      if (status === "rejected") return "badge badge-red";
+      return "badge badge-yellow";
+    }
+
+    function statusText(status) {
+      if (status === "approved") return "Approved";
+      if (status === "rejected") return "Rejected";
+      return "Pending approval";
+    }
+
+    function renderEventDetail() {
+      document.getElementById("statusBadge").className = badgeClass(selectedEvent.status);
+      document.getElementById("statusBadge").textContent = statusText(selectedEvent.status);
+      document.getElementById("eventTitle").textContent = selectedEvent.title;
+      document.getElementById("eventMeta").textContent = `${selectedEvent.society} · Submitted for Faculty Admin review`;
+      document.getElementById("eventCategoryBadge").textContent = selectedEvent.category;
+      document.getElementById("posterTitle").textContent = selectedEvent.title;
+      document.getElementById("posterDescription").textContent = selectedEvent.description;
+      document.getElementById("eventDate").textContent = selectedEvent.date;
+      document.getElementById("eventVenue").textContent = selectedEvent.venue;
+      document.getElementById("eventDeadline").textContent = selectedEvent.deadline;
+      document.getElementById("eventCapacity").textContent = selectedEvent.capacity;
+      document.getElementById("eventTicket").textContent = selectedEvent.ticket;
+      document.getElementById("eventSociety").textContent = selectedEvent.society;
+      document.getElementById("eventDescription").textContent = selectedEvent.description;
+      document.getElementById("rejectModalTitle").textContent = selectedEvent.title;
+      document.getElementById("rejectModalSociety").textContent = selectedEvent.society;
+
+      renderDecisionContent();
+    }
+
+    function renderDecisionContent() {
+      const decisionContent = document.getElementById("decisionContent");
+
+      if (selectedEvent.status === "approved") {
+        decisionContent.innerHTML = `
+          <div class="approved-note">
+            <strong>Approved</strong>
+            <p style="margin:6px 0 0;">
+              This event has been approved and can appear in the public event list.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      if (selectedEvent.status === "rejected") {
+        decisionContent.innerHTML = `
+          <div class="rejected-note">
+            <strong>Rejected</strong>
+            <p style="margin:6px 0 0;">
+              This event was rejected and returned to the organiser for revision.
+            </p>
+          </div>
+
+          <h2 class="section-title">Rejection Reason</h2>
+          <div class="info-item">
+            <strong>${selectedEvent.reason}</strong>
+          </div>
+        `;
+        return;
+      }
+
+      decisionContent.innerHTML = `
+        <div class="review-note">
+          <strong>Faculty Admin review required</strong>
+          <p style="margin:6px 0 0;">
+            Approving this event will allow it to appear in the public event list.
+            Rejecting it requires a reason for the organiser.
+          </p>
+        </div>
+
+        <div class="decision-actions">
+          <a class="button button-success full-width" href="approval-queue.html?adminAction=approved">
+            Approve Event
+          </a>
+          <button class="button button-danger full-width" id="openRejectModalBtn">
+            Reject Event
+          </button>
+        </div>
+      `;
+
+      document.getElementById("openRejectModalBtn").addEventListener("click", openRejectModal);
+    }
+
+    function openRejectModal() {
+      document.getElementById("rejectReason").value = "";
+      document.getElementById("rejectReason").style.borderColor = "var(--border)";
+      document.getElementById("rejectModal").style.display = "flex";
+    }
+
+    document.getElementById("cancelRejectBtn").addEventListener("click", () => {
+      document.getElementById("rejectModal").style.display = "none";
+    });
+
+    document.getElementById("confirmRejectBtn").addEventListener("click", () => {
+      const reason = document.getElementById("rejectReason").value.trim();
+
+      if (!reason) {
+        document.getElementById("rejectReason").style.borderColor = "var(--danger)";
+        return;
+      }
+
+      window.location.href = "approval-queue.html?adminAction=rejected";
+    });
+
+    renderEventDetail();
+  </script>
+</body>
+</html>
