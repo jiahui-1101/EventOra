@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Login</title>
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/styles/base.css" />
+  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../../src/styles/responsive.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../../index.html" aria-label="EventOra home">
+      <span class="brand-mark">E</span>
+      <span>EventOra</span>
+    </a>
+    <nav class="desktop-nav">
+      <a href="../../index.html">Events</a>
+      <a href="event-detail.html?event=1">Register</a>
+      <a href="tickets.html">My Tickets</a>
+      <a href="check-in.html">QR Check-in</a>
+      <a href="organiser-dashboard.html">📋 Organiser Dashboard</a>
+      <a href="approval-queue.html">✅ Admin Queue</a>
+    </nav>
+    <a class="header-action" href="register.html">Sign up</a>
+  </header>
+
+  <main class="app-shell">
+    <section class="page-section auth-section">
+      <div class="auth-shell">
+
+        <div class="auth-brand">
+          <span class="auth-brand-mark">E</span>
+          <h2>EventOra</h2>
+          <p class="auth-tagline">From idea to QR check-in — run your society events end-to-end.</p>
+        </div>
+
+        <div class="auth-card">
+          <p class="eyebrow">Welcome back</p>
+          <h3>Sign in to EventOra</h3>
+
+          <div class="input-label">
+            Email address
+            <input type="email" id="loginEmail" placeholder="e.g. mei@utm.my" aria-label="Email address" />
+          </div>
+          <div class="input-label">
+            Password
+            <input type="password" id="loginPassword" placeholder="Enter your password" aria-label="Password" />
+          </div>
+
+          <div class="auth-options">
+            <label class="remember-label">
+              <input type="checkbox" id="rememberMe" aria-label="Remember me" /> Remember me
+            </label>
+            <a href="#" class="auth-link">Forgot password?</a>
+          </div>
+
+          <div id="loginError" class="auth-error" style="display:none;">
+            Invalid email or password. Please try again.
+          </div>
+
+          <button class="button button-primary full-width auth-submit" id="loginBtn" aria-label="Sign in">
+            Sign in
+          </button>
+
+          <div class="auth-divider"><span>Sign in as</span></div>
+
+          <div class="auth-roles">
+            <button class="auth-role-chip active" data-role="attendee" aria-label="Sign in as Attendee">Attendee</button>
+            <button class="auth-role-chip" data-role="organiser" aria-label="Sign in as Organiser">Organiser</button>
+            <button class="auth-role-chip" data-role="faculty_admin" aria-label="Sign in as Faculty Admin">Faculty Admin</button>
+          </div>
+
+          <p class="auth-footer-text">
+            Don't have an account? <a class="auth-link" href="register.html">Create one</a>
+          </p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <script src="../js/login.js"></script>
+</body>
+</html>
