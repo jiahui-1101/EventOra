@@ -1,7 +1,52 @@
 const defaultEvents = [
-  { id: 1, title: "Build Your First AI App", status: "published", registrations: 28, checkedIn: 18, avgRating: 4.5, capacity: 40 },
-  { id: 2, title: "Hackathon 2026", status: "pending_approval", registrations: 0, checkedIn: 0, avgRating: null, capacity: 60 },
-  { id: 3, title: "Futsal Tournament", status: "published", registrations: 40, checkedIn: 32, avgRating: 4.2, capacity: 40 }
+  {
+    id: 1,
+    title: "Build Your First AI App",
+    category: "Academic",
+    location: "N28A Innovation Lab",
+    eventDate: "12 Jun 2026",
+    startTime: "7:30 PM",
+    endTime: "9:30 PM",
+    feeType: "Paid",
+    feeAmount: 8,
+    status: "published",
+    registrations: 28,
+    checkedIn: 18,
+    avgRating: 4.5,
+    capacity: 40
+  },
+  {
+    id: 2,
+    title: "Hackathon 2026",
+    category: "Academic",
+    location: "FAB Lab",
+    eventDate: "5 Jul 2026",
+    startTime: "9:00 AM",
+    endTime: "6:00 PM",
+    feeType: "Paid",
+    feeAmount: 15,
+    status: "pending_approval",
+    registrations: 0,
+    checkedIn: 0,
+    avgRating: null,
+    capacity: 60
+  },
+  {
+    id: 3,
+    title: "Futsal Tournament",
+    category: "Sports",
+    location: "UTM Sports Hall",
+    eventDate: "28 Jun 2026",
+    startTime: "9:00 AM",
+    endTime: "1:00 PM",
+    feeType: "Free",
+    feeAmount: 0,
+    status: "published",
+    registrations: 40,
+    checkedIn: 32,
+    avgRating: 4.2,
+    capacity: 40
+  }
 ];
 
 const registrationsList = [
@@ -31,7 +76,42 @@ function saveEvents() {
 function badgeForStatus(status) {
   if (status === "published") return "badge-green";
   if (status === "pending_approval") return "badge-yellow";
+  if (status === "completed") return "badge-purple";
+  if (status === "rejected" || status === "cancelled") return "badge-red";
   return "badge-blue";
+}
+
+function renderWorkflowActions(event) {
+  if (event.status === "draft") {
+    return `
+      <button class="button button-secondary edit-event-btn" data-id="${event.id}">Edit</button>
+      <button class="button button-secondary">Preview</button>
+      <button class="button button-primary">Submit</button>
+    `;
+  }
+
+  if (event.status === "pending_approval") {
+    return `
+      <button class="button button-secondary">Preview</button>
+      <button class="button button-danger cancel-event-btn" data-id="${event.id}">Cancel</button>
+    `;
+  }
+
+  if (event.status === "published") {
+    return `
+      <button class="button button-secondary">Preview</button>
+      <button class="button button-danger cancel-event-btn" data-id="${event.id}">Cancel</button>
+    `;
+  }
+
+  if (event.status === "rejected") {
+    return `
+      <button class="button button-secondary edit-event-btn" data-id="${event.id}">Edit</button>
+      <button class="button button-primary">Resubmit</button>
+    `;
+  }
+
+  return `<button class="button button-secondary">Preview</button>`;
 }
 
 function statusLabel(status) {
@@ -84,31 +164,45 @@ function renderEventsTab() {
         <h2>Manage Events</h2>
         <button class="button button-primary" id="createEventBtn">+ Create Event</button>
       </div>
+      
       <div class="admin-table-wrap">
         <table class="admin-table">
           <thead>
             <tr>
               <th>Title</th>
-              <th>Status</th>
+              <th>Category</th>
+              <th>Date & Time</th>
+              <th>Location</th>
+              <th>Fee</th>
               <th>Capacity</th>
-              <th>Registrations</th>
-              <th>Checked In</th>
-              <th>Avg Rating</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             ${societyEvents.map(ev => `
               <tr>
-                <td>${ev.title}</td>
-                <td><span class="badge ${badgeForStatus(ev.status)}">${statusLabel(ev.status)}</span></td>
-                <td>${ev.capacity}</td>
-                <td>${ev.registrations}</td>
-                <td>${ev.checkedIn}</td>
-                <td>${ev.avgRating || "-"}</td>
                 <td>
-                  <button class="button button-secondary edit-event-btn" data-id="${ev.id}">Edit</button>
-                  <button class="button button-danger cancel-event-btn" data-id="${ev.id}">Cancel</button>
+                  <strong>${ev.title}</strong>
+                  <br>
+                  <span style="color:var(--muted);font-size:0.78rem;">
+                    ${ev.registrations} registrations · ${ev.checkedIn} checked in
+                  </span>
+                </td>
+                <td>${ev.category || "-"}</td>
+                <td>
+                  ${ev.eventDate || "-"}
+                  <br>
+                  <span style="color:var(--muted);font-size:0.78rem;">
+                    ${ev.startTime || "-"} - ${ev.endTime || "-"}
+                  </span>
+                </td>
+                <td>${ev.location || "-"}</td>
+                <td>${ev.feeType === "Paid" ? `RM ${ev.feeAmount}` : "Free"}</td>
+                <td>${ev.capacity}</td>
+                <td><span class="badge ${badgeForStatus(ev.status)}">${statusLabel(ev.status)}</span></td>
+                <td>
+                ${renderWorkflowActions(ev)}
                 </td>
               </tr>
             `).join("")}
