@@ -23,26 +23,20 @@
       <span class="brand-mark">E</span>
       <span>EventOra</span>
     </a>
-    <nav class="desktop-nav">
-      <a href="../../index.html">Events</a>
-      <a href="event-detail.html?event=1">Register</a>
-      <a href="tickets.html">My Tickets</a>
-      <a href="check-in.html">QR Check-in</a>
-      <a href="organizer-feedback.html">📊 Feedback Analytics</a>
-      <a href="organiser-dashboard.html">📋 Organiser Dashboard</a>
-      <a href="approval-queue.html">✅ Admin Queue</a>
-      <a href="my-completed-events.html">🏆 My Completed</a>
-    </nav>
-    <a class="header-action" href="event-detail.html?event=1">View Demo</a>
+    <nav class="desktop-nav" id="mainNav" aria-label="Main navigation">
+  <a href="../../index.html">Events</a>
+  <a href="login.html">Login</a>
+</nav>
+<a class="header-action" href="register.html" id="headerAction">Create account</a>
   </header>
 
   <main class="app-shell">
     <div class="dashboard-layout">
       <aside class="sidebar-nav">
-        <a href="#" class="active" data-tab="events">📅 Events</a>
-        <a href="#" data-tab="registrations">📋 Registrations</a>
-        <a href="#" data-tab="attendance">✅ Attendance</a>
-        <a href="#" data-tab="feedback">⭐ Feedback</a>
+        <a href="#" class="active" data-tab="events">Events</a>
+        <a href="#" data-tab="registrations">Registrations</a>
+        <a href="#" data-tab="attendance">Attendance</a>
+        <a href="#" data-tab="feedback">Feedback</a>
       </aside>
 
       <div class="dashboard-main">
@@ -77,8 +71,44 @@
         </div>
       </div>
     </div>
+
+    <div id="eventModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Event form">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow" id="eventModalEyebrow">Organiser action</p>
+            <h3 id="eventModalTitle">Create Event</h3>
+          </div>
+          <span class="badge badge-blue">Draft</span>
+        </div>
+        <div class="input-label" style="margin-top:16px;">
+          Event title
+          <input type="text" id="eventTitleInput" placeholder="e.g. Vue Workshop 2026" />
+        </div>
+        <div class="input-row-2">
+          <div class="input-label">
+            Capacity
+            <input type="number" id="eventCapacityInput" min="1" placeholder="40" />
+          </div>
+          <div class="input-label">
+            Status
+            <select id="eventStatusInput">
+              <option value="draft">Draft</option>
+              <option value="pending_approval">Pending approval</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+        </div>
+        <div id="eventFormError" class="auth-error" style="display:none;"></div>
+        <div class="modal-actions" style="margin-top:20px;">
+          <button class="button button-ghost" id="closeEventModalBtn">Cancel</button>
+          <button class="button button-primary" id="saveEventBtn">Save event</button>
+        </div>
+      </div>
+    </div>
   </main>
 
-  <script src="../js/organiser-dashboard.js"> </script>
+<script src="../js/nav.js" defer></script>
+<script src="../js/organiser-dashboard.js" defer></script>
 </body>
 </html>
