@@ -26,13 +26,16 @@
 
   <main class="app-shell">
     <section class="page-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 1rem;">
         <h2>Event Feedback Analytics</h2>
         <div style="display: flex; gap: 12px;">
           <button id="exportFeedbackCsvBtn" class="button button-primary">📝 Export Feedback CSV</button>
           <button id="exportAttendanceCsvBtn" class="button button-secondary">📊 Export Attendance CSV</button>
         </div>
       </div>
+      <label for="eventSelect" style="font-weight: 600; margin-right: 8px;">Select Event:</label>
+      <select id="eventSelect" class="filter-select" style="margin-bottom: 1.5rem;"></select>
+      <div id="feedbackStats"></div>
     </section>
   </main>
 

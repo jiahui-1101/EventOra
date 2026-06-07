@@ -1,11 +1,11 @@
 const allFeedbacks = {
-  1: [{ rating: 5, comment: "Excellent workshop!" }, { rating: 4, comment: "Good but short" }],
-  2: [{ rating: 5, comment: "Cultural night was amazing" }, { rating: 5, comment: "Loved it" }, { rating: 4, comment: "Food could be better" }],
+  1: [{ rating: 5, comment: "Excellent workshop! Very practical." }, { rating: 4, comment: "Good but too short." }, { rating: 5, comment: "Loved it!" }],
+  2: [{ rating: 5, comment: "Cultural night was amazing" }, { rating: 5, comment: "Loved the dances" }, { rating: 4, comment: "Food could be better" }, { rating: 3, comment: "Sound system issues" }],
   3: [{ rating: 3, comment: "Futsal field too hot" }, { rating: 2, comment: "Poor organization" }],
 };
 
 const attendanceData = {
-  1: ["Aina Rahman", "Nurul Iman", "Kevin Tan", "Siti Aisyah"], 
+  1: ["Aina Rahman", "Nurul Iman", "Kevin Tan", "Siti Aisyah"],
   2: ["Aina Rahman", "Muthu", "Lee Wei", "Siti Aisyah", "Nurul Iman"],
   3: ["Kevin Tan", "Aina Rahman"],
 };
@@ -21,45 +21,59 @@ let currentEventId = 1;
 function renderFeedback(eventId) {
   const feedbacks = allFeedbacks[eventId] || [];
   const total = feedbacks.length;
-  if (total === 0) {
-    document.getElementById("feedbackStats").innerHTML = "<p>No feedback yet.</p>";
-    return;
-  }
-  const avg = (feedbacks.reduce((sum,f)=>sum+f.rating,0)/total).toFixed(1);
   
-  const distribution = [0,0,0,0,0];
-  feedbacks.forEach(f => distribution[f.rating-1]++);
+  let avg = 0;
+  if (total > 0) {
+    avg = (feedbacks.reduce((sum, f) => sum + f.rating, 0) / total).toFixed(1);
+  }
+  
+  const distribution = [0, 0, 0, 0, 0]; 
+  feedbacks.forEach(f => distribution[f.rating - 1]++);
   
   let barsHtml = "";
-  for (let i=5; i>=1; i--) {
-    const percent = (distribution[i-1]/total)*100;
+  for (let i = 5; i >= 1; i--) {
+    const percent = total > 0 ? (distribution[i-1] / total) * 100 : 0;
     barsHtml += `
       <div class="rating-bar">
-        <span class="rating-bar-label">${i} star</span>
-        <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: ${percent}%;"></div></div>
+        <span class="rating-bar-label">${i} star${i > 1 ? 's' : ''}</span>
+        <div class="rating-bar-bg">
+          <div class="rating-bar-fill" style="width: ${percent}%;"></div>
+        </div>
         <span class="rating-bar-percent">${percent.toFixed(0)}%</span>
       </div>
     `;
   }
-
+  
   let commentsHtml = `<div class="comments-list"><h3>User Comments (${total})</h3>`;
-  feedbacks.forEach(f => {
-    commentsHtml += `
-      <div class="comment-item">
-        <div class="comment-rating">${'★'.repeat(f.rating)}${'☆'.repeat(5-f.rating)}</div>
-        <p>${escapeHtml(f.comment)}</p>
-      </div>
-    `;
-  });
+  if (total === 0) {
+    commentsHtml += `<p class="muted">No comments yet.</p>`;
+  } else {
+    feedbacks.forEach(f => {
+      commentsHtml += `
+        <div class="comment-item">
+          <div class="comment-rating">${'★'.repeat(f.rating)}${'☆'.repeat(5-f.rating)}</div>
+          <p class="comment-text">${escapeHtml(f.comment)}</p>
+        </div>
+      `;
+    });
+  }
   commentsHtml += `</div>`;
-
-  document.getElementById("feedbackStats").innerHTML = `
-    <div class="rating-summary">
-      <h3>Average Rating: ${avg} / 5 (${total} reviews)</h3>
-      ${barsHtml}
+  
+  const statsHtml = `
+    <div class="feedback-summary">
+      <div class="average-rating">
+        <span class="avg-score">${avg}</span>
+        <span class="avg-label">/ 5 average rating</span>
+      </div>
+      <div class="rating-distribution">
+        <h4>Rating Distribution</h4>
+        ${barsHtml}
+      </div>
     </div>
     ${commentsHtml}
   `;
+  
+  document.getElementById("feedbackStats").innerHTML = statsHtml;
 }
 
 function escapeHtml(str) {

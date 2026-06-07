@@ -119,27 +119,152 @@ function showFeedbackModal(eventId) {
 }
 
 function downloadCertificate(eventId) {
-  const event = eventsData.find(e => e.id === eventId);
-  const win = window.open();
-  win.document.write(`
-    <html><head><title>Certificate - ${event.title}</title>
-    <style>
-      body { font-family: Georgia, serif; text-align: center; padding: 4rem; }
-      .cert { border: 8px double #4f46e5; padding: 2rem; max-width: 600px; margin: 0 auto; }
-    </style>
-    </head>
-    <body><div class="cert">
-      <h1>Certificate of Participation</h1>
-      <p>This certificate is awarded to</p>
-      <h2>Current User</h2>
-      <p>for attending</p>
-      <h3>${event.title}</h3>
-      <p>on ${new Date(event.date).toLocaleDateString()}</p>
-      <p>EventOra - UTM Student Society Platform</p>
-      <button onclick="window.print()">Save as PDF</button>
-    </div></body></html>
-  `);
-  win.document.close();
-}
-
+    const event = eventsData.find(e => e.id === eventId);
+    const userName = "Current User"; 
+    const dateStr = new Date(event.date).toLocaleDateString('en-MY', { year:'numeric', month:'long', day:'numeric' });
+    
+    const win = window.open();
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Certificate - ${event.title}</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            background: #eef2f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            padding: 20px;
+          }
+          .certificate {
+            position: relative;
+            max-width: 800px;
+            width: 100%;
+            background: #fffef7;
+            border: 12px double #4f46e5;
+            border-radius: 16px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+          }
+          .certificate::before {
+            content: "UTM • EventOra";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-25deg);
+            font-size: 70px;
+            font-weight: bold;
+            color: rgba(79, 70, 229, 0.08);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+          }
+          .certificate h1 {
+            font-size: 2.5rem;
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+            display: inline-block;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+          }
+          .certificate .awardee {
+            font-size: 1.8rem;
+            color: #4f46e5;
+            margin: 25px 0 10px;
+            font-weight: bold;
+          }
+          .certificate .event-title {
+            font-size: 1.6rem;
+            color: #111827;
+            margin: 15px 0;
+          }
+          .certificate .date {
+            color: #6b7280;
+            margin-top: 25px;
+            font-style: italic;
+          }
+          .certificate footer {
+            margin-top: 35px;
+            font-size: 0.8rem;
+            color: #9ca3af;
+            border-top: 1px dashed #e5e7eb;
+            padding-top: 20px;
+          }
+          .download-btn {
+            display: inline-block;
+            margin-top: 30px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+          }
+          .download-btn:hover {
+            background: #3730a3;
+          }
+          @media (max-width: 640px) {
+            .certificate { padding: 25px 20px; }
+            .certificate h1 { font-size: 1.8rem; }
+            .awardee { font-size: 1.4rem; }
+            .event-title { font-size: 1.2rem; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="certificate">
+          <h1>Certificate of Participation</h1>
+          <div class="awardee">${escapeHtml(userName)}</div>
+          <p>has successfully participated in</p>
+          <div class="event-title">${escapeHtml(event.title)}</div>
+          <p>held on ${dateStr}</p>
+          <div class="date">EventOra • UTM Student Society Platform</div>
+          <footer>This certificate is auto-generated and verifiable via EventOra platform.</footer>
+          <button class="download-btn" onclick="window.print(); setTimeout(() => { window.close(); }, 500);">📥 Save as PDF</button>
+        </div>
+        <script>
+          const btn = document.querySelector('.download-btn');
+          btn.addEventListener('click', () => {
+            const toast = document.createElement('div');
+            toast.innerText = '✅ Opening print dialog — save as PDF';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.backgroundColor = '#10b981';
+            toast.style.color = 'white';
+            toast.style.padding = '8px 16px';
+            toast.style.borderRadius = '40px';
+            toast.style.fontSize = '14px';
+            toast.style.zIndex = '9999';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+          });
+        </script>
+      </body>
+      </html>
+    `);
+    win.document.close();
+  }
+  
+  function escapeHtml(str) {
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
 document.addEventListener("DOMContentLoaded", renderCompletedEvents);
