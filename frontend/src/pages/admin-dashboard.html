@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Faculty Admin Dashboard</title>
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/styles/base.css" />
+  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../../src/styles/responsive.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../../index.html" aria-label="EventOra home">
+      <span class="brand-mark">E</span>
+      <span>EventOra</span>
+    </a>
+    <nav class="desktop-nav">
+      <a href="../../index.html">Events</a>
+      <a href="organiser-dashboard.html">📋 Organiser Dashboard</a>
+      <a href="approval-queue.html">✅ Admin Queue</a>
+      <a href="admin-dashboard.html" class="active">🏛 Admin Dashboard</a>
+    </nav>
+    <a class="header-action" href="login.html">Sign out</a>
+  </header>
+
+  <main class="app-shell">
+
+    <!-- Header -->
+    <section class="page-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Faculty of Computing</p>
+          <h2>Faculty Admin Dashboard</h2>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span class="badge badge-purple">Faculty Admin</span>
+          <a class="button button-primary" href="approval-queue.html">
+            Approval Queue <span class="badge badge-red" style="margin-left:6px;" id="pendingBadge">3</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="admin-stats-grid">
+        <article class="admin-stat-card admin-stat-alert">
+          <span>Pending Approvals</span>
+          <strong>3</strong>
+          <p>Awaiting your review</p>
+        </article>
+        <article class="admin-stat-card">
+          <span>Active Societies</span>
+          <strong>12</strong>
+          <p>Under Faculty of Computing</p>
+        </article>
+        <article class="admin-stat-card">
+          <span>Total Registrations</span>
+          <strong>1,204</strong>
+          <p>This semester</p>
+        </article>
+        <article class="admin-stat-card">
+          <span>Overall Attendance Rate</span>
+          <strong>82%</strong>
+          <p>987 of 1,204 attended</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Society Activity Table -->
+    <section class="page-section">
+      <div class="section-heading">
+        <h2>Society Activity Overview</h2>
+        <span class="badge badge-blue">This Semester</span>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table" aria-label="Society activity overview">
+          <thead>
+            <tr>
+              <th>Society</th>
+              <th>Events Held</th>
+              <th>Total Registered</th>
+              <th>Total Attended</th>
+              <th>Attendance Rate</th>
+            </tr>
+          </thead>
+          <tbody id="societyTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Most Popular Events -->
+    <section class="page-section">
+      <div class="section-heading">
+        <h2>Most Popular Events This Semester</h2>
+        <span class="badge badge-green">Top 3</span>
+      </div>
+      <div id="popularEventsList"></div>
+    </section>
+
+  </main>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <a href="../../index.html">Events</a>
+    <a href="login.html">Login</a>
+    <a href="approval-queue.html">Approve</a>
+    <a href="admin-dashboard.html">Dashboard</a>
+  </nav>
+
+  <script src="../js/admin-dashboard.js"></script>
+</body>
+</html>
