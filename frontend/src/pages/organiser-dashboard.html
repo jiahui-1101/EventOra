@@ -81,24 +81,84 @@
           </div>
           <span class="badge badge-blue">Draft</span>
         </div>
-        <div class="input-label" style="margin-top:16px;">
-          Event title
-          <input type="text" id="eventTitleInput" placeholder="e.g. Vue Workshop 2026" />
-        </div>
-        <div class="input-row-2">
-          <div class="input-label">
-            Capacity
-            <input type="number" id="eventCapacityInput" min="1" placeholder="40" />
-          </div>
-          <div class="input-label">
-            Status
-            <select id="eventStatusInput">
-              <option value="draft">Draft</option>
-              <option value="pending_approval">Pending approval</option>
-              <option value="published">Published</option>
-            </select>
-          </div>
-        </div>
+<div class="input-label" style="margin-top:16px;">
+  Event title
+  <input type="text" id="eventTitleInput" placeholder="e.g. Vue Workshop 2026" />
+</div>
+
+<div class="input-row-2">
+  <div class="input-label">
+    Category
+    <select id="eventCategoryInput">
+      <option value="academic">Academic</option>
+      <option value="cultural">Cultural</option>
+      <option value="sports">Sports</option>
+      <option value="career">Career</option>
+      <option value="volunteer">Volunteer</option>
+    </select>
+  </div>
+
+  <div class="input-label">
+    Location
+    <input type="text" id="eventLocationInput" placeholder="e.g. N28A Innovation Lab" />
+  </div>
+</div>
+
+<div class="input-row-2">
+  <div class="input-label">
+    Event date
+    <input type="date" id="eventDateInput" />
+  </div>
+
+  <div class="input-label">
+    Registration deadline
+    <input type="date" id="eventDeadlineInput" />
+  </div>
+</div>
+
+<div class="input-row-2">
+  <div class="input-label">
+    Start time
+    <input type="time" id="eventStartTimeInput" />
+  </div>
+
+  <div class="input-label">
+    End time
+    <input type="time" id="eventEndTimeInput" />
+  </div>
+</div>
+
+<div class="input-row-2">
+  <div class="input-label">
+    Capacity
+    <input type="number" id="eventCapacityInput" min="1" placeholder="40" />
+  </div>
+
+  <div class="input-label">
+    Fee type
+    <select id="eventFeeTypeInput">
+      <option value="free">Free</option>
+      <option value="paid">Paid</option>
+    </select>
+  </div>
+</div>
+
+<div class="input-label">
+  Fee amount (RM)
+  <input type="number" id="eventFeeAmountInput" min="0" step="0.01" placeholder="0.00" />
+</div>
+
+<div class="input-label">
+  Status
+  <select id="eventStatusInput">
+    <option value="draft">Draft</option>
+    <option value="pending_approval">Pending approval</option>
+    <option value="published">Published</option>
+    <option value="completed">Completed</option>
+    <option value="rejected">Rejected</option>
+    <option value="cancelled">Cancelled</option>
+  </select>
+</div>
         <div id="eventFormError" class="auth-error" style="display:none;"></div>
         <div class="modal-actions" style="margin-top:20px;">
           <button class="button button-ghost" id="closeEventModalBtn">Cancel</button>
