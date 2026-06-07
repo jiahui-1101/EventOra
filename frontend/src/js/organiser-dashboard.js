@@ -87,46 +87,10 @@ function statusLabel(status) {
 }
 
 function renderWorkflowActions(event) {
-  if (event.status === "draft") {
-    return `
-      <div class="flex-gap">
-        <button class="button button-secondary edit-event-btn" data-id="${event.id}">Edit</button>
-        <button class="button button-secondary">Preview</button>
-        <button class="button button-primary">Submit</button>
-      </div>
-    `;
-  }
-
-  if (event.status === "pending_approval") {
-    return `
-      <div class="flex-gap">
-        <button class="button button-secondary">Preview</button>
-        <button class="button button-danger cancel-event-btn" data-id="${event.id}">Cancel</button>
-      </div>
-    `;
-  }
-
-  if (event.status === "published") {
-    return `
-      <div class="flex-gap">
-        <button class="button button-secondary edit-event-btn" data-id="${event.id}">Edit</button>
-        <button class="button button-secondary">Report</button>
-        <button class="button button-danger cancel-event-btn" data-id="${event.id}">Cancel</button>
-      </div>
-    `;
-  }
-
-  if (event.status === "rejected") {
-    return `
-      <div class="flex-gap">
-        <button class="button button-secondary edit-event-btn" data-id="${event.id}">Edit</button>
-        <button class="button button-primary">Resubmit</button>
-      </div>
-    `;
-  }
-
   return `
-    <button class="button button-secondary" disabled>View</button>
+    <a class="button button-secondary" href="organiser-event-detail.html?event=${event.id}">
+      Edit
+    </a>
   `;
 }
 
@@ -193,17 +157,19 @@ function renderEventsTab() {
             ${societyEvents.map(ev => `
               <tr>
                 <td>
-                  <div style="font-weight:700;">${ev.title}</div>
-                  <span class="badge badge-blue" style="font-size:0.68rem;margin-top:6px;">
+                  <a href="organiser-event-detail.html?event=${ev.id}" style="font-weight:700;color:var(--text);text-decoration:none;">
+                  ${ev.title}
+                  </a>
+                  <span class="badge ${ev.category === "Sports" ? "badge-yellow" : "badge-blue"}" style="font-size:0.68rem;margin-top:6px;">
                     ${ev.category || "Academic"}
                   </span>
                 </td>
                 <td>
-                  ${ev.eventDate || "Not set"}
-                  <br>
-                  <span style="color:var(--muted);font-size:0.78rem;">
-                    ${ev.startTime || "--"} - ${ev.endTime || "--"}
-                  </span>
+                ${ev.eventDate || "Not set"}
+                <br>
+                <span style="color:var(--muted);font-size:0.78rem;">
+                ${ev.startTime || "--"} - ${ev.endTime || "--"}
+                </span>
                 </td>
                 <td>${ev.capacity}</td>
                 <td>
@@ -428,7 +394,8 @@ function addCreatedEventToDashboard(status) {
 function showCreateEventToast() {
   const params = new URLSearchParams(window.location.search);
   const eventSaved = params.get("eventSaved");
-  if (!eventSaved) return;
+  const eventAction = params.get("eventAction");
+  if (!eventSaved && !eventAction) return;
 
   const toast = document.getElementById("dashboardToast");
   const title = document.getElementById("dashboardToastTitle");
@@ -436,7 +403,7 @@ function showCreateEventToast() {
 
   if (!toast || !title || !message) return;
 
-    if (eventSaved === "draft") {
+  if (eventSaved === "draft") {
     title.textContent = "Draft saved successfully";
     message.textContent = "The event is saved as a draft and can be edited before submission.";
     addCreatedEventToDashboard("draft");
@@ -446,6 +413,16 @@ function showCreateEventToast() {
     title.textContent = "Event submitted for approval";
     message.textContent = "Faculty Admin will review the event before it appears in the public list.";
     addCreatedEventToDashboard("pending_approval");
+  }
+
+  if (eventAction === "submitted") {
+    title.textContent = "Event submitted for approval";
+    message.textContent = "The event moved from draft to pending approval for Faculty Admin review.";
+  }
+
+  if (eventAction === "deleted") {
+    title.textContent = "Draft deleted";
+    message.textContent = "The draft event has been removed from the organiser workspace.";
   }
 
   toast.style.display = "block";
