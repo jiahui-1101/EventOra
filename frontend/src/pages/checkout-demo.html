@@ -99,17 +99,18 @@
         </div>
         <div class="payment-method">
           <span>Payment method</span>
-          <strong>Campus Card ending 4242</strong>
+          <strong id="selectedPaymentMethod">Campus Card ending 4242</strong>
         </div>
-        <div class="payment-method-grid">
-          <span class="payment-option selected">Campus Card</span>
-          <span class="payment-option">Online Banking</span>
-          <span class="payment-option">E-wallet</span>
+        <div class="payment-method-grid" id="paymentMethodGrid">
+          <button class="payment-option selected" type="button" data-method="Campus Card">Campus Card</button>
+          <button class="payment-option" type="button" data-method="Online Banking">Online Banking</button>
+          <button class="payment-option" type="button" data-method="E-wallet">E-wallet</button>
         </div>
         <label class="input-label">
           Mock card number
-          <input value="4242 4242 4242 4242" readonly />
+          <input id="cardInput" placeholder="4242 4242 4242 4242" maxlength="19" value="4242 4242 4242 4242" />
         </label>
+        <p id="cardError" class="payment-error" style="display: none;">Use test card: 4242 4242 4242 4242</p>
         <div class="payment-summary checkout-receipt">
           <div><span>Event pass</span><strong>Build Your First AI App</strong></div>
           <div><span>Ticket price</span><strong>RM 8.00</strong></div>
@@ -117,10 +118,11 @@
           <div class="receipt-total"><span>Total due</span><strong>RM 8.00</strong></div>
         </div>
         <div class="modal-actions">
-          <a class="button button-primary" href="tickets.html?status=paid-confirmed">Approve payment</a>
-          <span class="button button-ghost">Decline</span>
+          <button id="approveBtn" class="button button-primary" type="button">Approve payment</button>
+          <button id="declineBtn" class="button button-ghost" type="button">Decline</button>
         </div>
       </div>
+      <div id="paymentResult" class="payment-result" style="display: none;"></div>
       <div class="payment-states">
         <article class="state-card warning-state">
           <span class="status-dot"></span>
@@ -150,5 +152,6 @@
     <a href="tickets.html">Tickets</a>
     <a href="check-in.html">Scan</a>
   </nav>
+  <script type="module" src="../js/checkout-demo.js"></script>
 </body>
 </html>

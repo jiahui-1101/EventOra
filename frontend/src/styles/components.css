@@ -567,12 +567,39 @@
   border-radius: var(--radius-sm);
   background: var(--surface);
   text-align: center;
+  cursor: pointer;
 }
 
 .payment-option.selected {
   border-color: var(--primary);
   background: var(--primary-soft);
   color: var(--primary);
+}
+
+.payment-error {
+  margin-top: -8px;
+  color: var(--danger);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.payment-result {
+  align-self: start;
+}
+
+.payment-result-card {
+  padding: 24px;
+}
+
+.payment-result-card h3 {
+  margin: 10px 0 6px;
+}
+
+.payment-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 .ticket-preview-card {

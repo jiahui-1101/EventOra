@@ -1,5 +1,6 @@
 const STORAGE_KEY = "eventora_checkin_tickets";
-const MY_USER = "Aina Rahman";
+const CURRENT_ATTENDEE_KEY = "eventora_current_attendee";
+const DEFAULT_USER = "Aina Rahman";
 
 const defaultTickets = [
   {
@@ -47,7 +48,8 @@ function escapeHtml(value) {
 }
 
 function getMyTickets() {
-  return loadTickets().filter(ticket => ticket.attendeeName === MY_USER);
+  const currentUser = localStorage.getItem(CURRENT_ATTENDEE_KEY) || DEFAULT_USER;
+  return loadTickets().filter(ticket => ticket.attendeeName === currentUser);
 }
 
 function renderQrPattern(isUsed) {
