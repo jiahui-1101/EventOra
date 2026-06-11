@@ -43,26 +43,65 @@
           <div class="ticket-info">
             <div class="ticket-topline">
               <span class="badge badge-green">Active</span>
-              <span>Admit one</span>
+              <span>Confirmed after payment</span>
             </div>
             <h3>Build Your First AI App</h3>
             <p>12 Jun 2026 · 7:30 PM · N28A Innovation Lab</p>
             <div class="ticket-meta">
+              <span>Ticket ID <strong>TCK-2026-000482</strong></span>
               <span>Seat type <strong>Student</strong></span>
               <span>Gate <strong>Lab Entrance</strong></span>
+              <span>Check-in <strong>Not used</strong></span>
             </div>
-            <code>EVT-9F4K-2Q8M-X7P1</code>
+            <div class="ticket-security">
+              <div>
+                <span>Unique ticket code</span>
+                <code>EVT-9F4K-2Q8M-X7P1</code>
+              </div>
+              <div>
+                <span>Unpredictable QR token</span>
+                <code>qr_8vK29pLmQ4xT7nB6zR1s</code>
+              </div>
+            </div>
             <div class="ticket-actions">
               <span>Cancel registration</span>
               <span>Add to calendar</span>
             </div>
           </div>
           <div class="ticket-divider" aria-hidden="true"></div>
-          <div class="qr-pattern" aria-label="QR ticket code">
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
+          <div class="qr-zone">
+            <div class="qr-pattern" aria-label="QR ticket code">
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <strong>Scan at entrance</strong>
+            <small>Valid for this event only</small>
+          </div>
+        </article>
+      </div>
+
+      <div class="ticket-rule-grid">
+        <article class="ticket-rule-card success-state">
+          <span class="status-dot"></span>
+          <div>
+            <h3>Free event</h3>
+            <p>Confirmed registration creates the QR ticket immediately.</p>
+          </div>
+        </article>
+        <article class="ticket-rule-card warning-state">
+          <span class="status-dot"></span>
+          <div>
+            <h3>Paid event</h3>
+            <p>QR ticket is generated only after payment is approved.</p>
+          </div>
+        </article>
+        <article class="ticket-rule-card neutral-state">
+          <span class="status-dot"></span>
+          <div>
+            <h3>Waitlist</h3>
+            <p>No QR ticket is created until the user is promoted to confirmed.</p>
           </div>
         </article>
       </div>
@@ -78,17 +117,32 @@
             <h3>Vue 3 Crash Course</h3>
             <p>18 May 2026 · 2:00 PM · Seminar Room 2</p>
             <div class="ticket-meta">
+              <span>Ticket ID <strong>TCK-2026-000219</strong></span>
               <span>Attendance <strong>Present</strong></span>
               <span>Certificate <strong>Ready</strong></span>
+              <span>Check-in <strong>Used once</strong></span>
             </div>
-            <code>EVT-6B1P-8Q2N-R4Z9</code>
+            <div class="ticket-security">
+              <div>
+                <span>Unique ticket code</span>
+                <code>EVT-6B1P-8Q2N-R4Z9</code>
+              </div>
+              <div>
+                <span>QR token status</span>
+                <code>Used and locked</code>
+              </div>
+            </div>
           </div>
           <div class="ticket-divider" aria-hidden="true"></div>
-          <div class="qr-pattern used" aria-label="Used QR ticket code">
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
+          <div class="qr-zone">
+            <div class="qr-pattern used" aria-label="Used QR ticket code">
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <strong>Already checked in</strong>
+            <small>Cannot be reused</small>
           </div>
         </article>
       </div>

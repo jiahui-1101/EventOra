@@ -52,13 +52,13 @@ END:VCALENDAR`;
 
   function registerForEvent() {
     if (event.seatsLeft === 0) {
-      alert("This event is full. You can join waitlist (feature coming soon).");
+      window.location.href = "waitlist-demo.html";
       return;
     }
     if (event.priceType === "free") {
-      alert("Free event registration successful! A QR ticket will be generated. (Demo)");
+      window.location.href = "tickets.html?status=free-confirmed";
     } else {
-      alert(`Redirect to mock payment for RM ${event.price} ... (Demo)`);
+      window.location.href = `checkout-demo.html?event=${event.id}`;
     }
   }
 
@@ -94,7 +94,8 @@ END:VCALENDAR`;
           <div class="checkout-list">
             <div><span>Capacity</span><strong>${event.capacity} attendees</strong></div>
             <div><span>Ticket type</span><strong>Student</strong></div>
-            <div><span>Status after payment</span><strong>Confirmed with QR ticket</strong></div>
+            <div><span>Registration rule</span><strong>One active booking per user</strong></div>
+            <div><span>QR ticket generation</span><strong>${event.priceType === "paid" ? "After successful payment only" : "Generated immediately after confirmation"}</strong></div>
           </div>
           <button class="button button-primary full-width" id="registerBtn">${event.priceType === "paid" ? "Proceed to Mock Payment" : "Get Free Ticket"}</button>
           <div class="registration-alert"><strong>Duplicate registration protected</strong><p>You can only register once per event.</p></div>

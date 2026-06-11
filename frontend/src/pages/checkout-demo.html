@@ -29,6 +29,33 @@
   </header>
 
   <main class="app-shell">
+    <section class="page-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Paid registration flow</p>
+          <h2>Payment is required before ticket confirmation</h2>
+        </div>
+        <span class="badge badge-blue">Paid event</span>
+      </div>
+      <div class="payment-flow-steps" aria-label="Paid registration steps">
+        <article class="payment-step active">
+          <span>1</span>
+          <strong>Select paid event</strong>
+          <p>User chooses a paid event and proceeds from the registration panel.</p>
+        </article>
+        <article class="payment-step active">
+          <span>2</span>
+          <strong>Complete payment</strong>
+          <p>The booking is pending while payment is being processed.</p>
+        </article>
+        <article class="payment-step">
+          <span>3</span>
+          <strong>Generate QR Ticket</strong>
+          <p>Only approved payment creates a confirmed registration and QR ticket.</p>
+        </article>
+      </div>
+    </section>
+
     <section class="state-grid">
       <article class="state-card success-state">
         <span class="status-dot"></span>
@@ -55,10 +82,29 @@
           </div>
           <span class="badge badge-yellow">Pending</span>
         </div>
-        <p>Confirm the event pass, review the amount, and issue a QR ticket once the mock payment is approved.</p>
+        <p>Confirm the event pass, review the amount, and issue a QR ticket only after the mock payment is approved.</p>
+        <div class="checkout-event-summary">
+          <div>
+            <span>Event</span>
+            <strong>Build Your First AI App</strong>
+          </div>
+          <div>
+            <span>Registration status</span>
+            <strong>Pending payment</strong>
+          </div>
+          <div>
+            <span>Ticket status</span>
+            <strong>Not generated yet</strong>
+          </div>
+        </div>
         <div class="payment-method">
           <span>Payment method</span>
           <strong>Campus Card ending 4242</strong>
+        </div>
+        <div class="payment-method-grid">
+          <span class="payment-option selected">Campus Card</span>
+          <span class="payment-option">Online Banking</span>
+          <span class="payment-option">E-wallet</span>
         </div>
         <label class="input-label">
           Mock card number
@@ -71,7 +117,7 @@
           <div class="receipt-total"><span>Total due</span><strong>RM 8.00</strong></div>
         </div>
         <div class="modal-actions">
-          <span class="button button-primary">Approve payment</span>
+          <a class="button button-primary" href="tickets.html?status=paid-confirmed">Approve payment</a>
           <span class="button button-ghost">Decline</span>
         </div>
       </div>
@@ -82,11 +128,17 @@
         </article>
         <article class="state-card success-state">
           <span class="status-dot"></span>
-          <div><h3>Payment approved</h3><p>The registration becomes confirmed and the attendee receives an active QR ticket in My Tickets.</p></div>
+          <div><h3>Payment approved</h3><p>The registration becomes confirmed and the attendee receives a unique active QR ticket in My Tickets.</p></div>
         </article>
         <article class="state-card danger-state">
           <span class="status-dot"></span>
           <div><h3>Payment declined</h3><p>The booking stays unpaid, and EventOra prevents ticket generation until the attendee retries successfully.</p></div>
+        </article>
+        <article class="ticket-preview-card">
+          <span class="badge badge-gray">After approval</span>
+          <h3>QR Ticket created</h3>
+          <p>Ticket code and QR token are generated from the confirmed registration, not from an unpaid booking.</p>
+          <code>EVT-9F4K-2Q8M-X7P1</code>
         </article>
       </div>
     </section>
