@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Review Event</title>
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/styles/base.css" />
+  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../../src/styles/responsive.css" />
+  <style>
+    .create-shell { padding:28px; background:var(--surface-soft); min-height:100vh; }
+    .create-header { margin-bottom:24px; }
+    .create-header a { display:inline-flex; margin-bottom:14px; color:var(--muted); text-decoration:none; font-size:0.86rem; }
+    .create-header h1 { margin:0 0 6px; font-size:1.6rem; }
+    .create-header p { margin:0; color:var(--muted); font-size:0.9rem; }
+    .stepper { display:grid; grid-template-columns:repeat(4,1fr); margin:28px 0 34px; position:relative; }
+    .stepper::before { content:""; position:absolute; top:13px; left:8%; right:8%; height:1px; background:var(--border); }
+    .step-item { position:relative; display:grid; justify-items:center; gap:8px; color:var(--muted); font-size:0.76rem; z-index:1; }
+    .step-number { width:28px; height:28px; border-radius:999px; display:grid; place-items:center; background:#e5e7eb; color:var(--muted); font-weight:700; }
+    .step-item.done .step-number { background:var(--success); color:#fff; }
+    .step-item.active { color:var(--primary); font-weight:700; }
+    .step-item.active .step-number { background:var(--primary); color:#fff; }
+    .review-layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:18px; align-items:start; }
+    .create-card, .review-panel { border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--surface); box-shadow:var(--shadow); padding:24px; }
+    .create-card h2, .review-panel h2 { margin:0 0 18px; font-size:1rem; }
+    .review-banner { min-height:180px; border-radius:var(--radius-md); background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; display:flex; align-items:end; padding:20px; margin-bottom:18px; }
+    .review-banner h3 { color:#fff; margin:8px 0 4px; }
+    .review-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+    .review-item { padding:12px; border-radius:var(--radius-sm); background:var(--surface-soft); }
+    .review-item span { display:block; color:var(--muted); font-size:0.74rem; font-weight:700; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em; }
+    .review-item strong { display:block; color:var(--text); font-size:0.9rem; }
+    .approval-note { padding:14px; border:1px solid #bfdbfe; border-radius:var(--radius-sm); background:#eff6ff; color:#1d4ed8; font-size:0.86rem; }
+    .create-actions { display:flex; justify-content:space-between; gap:12px; margin-top:20px; }
+  </style>
+</head>
+<body>
+  <main class="create-shell">
+    <section class="create-header">
+      <a href="create-event-details.html">← Back to Details</a>
+      <h1>Review Event</h1>
+      <p>Preview the event before submitting it to Faculty Admin for approval.</p>
+    </section>
+
+    <section class="stepper">
+      <div class="step-item done"><span class="step-number">1</span><span>Basic Info</span></div>
+      <div class="step-item done"><span class="step-number">2</span><span>Ticketing</span></div>
+      <div class="step-item done"><span class="step-number">3</span><span>Details</span></div>
+      <div class="step-item active"><span class="step-number">4</span><span>Review</span></div>
+    </section>
+
+    <section class="review-layout">
+      <article class="create-card">
+        <h2>Public Event Preview</h2>
+
+        <div class="review-banner">
+          <div>
+            <span class="badge badge-blue">Academic</span>
+            <h3>Annual Tech Symposium 2026</h3>
+            <p>Computer Society UTM · Faculty approval required</p>
+          </div>
+        </div>
+
+        <div class="review-grid">
+          <div class="review-item"><span>Date & Time</span><strong>15 Jul 2026, 9:00 AM - 5:00 PM</strong></div>
+          <div class="review-item"><span>Venue</span><strong>Dewan Sultan Iskandar, UTM JB</strong></div>
+          <div class="review-item"><span>Capacity</span><strong>120 attendees</strong></div>
+          <div class="review-item"><span>Ticket</span><strong>Free</strong></div>
+          <div class="review-item"><span>Deadline</span><strong>10 Jul 2026, 11:59 PM</strong></div>
+          <div class="review-item"><span>Status</span><strong>Draft</strong></div>
+        </div>
+      </article>
+
+      <aside class="review-panel">
+        <h2>Submission Checklist</h2>
+
+        <div class="approval-note">
+          This event will move from draft to pending approval after submission. Faculty Admin must approve it before it appears in the public event list.
+        </div>
+
+        <div class="detail-list">
+          <div><dt>Basic information</dt><dd>Complete</dd></div>
+          <div><dt>Ticketing</dt><dd>Free event configured</dd></div>
+          <div><dt>Poster</dt><dd>Ready for review</dd></div>
+          <div><dt>Approval status</dt><dd>Draft → Pending approval</dd></div>
+        </div>
+
+        <div class="create-actions">
+        <a class="button button-ghost" href="create-event-details.html">Back</a>
+        <div style="display:flex;gap:10px;">
+        <a class="button button-secondary" href="organiser-dashboard.html?eventSaved=draft">Save Draft</a>
+        <a class="button button-primary" href="organiser-dashboard.html?eventSaved=submitted">Submit for Approval</a>
+        </div>
+</div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOra - Organiser Event Detail</title>
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/styles/base.css" />
+  <link rel="stylesheet" href="../../src/styles/components.css" />
+  <link rel="stylesheet" href="../../src/styles/responsive.css" />
+  <style>
+    .detail-shell { padding:28px; background:var(--surface-soft); min-height:100vh; }
+    .back-link { display:inline-flex; margin-bottom:14px; color:var(--muted); text-decoration:none; font-size:0.86rem; }
+    .detail-header { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:22px; }
+    .detail-header h1 { margin:0 0 6px; font-size:1.6rem; }
+    .detail-header p { margin:0; color:var(--muted); font-size:0.9rem; }
+    .detail-layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:18px; align-items:start; }
+    .detail-card, .side-card { border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--surface); box-shadow:var(--shadow); padding:24px; }
+    .poster-preview { min-height:220px; border-radius:var(--radius-md); background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; display:flex; align-items:end; padding:22px; margin-bottom:18px; }
+    .poster-preview h2 { color:#fff; margin:10px 0 6px; }
+    .poster-preview p { margin:0; color:rgba(255,255,255,0.82); }
+    .info-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+    .info-item { padding:12px; border-radius:var(--radius-sm); background:var(--surface-soft); }
+    .info-item span { display:block; color:var(--muted); font-size:0.74rem; font-weight:700; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em; }
+    .info-item strong { display:block; color:var(--text); font-size:0.9rem; }
+    .section-title { margin:24px 0 10px; font-size:1rem; }
+    .approval-note { padding:14px; border-radius:var(--radius-sm); font-size:0.86rem; margin-bottom:14px; }
+    .approval-draft { background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; }
+    .approval-pending { background:var(--warning-soft); border:1px solid #fde68a; color:#92400e; }
+    .approval-published { background:var(--success-soft); border:1px solid #bbf7d0; color:#065f46; }
+    .approval-rejected, .approval-cancelled { background:var(--danger-soft); border:1px solid #fecaca; color:#991b1b; }
+    .action-list { display:grid; gap:10px; }
+    .full-width { width:100%; justify-content:center; }
+    @media (max-width:900px) {
+      .detail-layout { grid-template-columns:1fr; }
+      .detail-header { display:block; }
+    }
+  </style>
+</head>
+<body>
+  <main class="detail-shell">
+    <a class="back-link" href="organiser-dashboard.html">← Back to Dashboard</a>
+
+    <section class="detail-header">
+      <div>
+        <span id="statusBadge" class="badge badge-blue">Draft</span>
+        <h1 id="eventTitle">Event Title</h1>
+        <p id="eventSubtitle">Computer Society UTM · Activity preview for organiser</p>
+      </div>
+    </section>
+
+    <section class="detail-layout">
+      <article class="detail-card">
+        <div class="poster-preview">
+          <div>
+            <span id="categoryBadge" class="badge badge-blue">Academic</span>
+            <h2 id="posterTitle">Event Title</h2>
+            <p id="posterDescription">Event description preview.</p>
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item"><span>Date & Time</span><strong id="eventDateTime">-</strong></div>
+          <div class="info-item"><span>Venue</span><strong id="eventVenue">-</strong></div>
+          <div class="info-item"><span>Registration Deadline</span><strong id="eventDeadline">Not set</strong></div>
+          <div class="info-item"><span>Capacity</span><strong id="eventCapacity">-</strong></div>
+          <div class="info-item"><span>Ticket</span><strong id="eventTicket">-</strong></div>
+          <div class="info-item"><span>Current Status</span><strong id="eventStatus">-</strong></div>
+        </div>
+
+        <h2 class="section-title">Event Description</h2>
+        <p id="eventDescription" style="color:var(--muted);line-height:1.6;"></p>
+      </article>
+
+      <aside class="side-card">
+        <h2 style="margin:0 0 14px;font-size:1rem;">Approval Workflow</h2>
+
+        <div id="approvalNote" class="approval-note approval-draft">
+          <strong>Draft</strong>
+          <p style="margin:6px 0 0;">This event is still editable. Submit it when all details are ready.</p>
+        </div>
+
+        <div class="detail-list">
+          <div><dt>Workflow</dt><dd>Draft → Pending approval → Published</dd></div>
+          <div><dt>Public listing</dt><dd id="publicListingText">Hidden until Faculty Admin approval</dd></div>
+          <div><dt>Last updated</dt><dd>8 Jun 2026, 10:30 AM</dd></div>
+        </div>
+
+        <h2 class="section-title">Available Actions</h2>
+        <div id="actionList" class="action-list"></div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const eventsStorageKey = "eventora_society_events_v2";
+
+    const defaultEvents = [
+      {
+        id: 1,
+        title: "Build Your First AI App",
+        category: "Academic",
+        location: "N28A Innovation Lab",
+        eventDate: "12 Jun 2026",
+        startTime: "7:30 PM",
+        endTime: "9:30 PM",
+        feeType: "Paid",
+        feeAmount: 8,
+        status: "published",
+        registrations: 28,
+        checkedIn: 18,
+        capacity: 40
+      },
+      {
+        id: 2,
+        title: "Hackathon 2026",
+        category: "Academic",
+        location: "FAB Lab",
+        eventDate: "5 Jul 2026",
+        startTime: "9:00 AM",
+        endTime: "6:00 PM",
+        feeType: "Paid",
+        feeAmount: 15,
+        status: "pending_approval",
+        registrations: 0,
+        checkedIn: 0,
+        capacity: 60
+      },
+      {
+        id: 3,
+        title: "Futsal Tournament",
+        category: "Sports",
+        location: "UTM Sports Hall",
+        eventDate: "28 Jun 2026",
+        startTime: "9:00 AM",
+        endTime: "1:00 PM",
+        feeType: "Free",
+        feeAmount: 0,
+        status: "published",
+        registrations: 40,
+        checkedIn: 32,
+        capacity: 40
+      }
+    ];
+
+    const eventDescriptions = {
+      "Build Your First AI App": "A practical evening workshop where students learn how to plan, prototype, and demo a simple AI-powered application.",
+      "Hackathon 2026": "A full-day hackathon for student teams to build software prototypes, receive mentor feedback, and present solutions.",
+      "Futsal Tournament": "A sports event for student teams to compete in an interfaculty futsal tournament at UTM Sports Hall.",
+      "Annual Tech Symposium 2026": "This symposium brings together students, organisers, and faculty members for a full-day technology event. The event includes talks, demo booths, and student project showcases."
+    };
+
+    let societyEvents = JSON.parse(localStorage.getItem(eventsStorageKey) || "null") || defaultEvents;
+
+    const params = new URLSearchParams(window.location.search);
+    const selectedEventId = params.get("event");
+    let selectedEvent = societyEvents.find(event => String(event.id) === String(selectedEventId)) || societyEvents[0];
+
+    function saveEvents() {
+      localStorage.setItem(eventsStorageKey, JSON.stringify(societyEvents));
+    }
+
+    function badgeForStatus(status) {
+      if (status === "published") return "badge-green";
+      if (status === "pending_approval") return "badge-yellow";
+      if (status === "completed") return "badge-purple";
+      if (status === "rejected" || status === "cancelled") return "badge-red";
+      return "badge-blue";
+    }
+
+    function statusLabel(status) {
+      if (status === "pending_approval") return "pending approval";
+      return status || "draft";
+    }
+
+    function approvalNoteClass(status) {
+      if (status === "published") return "approval-note approval-published";
+      if (status === "pending_approval") return "approval-note approval-pending";
+      if (status === "rejected") return "approval-note approval-rejected";
+      if (status === "cancelled") return "approval-note approval-cancelled";
+      return "approval-note approval-draft";
+    }
+
+    function approvalNoteContent(status) {
+      if (status === "published") {
+        return `
+          <strong>Published</strong>
+          <p style="margin:6px 0 0;">This event is approved and visible in the public event list.</p>
+        `;
+      }
+
+      if (status === "pending_approval") {
+        return `
+          <strong>Pending approval</strong>
+          <p style="margin:6px 0 0;">This event has been submitted and is waiting for Faculty Admin review.</p>
+        `;
+      }
+
+      if (status === "rejected") {
+        return `
+          <strong>Rejected</strong>
+          <p style="margin:6px 0 0;">This event needs changes before it can be submitted again.</p>
+        `;
+      }
+
+      if (status === "cancelled") {
+        return `
+          <strong>Cancelled</strong>
+          <p style="margin:6px 0 0;">This event has been cancelled and is no longer available for registration.</p>
+        `;
+      }
+
+      return `
+        <strong>Draft</strong>
+        <p style="margin:6px 0 0;">This event is still editable. Submit it when all details are ready.</p>
+      `;
+    }
+
+    function ticketLabel(event) {
+      if ((event.feeType || "").toLowerCase() === "paid") {
+        return `RM ${event.feeAmount || 0}`;
+      }
+
+      return "Free";
+    }
+
+    function renderActions(event) {
+      const status = event.status || "draft";
+
+      if (status === "published") {
+        return `
+          <a class="button button-secondary full-width" href="create-event.html">Edit Event</a>
+          <button class="button button-danger full-width" data-action="cancel">Cancel Event</button>
+        `;
+      }
+
+      if (status === "pending_approval") {
+        return `
+          <a class="button button-secondary full-width" href="create-event.html">Edit Event</a>
+          <span class="badge badge-yellow" style="justify-content:center;width:100%;">Waiting for Admin</span>
+        `;
+      }
+
+      if (status === "rejected") {
+        return `
+          <a class="button button-secondary full-width" href="create-event.html">Edit Event</a>
+          <button class="button button-primary full-width" data-action="submit">Resubmit for Approval</button>
+          <button class="button button-danger full-width" data-action="delete">Delete Draft</button>
+        `;
+      }
+
+      if (status === "cancelled" || status === "completed") {
+        return `
+          <span class="badge badge-gray" style="justify-content:center;width:100%;">No available actions</span>
+        `;
+      }
+
+      return `
+        <a class="button button-secondary full-width" href="create-event.html">Edit Event</a>
+        <button class="button button-primary full-width" data-action="submit">Submit for Approval</button>
+        <button class="button button-danger full-width" data-action="delete">Delete Draft</button>
+      `;
+    }
+
+    function renderEventDetail() {
+      const description = selectedEvent.description || eventDescriptions[selectedEvent.title] || "No description has been added for this event yet.";
+      const category = selectedEvent.category || "Academic";
+      const status = selectedEvent.status || "draft";
+
+      document.getElementById("statusBadge").className = `badge ${badgeForStatus(status)}`;
+      document.getElementById("statusBadge").textContent = statusLabel(status);
+      document.getElementById("eventTitle").textContent = selectedEvent.title;
+      document.getElementById("eventSubtitle").textContent = "Computer Society UTM · Activity preview for organiser";
+
+      document.getElementById("categoryBadge").className = `badge ${category === "Sports" ? "badge-yellow" : "badge-blue"}`;
+      document.getElementById("categoryBadge").textContent = category;
+      document.getElementById("posterTitle").textContent = selectedEvent.title;
+      document.getElementById("posterDescription").textContent = description;
+
+      document.getElementById("eventDateTime").textContent = `${selectedEvent.eventDate || "Not set"}, ${selectedEvent.startTime || "--"} - ${selectedEvent.endTime || "--"}`;
+      document.getElementById("eventVenue").textContent = selectedEvent.location || "Not set";
+      document.getElementById("eventDeadline").textContent = selectedEvent.registrationDeadline || "Not set";
+      document.getElementById("eventCapacity").textContent = `${selectedEvent.capacity || 0} attendees`;
+      document.getElementById("eventTicket").textContent = ticketLabel(selectedEvent);
+      document.getElementById("eventStatus").textContent = statusLabel(status);
+      document.getElementById("eventDescription").textContent = description;
+
+      document.getElementById("approvalNote").className = approvalNoteClass(status);
+      document.getElementById("approvalNote").innerHTML = approvalNoteContent(status);
+      document.getElementById("publicListingText").textContent = status === "published"
+        ? "Visible in public event list"
+        : "Hidden until Faculty Admin approval";
+
+      document.getElementById("actionList").innerHTML = renderActions(selectedEvent);
+      bindActionButtons();
+    }
+
+    function updateSelectedEventStatus(status) {
+      societyEvents = societyEvents.map(event =>
+        String(event.id) === String(selectedEvent.id) ? { ...event, status } : event
+      );
+
+      saveEvents();
+    }
+
+    function deleteSelectedEvent() {
+      societyEvents = societyEvents.filter(event => String(event.id) !== String(selectedEvent.id));
+      saveEvents();
+    }
+
+    function bindActionButtons() {
+      document.querySelectorAll("[data-action]").forEach(button => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.action;
+
+          if (action === "submit") {
+            updateSelectedEventStatus("pending_approval");
+            window.location.href = "organiser-dashboard.html?eventAction=submitted";
+          }
+
+          if (action === "delete") {
+            deleteSelectedEvent();
+            window.location.href = "organiser-dashboard.html?eventAction=deleted";
+          }
+
+          if (action === "cancel") {
+            updateSelectedEventStatus("cancelled");
+            window.location.href = "organiser-dashboard.html?eventAction=cancelled";
+          }
+        });
+      });
+    }
+
+    renderEventDetail();
+  </script>
+</body>
+</html>

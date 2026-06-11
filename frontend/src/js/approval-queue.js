@@ -1,77 +1,77 @@
-let pendingEvents = [
-  { id: 101, society: "Robotics Club", title: "Line Follower Workshop", date: "2026-07-10", category: "Academic", capacity: 30 },
-  { id: 102, society: "Entrepreneurship Society", title: "Startup Pitch Night", date: "2026-07-15", category: "Academic", capacity: 50 },
-  { id: 103, society: "Music Club", title: "Acoustic Night", date: "2026-07-18", category: "Cultural", capacity: 80 }
+let approvalEvents = [
+  {
+    id: 101,
+    society: "Robotics Club",
+    title: "Line Follower Workshop",
+    date: "2026-07-10",
+    category: "Academic",
+    capacity: 30,
+    status: "pending"
+  },
+  {
+    id: 102,
+    society: "Entrepreneurship Society",
+    title: "Startup Pitch Night",
+    date: "2026-07-15",
+    category: "Academic",
+    capacity: 50,
+    status: "approved"
+  },
+  {
+    id: 103,
+    society: "Music Club",
+    title: "Acoustic Night",
+    date: "2026-07-18",
+    category: "Cultural",
+    capacity: 80,
+    status: "rejected",
+    reason: "Venue booking confirmation is missing."
+  }
 ];
 
-let rejectTargetId = null;
+function statusBadge(status) {
+  if (status === "approved") {
+    return `<span class="badge badge-green">Approved</span>`;
+  }
+
+  if (status === "rejected") {
+    return `<span class="badge badge-red">Rejected</span>`;
+  }
+
+  return `<span class="badge badge-yellow">Pending</span>`;
+}
 
 function renderQueue() {
   const tbody = document.getElementById("pendingEventsList");
-  tbody.innerHTML = pendingEvents.map(ev => `
+
+  tbody.innerHTML = approvalEvents.map(ev => `
     <tr style="border-bottom:1px solid var(--border);">
       <td>${ev.society}</td>
-      <td>${ev.title}</td>
+      <td>
+        <strong>${ev.title}</strong>
+        ${ev.reason ? `<div style="color:var(--muted);font-size:0.78rem;margin-top:4px;">Reason: ${ev.reason}</div>` : ""}
+      </td>
       <td>${ev.date}</td>
       <td>${ev.category}</td>
       <td>${ev.capacity}</td>
+      <td>${statusBadge(ev.status)}</td>
       <td>
-        <button class="button button-success" data-id="${ev.id}" data-action="approve">✓ Approve</button>
-        <button class="button button-danger" data-id="${ev.id}" data-action="reject" data-title="${ev.title}" data-society="${ev.society}" style="margin-left:6px;">✕ Reject</button>
+        <a class="button button-secondary" href="approval-detail.html?event=${ev.id}">
+          View Details
+        </a>
       </td>
     </tr>
-  `).join('');
+  `).join("");
 
-  // Approve buttons
-  document.querySelectorAll('[data-action="approve"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = parseInt(btn.dataset.id);
-      pendingEvents = pendingEvents.filter(ev => ev.id !== id);
-      renderQueue();
-      updatePendingCount();
-      showToast("Event approved successfully!", "success");
-    });
-  });
-
-  // Reject buttons — open modal
-  document.querySelectorAll('[data-action="reject"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      rejectTargetId = parseInt(btn.dataset.id);
-      document.getElementById("rejectEventTitle").textContent = btn.dataset.title;
-      document.getElementById("rejectEventSociety").textContent = btn.dataset.society;
-      document.getElementById("rejectReason").value = "";
-      document.getElementById("rejectModal").style.display = "flex";
-    });
-  });
+  updatePendingCount();
 }
 
 function updatePendingCount() {
+  const pending = approvalEvents.filter(ev => ev.status === "pending").length;
   const badge = document.querySelector(".badge-yellow");
-  if (badge) badge.textContent = `${pendingEvents.length} pending`;
+  if (badge) badge.textContent = `${pending} pending`;
 }
 
-// Modal: Cancel
-document.getElementById("cancelRejectBtn").addEventListener("click", () => {
-  document.getElementById("rejectModal").style.display = "none";
-  rejectTargetId = null;
-});
-
-// Modal: Confirm reject
-document.getElementById("confirmRejectBtn").addEventListener("click", () => {
-  const reason = document.getElementById("rejectReason").value.trim();
-  if (!reason) {
-    document.getElementById("rejectReason").style.borderColor = "var(--danger)";
-    return;
-  }
-  pendingEvents = pendingEvents.filter(ev => ev.id !== rejectTargetId);
-  document.getElementById("rejectModal").style.display = "none";
-  rejectTargetId = null;
-  renderQueue();
-  updatePendingCount();
-  showToast("Event rejected. Organiser has been notified.", "danger");
-});
-
-// Toast notification
 function showToast(message, type) {
   const toast = document.createElement("div");
   toast.textContent = message;
@@ -83,6 +83,17 @@ function showToast(message, type) {
   `;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
+}
+
+const params = new URLSearchParams(window.location.search);
+const adminAction = params.get("adminAction");
+
+if (adminAction === "approved") {
+  showToast("Event approved successfully.", "success");
+}
+
+if (adminAction === "rejected") {
+  showToast("Event rejected. Reason has been recorded.", "danger");
 }
 
 renderQueue();
