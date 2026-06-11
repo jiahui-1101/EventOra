@@ -774,6 +774,19 @@
   margin-top: 16px;
 }
 
+.ticket-demo-actions {
+  margin: 16px 0 0;
+}
+
+.ticket-empty {
+  padding: 20px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .ticket-rule-card {
   display: flex;
   gap: 12px;
@@ -1019,6 +1032,14 @@
   display: block;
   margin-bottom: 8px;
   color: currentColor;
+}
+
+.result-note {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .event-card.full {

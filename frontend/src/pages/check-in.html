@@ -58,11 +58,11 @@
             <div class="camera-label"><strong>Camera scanner</strong><span>Ready to scan ticket QR</span></div>
           </div>
           <div class="scanner-stats">
-            <div><span>Checked in</span><strong>18</strong></div>
-            <div><span>Registered</span><strong>28</strong></div>
+            <div><span>Checked in</span><strong id="statCheckedIn">18</strong></div>
+            <div><span>Registered</span><strong id="statRegistered">28</strong></div>
           </div>
-          <label class="input-label">Manual ticket code<input value="EVT-9F4K-2Q8M-X7P1" readonly /></label>
-          <span class="button button-primary full-width">Check in attendee</span>
+          <label class="input-label">Manual ticket code<input id="manualTicketInput" placeholder="e.g. EVT-9F4K-2Q8M-X7P1" value="EVT-9F4K-2Q8M-X7P1" /></label>
+          <button id="checkInBtn" class="button button-primary full-width" type="button">Check in attendee</button>
           <p class="helper-text">Use manual fallback when the camera is unavailable.</p>
         </div>
       </aside>
@@ -74,14 +74,14 @@
         <span class="badge badge-gray">Scan outcomes</span>
       </div>
       <div class="scan-result-summary">
-        <article class="scan-receipt success-receipt">
-          <span class="badge badge-green">Checked in</span>
-          <h3>Aina Rahman</h3>
-          <p>Build Your First AI App · 12 Jun 2026 · N28A Innovation Lab</p>
+        <article id="scanReceipt" class="scan-receipt success-receipt">
+          <span id="receiptBadge" class="badge badge-green">Ready</span>
+          <h3 id="receiptName">Awaiting scan</h3>
+          <p id="receiptEvent">Enter a ticket code to validate attendee access.</p>
           <div class="receipt-meta">
-            <span>Ticket <strong>EVT-9F4K-2Q8M-X7P1</strong></span>
-            <span>Scanned by <strong>Nurul Admin</strong></span>
-            <span>Time <strong>7:18 PM</strong></span>
+            <span>Ticket <strong id="receiptTicket">-</strong></span>
+            <span>Scanned by <strong id="receiptScanner">-</strong></span>
+            <span>Time <strong id="receiptTime">-</strong></span>
           </div>
         </article>
         <article class="attendance-panel">
@@ -91,10 +91,11 @@
         </article>
       </div>
       <div class="result-grid">
-        <article class="result-card success-state"><span class="result-label">Success</span><strong>Check-in successful</strong><p>Aina Rahman has been marked present for Build Your First AI App.</p></article>
-        <article class="result-card danger-state"><span class="result-label">Blocked</span><strong>Invalid ticket</strong><p>Ticket code was not found or has been cancelled.</p></article>
-        <article class="result-card warning-state"><span class="result-label">Permission mismatch</span><strong>Wrong society</strong><p>This ticket belongs to another society and cannot be scanned here.</p></article>
-        <article class="result-card neutral-state"><span class="result-label">Duplicate scan</span><strong>Already checked in</strong><p>This ticket was already checked in earlier and cannot be used twice.</p></article>
+        <article id="lastScanResult" class="result-card neutral-state">
+          <span class="result-label">Ready</span>
+          <strong>No scan yet</strong>
+          <p>Manual check-in results will appear here after validation.</p>
+        </article>
       </div>
     </section>
   </main>
@@ -105,5 +106,6 @@
     <a href="tickets.html">Tickets</a>
     <a href="check-in.html">Scan</a>
   </nav>
+  <script type="module" src="../js/check-in.js"></script>
 </body>
 </html>
