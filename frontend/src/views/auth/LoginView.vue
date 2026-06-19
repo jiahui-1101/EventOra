@@ -40,8 +40,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
 const authStore = useAuthStore()
 
 const email = ref('')
@@ -55,6 +57,15 @@ function handleLogin() {
   if (!result.success) {
     errorMessage.value = result.message
     return
+  }
+
+  // Role-based redirect after login
+  if (authStore.isAdmin) {
+    router.push('/admin')
+  } else if (authStore.isOrganiser) {
+    router.push('/organiser/dashboard')
+  } else {
+    router.push('/')
   }
 }
 </script>
