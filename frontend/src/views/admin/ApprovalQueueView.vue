@@ -5,6 +5,42 @@
         <div><p class="eyebrow">Faculty Admin</p><h2>Event Approval Queue</h2></div>
         <span class="badge badge-yellow">{{ pendingCount }} pending</span>
       </div>
+
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);">
+            <th>Society</th>
+            <th>Event Title</th>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Capacity</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="ev in approvalEvents" :key="ev.id" style="border-bottom:1px solid var(--border);">
+            <td>{{ ev.society }}</td>
+            <td>
+              <strong>{{ ev.title }}</strong>
+            </td>
+            <td>{{ ev.date }}</td>
+            <td>{{ ev.category }}</td>
+            <td>{{ ev.capacity }}</td>
+            <td>
+              <span v-if="ev.status === 'approved'" class="badge badge-green">Approved</span>
+              <span v-else-if="ev.status === 'rejected'" class="badge badge-red">Rejected</span>
+              <span v-else class="badge badge-yellow">Pending</span>
+            </td>
+            <td class="admin-actions">
+              <template v-if="ev.status === 'pending'">
+                <button class="button button-primary">Approve</button>
+                <button class="button button-secondary">Reject</button>
+              </template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
     <section class="page-section">
@@ -22,7 +58,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
-const pendingCount = ref(0)
+const approvalEvents = ref([
+  { id: 101, society: 'Robotics Club', title: 'Line Follower Workshop', date: '2026-07-10', category: 'Academic', capacity: 30, status: 'pending' },
+  { id: 102, society: 'Entrepreneurship Society', title: 'Startup Pitch Night', date: '2026-07-15', category: 'Academic', capacity: 50, status: 'approved' },
+  { id: 103, society: 'Music Club', title: 'Acoustic Night', date: '2026-07-18', category: 'Cultural', capacity: 80, status: 'rejected', reason: 'Venue booking confirmation is missing.' },
+])
+
+const pendingCount = computed(() => approvalEvents.value.filter((e) => e.status === 'pending').length)
 </script>
