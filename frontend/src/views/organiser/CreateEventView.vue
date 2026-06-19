@@ -137,6 +137,38 @@
       </div>
     </section>
 
+        <section v-if="currentStep === 2" class="create-card">
+      <h2>Step 3 — Event Details</h2>
+
+      <label class="form-label">
+        Event poster *
+        <div class="upload-box">
+          <div>Drag &amp; drop poster here or <strong>browse</strong><br /><span>PNG, JPG up to 5MB · Recommended 1200x400px</span></div>
+        </div>
+      </label>
+
+      <div class="input-row-2">
+        <label class="form-label">
+          Contact person
+          <input type="text" v-model="form.contactName" placeholder="e.g. Siti Noor" />
+        </label>
+        <label class="form-label">
+          Contact email
+          <input type="email" v-model="form.contactEmail" placeholder="society@utm.my" />
+        </label>
+      </div>
+
+      <label class="form-label">
+        Special instructions
+        <textarea v-model="form.instructions" placeholder="Optional: dress code, materials to bring, prerequisite knowledge, or check-in notes."></textarea>
+      </label>
+
+      <div class="create-actions">
+        <button class="button button-ghost" @click="prevStep">Back</button>
+        <button class="button button-primary" @click="nextStep">Next: Review →</button>
+      </div>
+    </section>
+
   </main>
 </template>
 
