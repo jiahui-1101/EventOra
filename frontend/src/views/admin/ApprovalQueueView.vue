@@ -23,6 +23,9 @@
             <td>{{ ev.society }}</td>
             <td>
               <strong>{{ ev.title }}</strong>
+              <div v-if="ev.reason" style="color:var(--muted);font-size:0.78rem;margin-top:4px;">
+                Reason: {{ ev.reason }}
+              </div>
             </td>
             <td>{{ ev.date }}</td>
             <td>{{ ev.category }}</td>
@@ -68,18 +71,20 @@
         <div class="input-label" style="margin-top:20px;">
           Rejection reason <span style="color:var(--danger);">*</span>
           <textarea
+            v-model="rejectReason"
             rows="4"
             placeholder="e.g. Venue booking confirmation missing. Please attach DSI approval letter and resubmit."
             style="padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.88rem;resize:vertical;width:100%;box-sizing:border-box;margin-top:6px;"
           ></textarea>
         </div>
+        <p v-if="modalError" class="auth-error">{{ modalError }}</p>
         <div class="rejection-notice">
           <strong>📧 The organiser will be notified</strong>
           <p>Your reason will be sent as an in-app notification. The event returns to draft for revision.</p>
         </div>
         <div class="modal-actions" style="margin-top:20px;">
           <button class="button button-ghost" @click="closeModal">Cancel</button>
-          <button class="button button-danger">Confirm Rejection</button>
+          <button class="button button-danger" @click="confirmReject">Confirm Rejection</button>
         </div>
       </div>
     </div>
@@ -101,6 +106,8 @@ const pendingCount = computed(() => approvalEvents.value.filter((e) => e.status 
 
 const showModal = ref(false)
 const selectedEvent = ref(null)
+const rejectReason = ref('')
+const modalError = ref('')
 const toast = ref({ message: '', type: 'success' })
 
 function approveEvent(ev) {
@@ -110,12 +117,25 @@ function approveEvent(ev) {
 
 function openRejectModal(ev) {
   selectedEvent.value = ev
+  rejectReason.value = ''
+  modalError.value = ''
   showModal.value = true
 }
 
 function closeModal() {
   showModal.value = false
   selectedEvent.value = null
+}
+
+function confirmReject() {
+  if (!rejectReason.value.trim()) {
+    modalError.value = 'Please provide a rejection reason.'
+    return
+  }
+  selectedEvent.value.status = 'rejected'
+  selectedEvent.value.reason = rejectReason.value
+  showToast('Event rejected. Reason has been recorded.', 'danger')
+  closeModal()
 }
 
 function showToast(message, type) {
