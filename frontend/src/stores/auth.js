@@ -59,6 +59,21 @@ export const useAuthStore = defineStore('auth', () => {
     return { success: true }
   }
 
+  function register(payload) {
+    registeredUser.value = payload
+    localStorage.setItem('eventora_registered_user', JSON.stringify(payload))
+    return { success: true }
+  }
+
+  function updateProfile(updatedUser) {
+    registeredUser.value = updatedUser
+    session.value = { ...(session.value || {}), isLoggedIn: true, updatedAt: new Date().toISOString(), user: updatedUser }
+
+    localStorage.setItem('eventora_registered_user', JSON.stringify(updatedUser))
+    localStorage.setItem('eventora_session', JSON.stringify(session.value))
+    localStorage.setItem('userRole', updatedUser.role)
+  }
+
   function logout() {
     session.value = null
     localStorage.removeItem('eventora_session')
@@ -67,6 +82,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     session, registeredUser, user, isLoggedIn, role, isAdmin, isOrganiser,
-    login, logout,
+    login, register, updateProfile, logout,
   }
 })
