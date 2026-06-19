@@ -82,6 +82,61 @@
       </div>
     </section>
 
+        <section v-if="currentStep === 1" class="create-card">
+      <h2>Step 2 — Ticketing</h2>
+
+      <div class="input-row-2">
+        <label class="form-label">
+          Capacity *
+          <input type="number" v-model.number="form.capacity" placeholder="80" />
+        </label>
+        <label class="form-label">
+          Registration deadline *
+          <input type="datetime-local" v-model="form.deadline" />
+        </label>
+      </div>
+
+      <label class="form-label">
+        Ticket price
+        <div class="input-row-2">
+          <div class="ticket-option">
+            <strong><input type="radio" value="Free" v-model="form.feeType" /> Free event</strong>
+            <p>Students can register without mock payment.</p>
+          </div>
+          <div class="ticket-option">
+            <strong><input type="radio" value="Paid" v-model="form.feeType" /> Paid event</strong>
+            <p>Students complete mock payment before ticket confirmation.</p>
+          </div>
+        </div>
+      </label>
+
+      <div class="input-row-2">
+        <label class="form-label">
+          Fee amount (RM)
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            v-model.number="form.feeAmount"
+            :disabled="form.feeType === 'Free'"
+            placeholder="0.00"
+          />
+        </label>
+        <label class="form-label">
+          Waitlist
+          <select v-model="form.waitlist">
+            <option value="enabled">Enable when event is full</option>
+            <option value="disabled">Disable waitlist</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="create-actions">
+        <button class="button button-ghost" @click="prevStep">Back</button>
+        <button class="button button-primary" @click="nextStep">Next: Details →</button>
+      </div>
+    </section>
+
   </main>
 </template>
 
