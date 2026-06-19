@@ -87,6 +87,9 @@
         class="event-card"
       >
         <div :class="['event-cover', event.coverClass]">
+          <span :class="['badge', event.badgeClass]">
+            {{ capitalize(event.category) }}
+          </span>
         </div>
       </article>
     </section>
@@ -137,4 +140,12 @@ const events = ref([
     badgeClass: 'badge-green',
   },
 ])
+
+function formatDate(date) {
+  return new Date(date).toLocaleString('en-MY')
+}
+
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
 </script>
