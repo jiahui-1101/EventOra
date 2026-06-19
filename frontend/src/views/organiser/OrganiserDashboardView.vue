@@ -62,26 +62,42 @@
               <tbody>
                 <tr v-for="ev in societyEvents" :key="ev.id">
                   <td>
-                    <router-link :to="`/organiser/event-detail/${ev.id}`" style="font-weight:700;color:var(--text);text-decoration:none;">
+                    <router-link
+                      :to="`/organiser/event-detail/${ev.id}`"
+                      style="font-weight:700;color:var(--text);text-decoration:none;"
+                    >
                       {{ ev.title }}
                     </router-link>
                     <br />
-                    <span :class="['badge', ev.category === 'Sports' ? 'badge-yellow' : 'badge-blue']" style="font-size:0.68rem;margin-top:6px;">
+                    <span
+                      :class="['badge', ev.category === 'Sports' ? 'badge-yellow' : 'badge-blue']"
+                      style="font-size:0.68rem;margin-top:6px;"
+                    >
                       {{ ev.category || 'Academic' }}
                     </span>
                   </td>
                   <td>
                     {{ ev.eventDate || 'Not set' }}
                     <br />
-                    <span style="color:var(--muted);font-size:0.78rem;">{{ ev.startTime || '--' }} - {{ ev.endTime || '--' }}</span>
+                    <span style="color:var(--muted);font-size:0.78rem;">
+                      {{ ev.startTime || '--' }} - {{ ev.endTime || '--' }}
+                    </span>
                   </td>
                   <td>{{ ev.capacity }}</td>
                   <td>
                     {{ ev.registrations }}
-                    <span style="color:var(--muted);font-size:0.78rem;">({{ ev.capacity ? Math.round((ev.registrations / ev.capacity) * 100) : 0 }}%)</span>
+                    <span style="color:var(--muted);font-size:0.78rem;">
+                      ({{ ev.capacity ? Math.round((ev.registrations / ev.capacity) * 100) : 0 }}%)
+                    </span>
                   </td>
-                  <td><span :class="['badge', badgeForStatus(ev.status)]">{{ statusLabel(ev.status) }}</span></td>
-                  <td><router-link :to="`/organiser/event-detail/${ev.id}`" class="button button-secondary">Edit</router-link></td>
+                  <td>
+                    <span :class="['badge', badgeForStatus(ev.status)]">{{ statusLabel(ev.status) }}</span>
+                  </td>
+                  <td>
+                    <router-link :to="`/organiser/event-detail/${ev.id}`" class="button button-secondary">
+                      Edit
+                    </router-link>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -167,11 +183,24 @@
 
       </div>
     </div>
+
+        <div
+      v-if="toast.visible"
+      class="registration-alert"
+      style="display:block;position:fixed;right:24px;bottom:24px;z-index:1200;max-width:340px;box-shadow:var(--shadow-lg);"
+    >
+      <strong>{{ toast.title }}</strong>
+      <p>{{ toast.message }}</p>
+    </div>
   </main>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 const eventsStorageKey = 'eventora_society_events_v2'
 
@@ -221,7 +250,10 @@ const tabs = [
 ]
 
 const currentTab = ref('events')
-const societyEvents = ref(JSON.parse(localStorage.getItem(eventsStorageKey) || 'null') || defaultEvents)
+
+const societyEvents = ref(
+  JSON.parse(localStorage.getItem(eventsStorageKey) || 'null') || defaultEvents
+)
 
 function saveEvents() {
   localStorage.setItem(eventsStorageKey, JSON.stringify(societyEvents.value))
@@ -281,4 +313,67 @@ function exportCSV(rows, filename) {
   a.click()
   URL.revokeObjectURL(a.href)
 }
+
+// ===== Toast from query params (after teammate's create-event flow redirects back) =====
+const toast = reactive({ visible: false, title: '', message: '' })
+
+function showCreateEventToast() {
+  const eventSaved = route.query.eventSaved
+  const eventAction = route.query.eventAction
+  if (!eventSaved && !eventAction) return
+
+  if (eventSaved === 'draft') {
+    toast.title = 'Draft saved successfully'
+    toast.message = 'The event is saved as a draft and can be edited before submission.'
+    addCreatedEventToDashboard('draft')
+  }
+  if (eventSaved === 'submitted') {
+    toast.title = 'Event submitted for approval'
+    toast.message = 'Faculty Admin will review the event before it appears in the public list.'
+    addCreatedEventToDashboard('pending_approval')
+  }
+  if (eventAction === 'submitted') {
+    toast.title = 'Event submitted for approval'
+    toast.message = 'The event moved from draft to pending approval for Faculty Admin review.'
+  }
+  if (eventAction === 'deleted') {
+    toast.title = 'Draft deleted'
+    toast.message = 'The draft event has been removed from the organiser workspace.'
+  }
+
+  toast.visible = true
+  setTimeout(() => {
+    toast.visible = false
+    router.replace({ path: route.path })
+  }, 3500)
+}
+
+function addCreatedEventToDashboard(status) {
+  const mockId = 'created-event-annual-tech-symposium'
+  const alreadyAdded = societyEvents.value.some((ev) => ev.mockId === mockId)
+  if (alreadyAdded) return
+
+  societyEvents.value.unshift({
+    id: Date.now(),
+    mockId,
+    title: 'Annual Tech Symposium 2026',
+    category: 'Academic',
+    location: 'Dewan Sultan Iskandar, UTM JB',
+    eventDate: '15 Jul 2026',
+    startTime: '9:00 AM',
+    endTime: '5:00 PM',
+    feeType: 'Free',
+    feeAmount: 0,
+    status,
+    registrations: 0,
+    checkedIn: 0,
+    avgRating: null,
+    capacity: 120,
+  })
+  saveEvents()
+}
+
+onMounted(() => {
+  showCreateEventToast()
+})
 </script>
