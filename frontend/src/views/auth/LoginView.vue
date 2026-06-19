@@ -23,6 +23,8 @@
           required
         />
 
+        <p v-if="errorMessage" class="auth-error">{{ errorMessage }}</p>
+
         <button type="submit" class="button button-primary auth-submit">
           Login
         </button>
@@ -44,8 +46,15 @@ const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
+const errorMessage = ref('')
 
 function handleLogin() {
+  errorMessage.value = ''
   const result = authStore.login(email.value, password.value)
+
+  if (!result.success) {
+    errorMessage.value = result.message
+    return
+  }
 }
 </script>
