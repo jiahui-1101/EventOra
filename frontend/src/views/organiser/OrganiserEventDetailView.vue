@@ -3,9 +3,53 @@
     <router-link class="back-link" to="/organiser/dashboard">← Back to Dashboard</router-link>
 
     <section class="detail-header">
+      <div>
+        <span class="badge badge-blue">Draft</span>
+        <h1>Event Title</h1>
+        <p>Computer Society UTM · Activity preview for organiser</p>
+      </div>
     </section>
 
     <section class="detail-layout">
+      <article class="detail-card">
+        <div class="poster-preview">
+          <div>
+            <span class="badge badge-blue">Category</span>
+            <h2>Event Title</h2>
+            <p>Event description placeholder.</p>
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <span>Date &amp; Time</span>
+            <strong>Not set, -- - --</strong>
+          </div>
+          <div class="info-item">
+            <span>Venue</span>
+            <strong>Not set</strong>
+          </div>
+          <div class="info-item">
+            <span>Registration Deadline</span>
+            <strong>Not set</strong>
+          </div>
+          <div class="info-item">
+            <span>Capacity</span>
+            <strong>0 attendees</strong>
+          </div>
+          <div class="info-item">
+            <span>Ticket</span>
+            <strong>Free</strong>
+          </div>
+          <div class="info-item">
+            <span>Current Status</span>
+            <strong>Draft</strong>
+          </div>
+        </div>
+
+        <h2 class="section-title">Event Description</h2>
+        <p style="color:var(--muted);line-height:1.6;">Event description placeholder.</p>
+      </article>
     </section>
   </main>
 </template>
