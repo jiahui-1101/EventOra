@@ -29,6 +29,18 @@ const routes = [
     component: () => import('@/views/organiser/OrganiserDashboardView.vue'),
     meta: { requiresAuth: true, role: 'organiser' },
   },
+  {
+  path: '/organiser/create-event',
+  name: 'create-event',
+  component: () => import('@/views/organiser/CreateEventView.vue'),
+  meta: { requiresAuth: true, role: 'organiser' },
+},
+{
+  path: '/organiser/event-detail/:id',
+  name: 'organiser-event-detail',
+  component: () => import('@/views/organiser/OrganiserEventDetailView.vue'),
+  meta: { requiresAuth: true, role: 'organiser' },
+},
 ]
 
 const router = createRouter({
