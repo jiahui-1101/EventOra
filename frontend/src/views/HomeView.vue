@@ -83,7 +83,7 @@
 
     <section class="event-grid">
       <article
-        v-for="event in events"
+        v-for="event in filteredEvents"
         :key="event.id"
         class="event-card"
       >
@@ -141,6 +141,13 @@
           </button>
         </div>
       </article>
+
+      <div
+        v-if="filteredEvents.length === 0"
+        style="padding:40px;text-align:center;"
+      >
+        No events found.
+      </div>
     </section>
   </main>
 </template>
