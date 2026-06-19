@@ -50,6 +50,31 @@
         <h2 class="section-title">Event Description</h2>
         <p style="color:var(--muted);line-height:1.6;">Event description placeholder.</p>
       </article>
+
+      <aside class="side-card">
+        <h2 style="margin:0 0 14px;font-size:1rem;">Approval Workflow</h2>
+
+        <div class="approval-note approval-draft">
+          <strong>Draft</strong>
+          <p style="margin:6px 0 0;">This event is still editable.</p>
+        </div>
+
+        <div class="detail-list">
+          <div><dt>Workflow</dt><dd>Draft → Pending approval → Published</dd></div>
+          <div>
+            <dt>Public listing</dt>
+            <dd>Hidden until Faculty Admin approval</dd>
+          </div>
+          <div><dt>Last updated</dt><dd>8 Jun 2026, 10:30 AM</dd></div>
+        </div>
+
+        <h2 class="section-title">Available Actions</h2>
+        <div class="action-list">
+          <router-link to="/organiser/create-event" class="button button-secondary full-width">Edit Event</router-link>
+          <button class="button button-primary full-width">Submit for Approval</button>
+          <button class="button button-danger full-width">Delete Draft</button>
+        </div>
+      </aside>
     </section>
   </main>
 </template>
