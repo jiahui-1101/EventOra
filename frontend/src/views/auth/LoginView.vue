@@ -41,6 +41,13 @@
 
           <div v-if="errorMessage" class="auth-error">{{ errorMessage }}</div>
 
+          <div
+            v-if="showSuccess"
+            style="display:block;margin:10px 0;padding:10px 14px;border-radius:var(--radius-sm);background:var(--success-soft);color:#065f46;font-size:0.84rem;"
+          >
+            Signed in successfully. Redirecting...
+          </div>
+
           <button class="button button-primary full-width auth-submit" @click="handleLogin" aria-label="Sign in">
             Sign in
           </button>
@@ -71,11 +78,17 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
 const errorMessage = ref('')
+const showSuccess = ref(false)
 const selectedRole = ref('attendee')
 
 const roles = [
@@ -90,6 +103,7 @@ function isValidEmail(value) {
 
 function handleLogin() {
   errorMessage.value = ''
+  showSuccess.value = false
 
   if (!email.value || !password.value) {
     errorMessage.value = 'Please enter both email and password.'
@@ -99,5 +113,19 @@ function handleLogin() {
     errorMessage.value = 'Please enter a valid email address.'
     return
   }
+
+  const result = authStore.login(email.value, password.value, selectedRole.value, rememberMe.value)
+
+  if (!result.success) {
+    errorMessage.value = result.message
+    return
+  }
+
+  showSuccess.value = true
+  setTimeout(() => {
+    if (selectedRole.value === 'organiser') router.push('/organiser/dashboard')
+    else if (selectedRole.value === 'faculty_admin') router.push('/admin')
+    else router.push('/')
+  }, 700)
 }
 </script>
