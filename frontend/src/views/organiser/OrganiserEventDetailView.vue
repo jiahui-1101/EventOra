@@ -4,7 +4,7 @@
 
     <section class="detail-header">
       <div>
-        <span class="badge badge-blue">Draft</span>
+        <span :class="['badge', badgeForStatus(status)]">{{ statusLabel(status) }}</span>
         <h1>{{ selectedEvent?.title || 'Event Title' }}</h1>
         <p>Computer Society UTM · Activity preview for organiser</p>
       </div>
@@ -43,7 +43,7 @@
           </div>
           <div class="info-item">
             <span>Current Status</span>
-            <strong>Draft</strong>
+            <strong>{{ statusLabel(status) }}</strong>
           </div>
         </div>
 
@@ -174,6 +174,20 @@ const ticketLabel = computed(() =>
     ? `RM ${selectedEvent.value?.feeAmount || 0}`
     : 'Free'
 )
+
+// ── Badge / label helpers ─────────────────────────────────────────────────────
+function badgeForStatus(s) {
+  if (s === 'published') return 'badge-green'
+  if (s === 'pending_approval') return 'badge-yellow'
+  if (s === 'completed') return 'badge-purple'
+  if (s === 'rejected' || s === 'cancelled') return 'badge-red'
+  return 'badge-blue'
+}
+
+function statusLabel(s) {
+  if (s === 'pending_approval') return 'pending approval'
+  return s || 'draft'
+}
 </script>
 
 <style scoped>
