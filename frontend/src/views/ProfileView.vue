@@ -11,6 +11,15 @@
       </div>
 
       <div class="profile-layout">
+
+        <div class="profile-avatar-card">
+          <div class="avatar-circle">ST</div>
+          <strong>First Last</strong>
+          <span class="badge badge-blue">Student</span>
+          <p class="profile-society">EventOra member</p>
+          <button class="button button-ghost full-width" style="margin-top:8px;">Change photo</button>
+        </div>
+
       </div>
 
     </section>
