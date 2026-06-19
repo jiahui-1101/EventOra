@@ -146,7 +146,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const keyword = ref('')
 const category = ref('all')
@@ -215,6 +215,37 @@ function isInDateRange(eventDate, filter) {
 
   return true
 }
+
+const filteredEvents = computed(() => {
+  return events.value.filter((event) => {
+    if (
+      category.value !== 'all' &&
+      event.category !== category.value
+    )
+      return false
+
+    if (
+      price.value !== 'all' &&
+      event.priceType !== price.value
+    )
+      return false
+
+    if (
+      dateFilter.value !== 'all' &&
+      !isInDateRange(event.date, dateFilter.value)
+    )
+      return false
+
+    if (
+      keyword.value &&
+      !event.title.toLowerCase().includes(keyword.value.toLowerCase()) &&
+      !event.society.toLowerCase().includes(keyword.value.toLowerCase())
+    )
+      return false
+
+    return true
+  })
+})
 
 function formatDate(date) {
   return new Date(date).toLocaleString('en-MY')
