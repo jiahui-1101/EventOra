@@ -51,7 +51,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
@@ -72,6 +72,15 @@ const roleMap = {
 }
 
 const roleConfig = computed(() => roleMap[authStore.user?.role] || roleMap.attendee)
+
+onMounted(() => {
+  const user = authStore.user
+  firstName.value = user?.firstName || ''
+  lastName.value = user?.lastName || ''
+  email.value = user?.email || ''
+  matric.value = user?.matric || ''
+  society.value = user?.society || ''
+})
 
 function handleSave() {
   // Logic to be implemented
