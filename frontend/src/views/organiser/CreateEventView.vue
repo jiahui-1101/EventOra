@@ -16,11 +16,77 @@
         <span>{{ s.label }}</span>
       </div>
     </section>
+
+        <section v-if="currentStep === 0" class="create-card">
+      <h2>Step 1 — Basic Information</h2>
+
+      <label class="form-label">
+        Event title *
+        <input type="text" v-model="form.title" placeholder="e.g. Annual Tech Symposium 2026" />
+      </label>
+
+      <div class="input-row-2">
+        <label class="form-label">
+          Category *
+          <select v-model="form.category">
+            <option value="">Select category...</option>
+            <option>Academic</option>
+            <option>Sports</option>
+            <option>Cultural</option>
+            <option>Religious</option>
+            <option>Workshop</option>
+          </select>
+        </label>
+        <label class="form-label">
+          Society *
+          <select v-model="form.society">
+            <option>Computer Society UTM</option>
+            <option>IEEE UTM</option>
+            <option>Sports Club UTM</option>
+            <option>Cultural Club</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="input-row-2">
+        <label class="form-label">
+          Start date &amp; time *
+          <input type="datetime-local" v-model="form.startDateTime" />
+        </label>
+        <label class="form-label">
+          End date &amp; time *
+          <input type="datetime-local" v-model="form.endDateTime" />
+        </label>
+      </div>
+
+      <label class="form-label">
+        Venue *
+        <input type="text" v-model="form.location" placeholder="e.g. Dewan Sultan Iskandar, UTM JB" />
+      </label>
+
+      <label class="form-label">
+        Event description *
+        <textarea v-model="form.description" placeholder="Describe your event — agenda, speakers, requirements..."></textarea>
+      </label>
+
+      <label class="form-label">
+        Banner image
+        <div class="upload-box">
+          <div>Drag &amp; drop image here or <strong>browse</strong><br /><span>PNG, JPG up to 5MB · Recommended 1200x400px</span></div>
+        </div>
+      </label>
+
+      <div class="create-actions">
+        <router-link class="button button-ghost" to="/organiser/dashboard">Cancel</router-link>
+        <button class="button button-primary">Next: Ticketing →</button>
+      </div>
+    </section>
+
   </main>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 
 const steps = [
   { key: 'basic', label: 'Basic Info' },
@@ -30,6 +96,24 @@ const steps = [
 ]
 
 const currentStep = ref(0)
+
+const form = reactive({
+  title: '',
+  category: '',
+  society: 'Computer Society UTM',
+  startDateTime: '',
+  endDateTime: '',
+  location: '',
+  description: '',
+  capacity: null,
+  deadline: '',
+  feeType: 'Free',
+  feeAmount: 0,
+  waitlist: 'enabled',
+  contactName: '',
+  contactEmail: '',
+  instructions: '',
+})
 </script>
 
 <style scoped>
