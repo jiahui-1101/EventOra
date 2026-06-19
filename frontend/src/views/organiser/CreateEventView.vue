@@ -78,7 +78,7 @@
 
       <div class="create-actions">
         <router-link class="button button-ghost" to="/organiser/dashboard">Cancel</router-link>
-        <button class="button button-primary">Next: Ticketing →</button>
+        <button class="button button-primary" @click="nextStep">Next: Ticketing →</button>
       </div>
     </section>
 
@@ -114,6 +114,14 @@ const form = reactive({
   contactEmail: '',
   instructions: '',
 })
+
+function nextStep() {
+  currentStep.value++
+}
+
+function prevStep() {
+  currentStep.value--
+}
 </script>
 
 <style scoped>
