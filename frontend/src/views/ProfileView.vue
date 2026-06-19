@@ -40,6 +40,12 @@
           </div>
 
           <div v-if="errorMessage" class="auth-error">{{ errorMessage }}</div>
+          <div
+            v-if="showSuccess"
+            style="display:block;margin-top:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--success-soft);color:#065f46;"
+          >
+            Profile updated successfully!
+          </div>
 
           <div class="profile-actions">
             <router-link class="button button-ghost" :to="roleConfig.dashboard">Cancel</router-link>
@@ -67,6 +73,7 @@ const currentPw = ref('')
 const newPw = ref('')
 const confirmPw = ref('')
 const errorMessage = ref('')
+const showSuccess = ref(false)
 
 const roleMap = {
   organiser: { label: 'Organiser', avatar: 'OR', dashboard: '/organiser/dashboard' },
@@ -91,6 +98,7 @@ function isValidEmail(value) {
 
 function handleSave() {
   errorMessage.value = ''
+  showSuccess.value = false
 
   if (!firstName.value || !lastName.value || !email.value) {
     errorMessage.value = 'First name, last name, and email are required.'
@@ -112,5 +120,15 @@ function handleSave() {
     errorMessage.value = 'Passwords do not match.'
     return
   }
+
+  authStore.updateProfile({
+    ...authStore.user,
+    firstName: firstName.value,
+    lastName: lastName.value,
+    email: email.value,
+    matric: matric.value,
+  })
+
+  showSuccess.value = true
 }
 </script>
