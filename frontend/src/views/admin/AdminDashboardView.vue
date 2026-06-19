@@ -57,6 +57,15 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-for="s in societies" :key="s.name">
+              <td>{{ s.name }}</td>
+              <td>{{ s.events }}</td>
+              <td>{{ s.registered }}</td>
+              <td>{{ s.attended }}</td>
+              <td>
+                <strong>{{ rate(s) }}%</strong>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -69,4 +78,16 @@
 import { ref } from 'vue'
 
 const pendingCount = ref(3)
+
+const societies = ref([
+  { name: 'UTM Computing Society', events: 8, registered: 214, attended: 176 },
+  { name: 'Campus Culture Club', events: 5, registered: 312, attended: 258 },
+  { name: 'UTM Sports Society', events: 11, registered: 428, attended: 341 },
+  { name: 'Engineering Society', events: 4, registered: 98, attended: 79 },
+  { name: 'Photography Club', events: 3, registered: 152, attended: 133 },
+])
+
+function rate(s) {
+  return Math.round((s.attended / s.registered) * 100)
+}
 </script>
