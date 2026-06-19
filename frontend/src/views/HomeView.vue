@@ -11,6 +11,7 @@
 
         <div class="search-panel">
           <input
+            v-model="keyword"
             type="text"
             placeholder="Search by title or society..."
           />
@@ -52,7 +53,7 @@
       </div>
 
       <div class="filter-bar">
-        <select>
+        <select v-model="category">
           <option value="all">All</option>
           <option value="academic">Academic</option>
           <option value="sports">Sports</option>
@@ -60,13 +61,13 @@
           <option value="religious">Religious</option>
         </select>
 
-        <select>
+        <select v-model="price">
           <option value="all">All</option>
           <option value="free">Free</option>
           <option value="paid">Paid</option>
         </select>
 
-        <select>
+        <select v-model="dateFilter">
           <option value="all">Any time</option>
           <option value="week">This week</option>
           <option value="month">This month</option>
@@ -193,6 +194,27 @@ const events = ref([
     badgeClass: 'badge-green',
   },
 ])
+function isInDateRange(eventDate, filter) {
+  const today = new Date()
+
+  const eventDay = new Date(eventDate)
+
+  if (filter === 'week') {
+    const nextWeek = new Date()
+    nextWeek.setDate(today.getDate() + 7)
+
+    return eventDay >= today && eventDay <= nextWeek
+  }
+
+  if (filter === 'month') {
+    const nextMonth = new Date()
+    nextMonth.setMonth(today.getMonth() + 1)
+
+    return eventDay >= today && eventDay <= nextMonth
+  }
+
+  return true
+}
 
 function formatDate(date) {
   return new Date(date).toLocaleString('en-MY')
