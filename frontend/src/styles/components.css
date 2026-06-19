@@ -1476,3 +1476,41 @@
 .profile-divider { margin:20px 0 14px; padding-top:20px; border-top:1px solid var(--border); color:var(--muted); font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; }
 .profile-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
 @media (min-width:760px) { .profile-layout { grid-template-columns:220px 1fr; align-items:start; } }
+
+.dashboard-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.sidebar-nav {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.sidebar-nav a {
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.sidebar-nav a.active {
+  background: var(--primary);
+  color: white;
+}
+
+.dashboard-main {
+  flex: 1;
+  min-width: 0;
+}
