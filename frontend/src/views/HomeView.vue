@@ -16,6 +16,11 @@
           />
         </div>
       </div>
+
+      <aside class="hero-card">
+        <span>This month</span>
+        <strong>0 events live</strong>
+      </aside>
     </section>
   </main>
 </template>
