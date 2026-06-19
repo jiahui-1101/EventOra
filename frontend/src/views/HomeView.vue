@@ -22,6 +22,28 @@
         <strong>0 events live</strong>
       </aside>
     </section>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span>Upcoming Events</span>
+        <strong>0</strong>
+      </article>
+
+      <article class="stat-card">
+        <span>Active Societies</span>
+        <strong>12</strong>
+      </article>
+
+      <article class="stat-card">
+        <span>This Week</span>
+        <strong>0</strong>
+      </article>
+
+      <article class="stat-card">
+        <span>Free Events</span>
+        <strong>0</strong>
+      </article>
+    </section>
   </main>
 </template>
 
