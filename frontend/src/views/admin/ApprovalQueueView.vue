@@ -54,6 +54,8 @@
       <div class="capacity-bar" style="margin: 1rem 0;"><span style="width:74%"></span></div>
       <p>Most popular category: <strong>Academic</strong> (42% of registrations)</p>
     </section>
+
+        <div v-if="toast.message" :class="['eo-toast', toast.type]">{{ toast.message }}</div>
   </main>
 </template>
 
@@ -67,4 +69,29 @@ const approvalEvents = ref([
 ])
 
 const pendingCount = computed(() => approvalEvents.value.filter((e) => e.status === 'pending').length)
+const toast = ref({ message: '', type: 'success' })
+
+function showToast(message, type) {
+  toast.value = { message, type }
+  setTimeout(() => {
+    toast.value = { message: '', type: 'success' }
+  }, 3000)
+}
 </script>
+
+<style scoped>
+.eo-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 14px 20px;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+}
+.eo-toast.success { background: var(--success); }
+.eo-toast.danger { background: var(--danger); }
+</style>
