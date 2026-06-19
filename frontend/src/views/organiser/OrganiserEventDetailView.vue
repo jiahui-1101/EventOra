@@ -5,7 +5,7 @@
     <section class="detail-header">
       <div>
         <span class="badge badge-blue">Draft</span>
-        <h1>Event Title</h1>
+        <h1>{{ selectedEvent?.title || 'Event Title' }}</h1>
         <p>Computer Society UTM · Activity preview for organiser</p>
       </div>
     </section>
@@ -14,32 +14,32 @@
       <article class="detail-card">
         <div class="poster-preview">
           <div>
-            <span class="badge badge-blue">Category</span>
-            <h2>Event Title</h2>
-            <p>Event description placeholder.</p>
+            <span :class="['badge', category === 'Sports' ? 'badge-yellow' : 'badge-blue']">{{ category }}</span>
+            <h2>{{ selectedEvent?.title }}</h2>
+            <p>{{ description }}</p>
           </div>
         </div>
 
         <div class="info-grid">
           <div class="info-item">
             <span>Date &amp; Time</span>
-            <strong>Not set, -- - --</strong>
+            <strong>{{ selectedEvent?.eventDate || 'Not set' }}, {{ selectedEvent?.startTime || '--' }} - {{ selectedEvent?.endTime || '--' }}</strong>
           </div>
           <div class="info-item">
             <span>Venue</span>
-            <strong>Not set</strong>
+            <strong>{{ selectedEvent?.location || 'Not set' }}</strong>
           </div>
           <div class="info-item">
             <span>Registration Deadline</span>
-            <strong>Not set</strong>
+            <strong>{{ selectedEvent?.registrationDeadline || 'Not set' }}</strong>
           </div>
           <div class="info-item">
             <span>Capacity</span>
-            <strong>0 attendees</strong>
+            <strong>{{ selectedEvent?.capacity || 0 }} attendees</strong>
           </div>
           <div class="info-item">
             <span>Ticket</span>
-            <strong>Free</strong>
+            <strong>{{ ticketLabel }}</strong>
           </div>
           <div class="info-item">
             <span>Current Status</span>
@@ -48,7 +48,7 @@
         </div>
 
         <h2 class="section-title">Event Description</h2>
-        <p style="color:var(--muted);line-height:1.6;">Event description placeholder.</p>
+        <p style="color:var(--muted);line-height:1.6;">{{ description }}</p>
       </article>
 
       <aside class="side-card">
@@ -159,6 +159,21 @@ const selectedEvent = computed(() => {
   }
   return societyEvents.value[0]
 })
+
+// ── Derived values ────────────────────────────────────────────────────────────
+const status = computed(() => selectedEvent.value?.status || 'draft')
+const category = computed(() => selectedEvent.value?.category || 'Academic')
+const description = computed(
+  () =>
+    selectedEvent.value?.description ||
+    eventDescriptions[selectedEvent.value?.title] ||
+    'No description has been added for this event yet.'
+)
+const ticketLabel = computed(() =>
+  (selectedEvent.value?.feeType || '').toLowerCase() === 'paid'
+    ? `RM ${selectedEvent.value?.feeAmount || 0}`
+    : 'Free'
+)
 </script>
 
 <style scoped>
