@@ -35,7 +35,7 @@
             <td class="admin-actions">
               <template v-if="ev.status === 'pending'">
                 <button class="button button-primary" @click="approveEvent(ev)">Approve</button>
-                <button class="button button-secondary">Reject</button>
+                <button class="button button-secondary" @click="openRejectModal(ev)">Reject</button>
               </template>
             </td>
           </tr>
@@ -55,6 +55,35 @@
       <p>Most popular category: <strong>Academic</strong> (42% of registrations)</p>
     </section>
 
+        <div v-if="showModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Reject event dialog" @click.self="closeModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">You are rejecting</p>
+            <h3>{{ selectedEvent?.title }}</h3>
+            <span style="color:var(--muted);font-size:0.82rem;">{{ selectedEvent?.society }}</span>
+          </div>
+          <span class="badge badge-red">Pending rejection</span>
+        </div>
+        <div class="input-label" style="margin-top:20px;">
+          Rejection reason <span style="color:var(--danger);">*</span>
+          <textarea
+            rows="4"
+            placeholder="e.g. Venue booking confirmation missing. Please attach DSI approval letter and resubmit."
+            style="padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.88rem;resize:vertical;width:100%;box-sizing:border-box;margin-top:6px;"
+          ></textarea>
+        </div>
+        <div class="rejection-notice">
+          <strong>📧 The organiser will be notified</strong>
+          <p>Your reason will be sent as an in-app notification. The event returns to draft for revision.</p>
+        </div>
+        <div class="modal-actions" style="margin-top:20px;">
+          <button class="button button-ghost" @click="closeModal">Cancel</button>
+          <button class="button button-danger">Confirm Rejection</button>
+        </div>
+      </div>
+    </div>
+
         <div v-if="toast.message" :class="['eo-toast', toast.type]">{{ toast.message }}</div>
   </main>
 </template>
@@ -69,11 +98,24 @@ const approvalEvents = ref([
 ])
 
 const pendingCount = computed(() => approvalEvents.value.filter((e) => e.status === 'pending').length)
+
+const showModal = ref(false)
+const selectedEvent = ref(null)
 const toast = ref({ message: '', type: 'success' })
 
 function approveEvent(ev) {
   ev.status = 'approved'
   showToast('Event approved successfully.', 'success')
+}
+
+function openRejectModal(ev) {
+  selectedEvent.value = ev
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+  selectedEvent.value = null
 }
 
 function showToast(message, type) {
