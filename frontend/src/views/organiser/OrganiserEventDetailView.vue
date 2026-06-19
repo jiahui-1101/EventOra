@@ -80,7 +80,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
 
 const eventsStorageKey = 'eventora_society_events_v2'
 
@@ -143,9 +146,19 @@ const eventDescriptions = {
     'This symposium brings together students, organisers, and faculty members for a full-day technology event. The event includes talks, demo booths, and student project showcases.',
 }
 
+// ── State ────────────────────────────────────────────────────────────────────
 const societyEvents = ref(
   JSON.parse(localStorage.getItem(eventsStorageKey) || 'null') || defaultEvents
 )
+
+// ── Selected event (by route param or query) ─────────────────────────────────
+const selectedEvent = computed(() => {
+  const id = route.params.id || route.query.id
+  if (id) {
+    return societyEvents.value.find((ev) => String(ev.id) === String(id)) || societyEvents.value[0]
+  }
+  return societyEvents.value[0]
+})
 </script>
 
 <style scoped>
