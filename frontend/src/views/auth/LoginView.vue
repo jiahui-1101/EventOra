@@ -4,10 +4,11 @@
       <h1>Welcome back</h1>
       <p class="auth-subtitle">Login to manage your events and tickets</p>
 
-      <form class="auth-form">
+      <form class="auth-form" @submit.prevent="handleLogin">
         <label for="email">Email</label>
         <input
           id="email"
+          v-model="email"
           type="email"
           placeholder="you@utm.my"
           required
@@ -16,6 +17,7 @@
         <label for="password">Password</label>
         <input
           id="password"
+          v-model="password"
           type="password"
           placeholder="••••••••"
           required
@@ -33,3 +35,14 @@
     </div>
   </div>
 </template>
+
+<script setup>
+import { ref } from 'vue'
+
+const email = ref('')
+const password = ref('')
+
+function handleLogin() {
+  // Store logic will go here
+}
+</script>
