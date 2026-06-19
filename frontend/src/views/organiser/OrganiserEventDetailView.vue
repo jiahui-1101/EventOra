@@ -80,6 +80,72 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
+const eventsStorageKey = 'eventora_society_events_v2'
+
+const defaultEvents = [
+  {
+    id: 1,
+    title: 'Build Your First AI App',
+    category: 'Academic',
+    location: 'N28A Innovation Lab',
+    eventDate: '12 Jun 2026',
+    startTime: '7:30 PM',
+    endTime: '9:30 PM',
+    feeType: 'Paid',
+    feeAmount: 8,
+    status: 'published',
+    registrations: 28,
+    checkedIn: 18,
+    capacity: 40,
+  },
+  {
+    id: 2,
+    title: 'Hackathon 2026',
+    category: 'Academic',
+    location: 'FAB Lab',
+    eventDate: '5 Jul 2026',
+    startTime: '9:00 AM',
+    endTime: '6:00 PM',
+    feeType: 'Paid',
+    feeAmount: 15,
+    status: 'pending_approval',
+    registrations: 0,
+    checkedIn: 0,
+    capacity: 60,
+  },
+  {
+    id: 3,
+    title: 'Futsal Tournament',
+    category: 'Sports',
+    location: 'UTM Sports Hall',
+    eventDate: '28 Jun 2026',
+    startTime: '9:00 AM',
+    endTime: '1:00 PM',
+    feeType: 'Free',
+    feeAmount: 0,
+    status: 'published',
+    registrations: 40,
+    checkedIn: 32,
+    capacity: 40,
+  },
+]
+
+const eventDescriptions = {
+  'Build Your First AI App':
+    'A practical evening workshop where students learn how to plan, prototype, and demo a simple AI-powered application.',
+  'Hackathon 2026':
+    'A full-day hackathon for student teams to build software prototypes, receive mentor feedback, and present solutions.',
+  'Futsal Tournament':
+    'A sports event for student teams to compete in an interfaculty futsal tournament at UTM Sports Hall.',
+  'Annual Tech Symposium 2026':
+    'This symposium brings together students, organisers, and faculty members for a full-day technology event. The event includes talks, demo booths, and student project showcases.',
+}
+
+const societyEvents = ref(
+  JSON.parse(localStorage.getItem(eventsStorageKey) || 'null') || defaultEvents
+)
 </script>
 
 <style scoped>
