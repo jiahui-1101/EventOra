@@ -88,6 +88,32 @@
           </div>
         </div>
 
+                <div v-if="currentTab === 'registrations'" class="page-section">
+          <div class="section-heading">
+            <h2>Registrations</h2>
+            <button class="button button-primary" @click="exportCSV(registrationsList, 'registrations.csv')">
+              Export CSV
+            </button>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Ticket Code</th></tr></thead>
+              <tbody>
+                <tr v-for="r in registrationsList" :key="r.email">
+                  <td>{{ r.name }}</td>
+                  <td>{{ r.email }}</td>
+                  <td>
+                    <span :class="['badge', r.status === 'confirmed' ? 'badge-green' : 'badge-yellow']">
+                      {{ r.status }}
+                    </span>
+                  </td>
+                  <td><code>{{ r.ticketCode || '-' }}</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   </main>
@@ -115,6 +141,12 @@ const defaultEvents = [
     feeType: 'Free', feeAmount: 0, status: 'published',
     registrations: 40, checkedIn: 32, avgRating: 4.2, capacity: 40,
   },
+]
+
+const registrationsList = [
+  { name: 'Aina Rahman', email: 'aina@utm.my', status: 'confirmed', ticketCode: 'EVT-9F4K-2Q8M-X7P1' },
+  { name: 'Nurul Iman', email: 'nurul@utm.my', status: 'confirmed', ticketCode: 'EVT-3H7J-1L9N-P5R2' },
+  { name: 'Kevin Tan', email: 'kevin@utm.my', status: 'waitlist', ticketCode: '' },
 ]
 
 const tabs = [
@@ -153,4 +185,25 @@ const avgRating = computed(() => {
   if (!ratings.length) return '0.0'
   return (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(1)
 })
+
+// ===== CSV export =====
+function escapeCsv(value) {
+  const text = String(value ?? '')
+  return `"${text.replaceAll('"', '""')}"`
+}
+
+function exportCSV(rows, filename) {
+  if (!rows.length) return
+  const headers = Object.keys(rows[0])
+  const csv = [
+    headers.map(escapeCsv).join(','),
+    ...rows.map((row) => headers.map((header) => escapeCsv(row[header])).join(',')),
+  ].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
 </script>
