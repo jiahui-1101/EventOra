@@ -173,6 +173,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 
+const eventsStorageKey = 'eventora_society_events_v2'
+
 const defaultEvents = [
   {
     id: 1, title: 'Build Your First AI App', category: 'Academic', location: 'N28A Innovation Lab',
@@ -219,7 +221,11 @@ const tabs = [
 ]
 
 const currentTab = ref('events')
-const societyEvents = ref(defaultEvents)
+const societyEvents = ref(JSON.parse(localStorage.getItem(eventsStorageKey) || 'null') || defaultEvents)
+
+function saveEvents() {
+  localStorage.setItem(eventsStorageKey, JSON.stringify(societyEvents.value))
+}
 
 function badgeForStatus(status) {
   if (status === 'published') return 'badge-green'
