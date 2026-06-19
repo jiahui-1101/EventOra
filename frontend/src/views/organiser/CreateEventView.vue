@@ -76,6 +76,8 @@
         </div>
       </label>
 
+      <p v-if="stepError" class="auth-error">{{ stepError }}</p>
+
       <div class="create-actions">
         <router-link class="button button-ghost" to="/organiser/dashboard">Cancel</router-link>
         <button class="button button-primary" @click="nextStep">Next: Ticketing →</button>
@@ -131,6 +133,8 @@
         </label>
       </div>
 
+      <p v-if="stepError" class="auth-error">{{ stepError }}</p>
+
       <div class="create-actions">
         <button class="button button-ghost" @click="prevStep">Back</button>
         <button class="button button-primary" @click="nextStep">Next: Details →</button>
@@ -183,6 +187,7 @@ const steps = [
 ]
 
 const currentStep = ref(0)
+const stepError = ref('')
 
 const form = reactive({
   title: '',
@@ -203,10 +208,27 @@ const form = reactive({
 })
 
 function nextStep() {
+  stepError.value = ''
+
+  if (currentStep.value === 0) {
+    if (!form.title || !form.category || !form.startDateTime || !form.endDateTime || !form.location || !form.description) {
+      stepError.value = 'Please fill in all required fields marked with *.'
+      return
+    }
+  }
+
+  if (currentStep.value === 1) {
+    if (!form.capacity || form.capacity < 1 || !form.deadline) {
+      stepError.value = 'Please provide a valid capacity and registration deadline.'
+      return
+    }
+  }
+
   currentStep.value++
 }
 
 function prevStep() {
+  stepError.value = ''
   currentStep.value--
 }
 </script>
