@@ -13,6 +13,39 @@
           <p class="eyebrow">Welcome back</p>
           <h3>Sign in to EventOra</h3>
 
+          <div class="input-label">
+            Email address
+            <input
+              type="email"
+              v-model="email"
+              placeholder="e.g. mei@utm.my"
+              aria-label="Email address"
+            />
+          </div>
+          <div class="input-label">
+            Password
+            <input
+              type="password"
+              v-model="password"
+              placeholder="Enter your password"
+              aria-label="Password"
+            />
+          </div>
+
+          <div class="auth-options">
+            <label class="remember-label">
+              <input type="checkbox" v-model="rememberMe" aria-label="Remember me" /> Remember me
+            </label>
+            <a href="#" class="auth-link">Forgot password?</a>
+          </div>
+
+          <button class="button button-primary full-width auth-submit" @click="handleLogin" aria-label="Sign in">
+            Sign in
+          </button>
+
+          <p class="auth-footer-text">
+            Don't have an account? <router-link class="auth-link" to="/register">Create one</router-link>
+          </p>
         </div>
 
       </div>
@@ -21,4 +54,13 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
+const email = ref('')
+const password = ref('')
+const rememberMe = ref(false)
+
+function handleLogin() {
+  // Logic to be implemented
+}
 </script>
