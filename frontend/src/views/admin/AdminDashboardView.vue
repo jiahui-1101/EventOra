@@ -15,6 +15,29 @@
           </router-link>
         </div>
       </div>
+
+      <div class="admin-stats-grid">
+        <article class="admin-stat-card admin-stat-alert">
+          <span>Pending Approvals</span>
+          <strong>{{ pendingCount }}</strong>
+          <p>Awaiting your review</p>
+        </article>
+        <article class="admin-stat-card">
+          <span>Active Societies</span>
+          <strong>12</strong>
+          <p>Under Faculty of Computing</p>
+        </article>
+        <article class="admin-stat-card">
+          <span>Total Registrations</span>
+          <strong>1,204</strong>
+          <p>This semester</p>
+        </article>
+        <article class="admin-stat-card">
+          <span>Overall Attendance Rate</span>
+          <strong>82%</strong>
+          <p>987 of 1,204 attended</p>
+        </article>
+      </div>
     </section>
 
   </main>
