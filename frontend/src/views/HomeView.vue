@@ -75,6 +75,7 @@
 
         <button
           class="button button-secondary"
+          @click="clearFilters"
         >
           Clear filters
         </button>
@@ -267,6 +268,13 @@ const thisWeekCount = computed(
       isInDateRange(e.date, 'week')
     ).length
 )
+
+function clearFilters() {
+  keyword.value = ''
+  category.value = 'all'
+  price.value = 'all'
+  dateFilter.value = 'all'
+}
 
 function formatDate(date) {
   return new Date(date).toLocaleString('en-MY')
