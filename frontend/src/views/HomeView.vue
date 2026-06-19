@@ -90,6 +90,54 @@
           <span :class="['badge', event.badgeClass]">
             {{ capitalize(event.category) }}
           </span>
+
+          <span
+            v-if="event.seatsLeft > 0"
+            class="badge badge-gray"
+          >
+            {{ event.seatsLeft }} seats left
+          </span>
+
+          <span
+            v-else
+            class="badge badge-yellow"
+          >
+            Full
+          </span>
+        </div>
+
+        <div class="event-card-body">
+          <span class="event-date">
+            {{ formatDate(event.date) }}
+          </span>
+
+          <h3>{{ event.title }}</h3>
+
+          <p>
+            {{ event.venue }}
+            ·
+            {{ event.society }}
+          </p>
+
+          <div class="card-meta">
+            <span>
+              {{ event.priceType === 'paid'
+                ? 'Paid ticket'
+                : 'Open registration' }}
+            </span>
+
+            <strong>
+              {{
+                event.priceType === 'free'
+                  ? 'Free'
+                  : `RM ${event.price}`
+              }}
+            </strong>
+          </div>
+
+          <button class="button button-primary">
+            View Registration
+          </button>
         </div>
       </article>
     </section>
@@ -98,6 +146,11 @@
 
 <script setup>
 import { ref } from 'vue'
+
+const keyword = ref('')
+const category = ref('all')
+const price = ref('all')
+const dateFilter = ref('all')
 
 const events = ref([
   {
