@@ -184,11 +184,11 @@
           </div>
         </div>
         <div class="review-grid">
-          <div class="review-item"><span>Date &amp; Time</span><strong>{{ form.startDateTime }}</strong></div>
+          <div class="review-item"><span>Date &amp; Time</span><strong>{{ formattedDateRange }}</strong></div>
           <div class="review-item"><span>Venue</span><strong>{{ form.location || 'Not set' }}</strong></div>
           <div class="review-item"><span>Capacity</span><strong>{{ form.capacity || 0 }} attendees</strong></div>
           <div class="review-item"><span>Ticket</span><strong>{{ form.feeType === 'Paid' ? `RM ${form.feeAmount || 0}` : 'Free' }}</strong></div>
-          <div class="review-item"><span>Deadline</span><strong>{{ form.deadline }}</strong></div>
+          <div class="review-item"><span>Deadline</span><strong>{{ formattedDeadline }}</strong></div>
           <div class="review-item"><span>Status</span><strong>Draft</strong></div>
         </div>
       </article>
@@ -218,7 +218,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 
 const steps = [
   { key: 'basic', label: 'Basic Info' },
@@ -246,6 +246,27 @@ const form = reactive({
   contactName: '',
   contactEmail: '',
   instructions: '',
+})
+
+const formattedDateRange = computed(() => {
+  if (!form.startDateTime) return 'Not set'
+  const start = new Date(form.startDateTime)
+  const end = form.endDateTime ? new Date(form.endDateTime) : null
+  const dateStr = start.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  const startTime = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  const endTime = end ? end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '--'
+  return `${dateStr}, ${startTime} - ${endTime}`
+})
+
+const formattedDeadline = computed(() => {
+  if (!form.deadline) return 'Not set'
+  return new Date(form.deadline).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 })
 
 function nextStep() {
