@@ -47,6 +47,8 @@
             </div>
           </div>
 
+          <div v-if="errorMessage" class="auth-error">{{ errorMessage }}</div>
+
           <button class="button button-primary full-width auth-submit" @click="handleRegister">
             Create account
           </button>
@@ -69,8 +71,30 @@ const email = ref('')
 const password = ref('')
 const confirm = ref('')
 const role = ref('attendee')
+const errorMessage = ref('')
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
 
 function handleRegister() {
-  // Logic to be implemented
+  errorMessage.value = ''
+
+  if (!firstName.value || !lastName.value || !email.value || !password.value || !confirm.value) {
+    errorMessage.value = 'Please fill in all fields.'
+    return
+  }
+  if (!isValidEmail(email.value)) {
+    errorMessage.value = 'Please enter a valid email address.'
+    return
+  }
+  if (password.value.length < 8) {
+    errorMessage.value = 'Password must be at least 8 characters.'
+    return
+  }
+  if (password.value !== confirm.value) {
+    errorMessage.value = 'Passwords do not match.'
+    return
+  }
 }
 </script>
