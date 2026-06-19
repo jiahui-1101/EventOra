@@ -83,4 +83,47 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
+const events = ref([
+  {
+    id: 1,
+    title: 'Build Your First AI App',
+    society: 'UTM Computing Society',
+    category: 'academic',
+    price: 8,
+    priceType: 'paid',
+    date: '2026-06-12T19:30:00',
+    venue: 'N28A Innovation Lab',
+    seatsLeft: 12,
+    coverClass: 'academic-cover',
+    badgeClass: 'badge-blue',
+  },
+  {
+    id: 2,
+    title: 'Campus Cultural Night',
+    society: 'Campus Culture Club',
+    category: 'cultural',
+    price: 0,
+    priceType: 'free',
+    date: '2026-06-20T18:30:00',
+    venue: 'Dewan Sultan Iskandar',
+    seatsLeft: 54,
+    coverClass: 'culture-cover',
+    badgeClass: 'badge-purple',
+  },
+  {
+    id: 3,
+    title: 'Interfaculty Futsal Cup',
+    society: 'UTM Sports Club',
+    category: 'sports',
+    price: 0,
+    priceType: 'free',
+    date: '2026-06-28T09:00:00',
+    venue: 'UTM Sports Hall',
+    seatsLeft: 0,
+    coverClass: 'sports-cover',
+    badgeClass: 'badge-green',
+  },
+])
 </script>
