@@ -34,7 +34,7 @@
             </td>
             <td class="admin-actions">
               <template v-if="ev.status === 'pending'">
-                <button class="button button-primary">Approve</button>
+                <button class="button button-primary" @click="approveEvent(ev)">Approve</button>
                 <button class="button button-secondary">Reject</button>
               </template>
             </td>
@@ -70,6 +70,11 @@ const approvalEvents = ref([
 
 const pendingCount = computed(() => approvalEvents.value.filter((e) => e.status === 'pending').length)
 const toast = ref({ message: '', type: 'success' })
+
+function approveEvent(ev) {
+  ev.status = 'approved'
+  showToast('Event approved successfully.', 'success')
+}
 
 function showToast(message, type) {
   toast.value = { message, type }
