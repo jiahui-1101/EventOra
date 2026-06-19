@@ -43,6 +43,20 @@
             Sign in
           </button>
 
+          <div class="auth-divider"><span>Sign in as</span></div>
+
+          <div class="auth-roles">
+            <button
+              v-for="r in roles"
+              :key="r.value"
+              :class="['auth-role-chip', { active: selectedRole === r.value }]"
+              @click="selectedRole = r.value"
+              :aria-label="`Sign in as ${r.label}`"
+            >
+              {{ r.label }}
+            </button>
+          </div>
+
           <p class="auth-footer-text">
             Don't have an account? <router-link class="auth-link" to="/register">Create one</router-link>
           </p>
@@ -59,6 +73,13 @@ import { ref } from 'vue'
 const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
+const selectedRole = ref('attendee')
+
+const roles = [
+  { value: 'attendee', label: 'Attendee' },
+  { value: 'organiser', label: 'Organiser' },
+  { value: 'faculty_admin', label: 'Faculty Admin' },
+]
 
 function handleLogin() {
   // Logic to be implemented
