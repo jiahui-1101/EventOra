@@ -20,14 +20,14 @@
 
       <aside class="hero-card">
         <span>This month</span>
-        <strong>0 events live</strong>
+        <strong>{{ filteredEvents.length }} events live</strong>
       </aside>
     </section>
 
     <section class="stats-grid">
       <article class="stat-card">
         <span>Upcoming Events</span>
-        <strong>0</strong>
+        <strong>{{ filteredEvents.length }}</strong>
       </article>
 
       <article class="stat-card">
@@ -37,12 +37,12 @@
 
       <article class="stat-card">
         <span>This Week</span>
-        <strong>0</strong>
+        <strong>{{ thisWeekCount }}</strong>
       </article>
 
       <article class="stat-card">
         <span>Free Events</span>
-        <strong>0</strong>
+        <strong>{{ freeCount }}</strong>
       </article>
     </section>
 
@@ -253,6 +253,20 @@ const filteredEvents = computed(() => {
     return true
   })
 })
+
+const freeCount = computed(
+  () =>
+    filteredEvents.value.filter(
+      (e) => e.priceType === 'free'
+    ).length
+)
+
+const thisWeekCount = computed(
+  () =>
+    filteredEvents.value.filter((e) =>
+      isInDateRange(e.date, 'week')
+    ).length
+)
 
 function formatDate(date) {
   return new Date(date).toLocaleString('en-MY')
