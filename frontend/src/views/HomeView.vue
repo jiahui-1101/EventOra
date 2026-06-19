@@ -50,6 +50,34 @@
         <p class="eyebrow">Featured calendar</p>
         <h2>Upcoming society activities</h2>
       </div>
+
+      <div class="filter-bar">
+        <select>
+          <option value="all">All</option>
+          <option value="academic">Academic</option>
+          <option value="sports">Sports</option>
+          <option value="cultural">Cultural</option>
+          <option value="religious">Religious</option>
+        </select>
+
+        <select>
+          <option value="all">All</option>
+          <option value="free">Free</option>
+          <option value="paid">Paid</option>
+        </select>
+
+        <select>
+          <option value="all">Any time</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+        </select>
+
+        <button
+          class="button button-secondary"
+        >
+          Clear filters
+        </button>
+      </div>
     </section>
   </main>
 </template>
