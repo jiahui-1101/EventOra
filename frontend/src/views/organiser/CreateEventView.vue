@@ -5,10 +5,31 @@
       <h1>Create New Event</h1>
       <p>Fill in the details — faculty admin will review before publishing.</p>
     </section>
+
+    <section class="stepper">
+      <div
+        v-for="(s, idx) in steps"
+        :key="s.key"
+        :class="['step-item', { active: currentStep === idx, done: currentStep > idx }]"
+      >
+        <span class="step-number">{{ idx + 1 }}</span>
+        <span>{{ s.label }}</span>
+      </div>
+    </section>
   </main>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
+const steps = [
+  { key: 'basic', label: 'Basic Info' },
+  { key: 'ticketing', label: 'Ticketing' },
+  { key: 'details', label: 'Details' },
+  { key: 'review', label: 'Review' },
+]
+
+const currentStep = ref(0)
 </script>
 
 <style scoped>
