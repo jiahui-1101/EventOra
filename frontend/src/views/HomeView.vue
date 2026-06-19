@@ -44,6 +44,13 @@
         <strong>0</strong>
       </article>
     </section>
+
+    <section class="toolbar">
+      <div>
+        <p class="eyebrow">Featured calendar</p>
+        <h2>Upcoming society activities</h2>
+      </div>
+    </section>
   </main>
 </template>
 
