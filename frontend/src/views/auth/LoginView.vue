@@ -38,11 +38,14 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
 
 function handleLogin() {
-  // Store logic will go here
+  const result = authStore.login(email.value, password.value)
 }
 </script>
