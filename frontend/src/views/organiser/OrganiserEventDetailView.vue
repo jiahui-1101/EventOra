@@ -54,16 +54,16 @@
       <aside class="side-card">
         <h2 style="margin:0 0 14px;font-size:1rem;">Approval Workflow</h2>
 
-        <div class="approval-note approval-draft">
-          <strong>Draft</strong>
-          <p style="margin:6px 0 0;">This event is still editable.</p>
+        <div :class="approvalNoteClass">
+          <strong>{{ approvalNoteTitle }}</strong>
+          <p style="margin:6px 0 0;">{{ approvalNoteText }}</p>
         </div>
 
         <div class="detail-list">
           <div><dt>Workflow</dt><dd>Draft → Pending approval → Published</dd></div>
           <div>
             <dt>Public listing</dt>
-            <dd>Hidden until Faculty Admin approval</dd>
+            <dd>{{ status === 'published' ? 'Visible in public event list' : 'Hidden until Faculty Admin approval' }}</dd>
           </div>
           <div><dt>Last updated</dt><dd>8 Jun 2026, 10:30 AM</dd></div>
         </div>
@@ -188,6 +188,37 @@ function statusLabel(s) {
   if (s === 'pending_approval') return 'pending approval'
   return s || 'draft'
 }
+
+// ── Approval note (computed) ──────────────────────────────────────────────────
+const approvalNoteClass = computed(() => {
+  const map = {
+    published: 'approval-note approval-published',
+    pending_approval: 'approval-note approval-pending',
+    rejected: 'approval-note approval-rejected',
+    cancelled: 'approval-note approval-cancelled',
+  }
+  return map[status.value] || 'approval-note approval-draft'
+})
+
+const approvalNoteTitle = computed(() => {
+  const map = {
+    published: 'Published',
+    pending_approval: 'Pending approval',
+    rejected: 'Rejected',
+    cancelled: 'Cancelled',
+  }
+  return map[status.value] || 'Draft'
+})
+
+const approvalNoteText = computed(() => {
+  const map = {
+    published: 'This event is approved and visible in the public event list.',
+    pending_approval: 'This event has been submitted and is waiting for Faculty Admin review.',
+    rejected: 'This event needs changes before it can be submitted again.',
+    cancelled: 'This event has been cancelled and is no longer available for registration.',
+  }
+  return map[status.value] || 'This event is still editable. Submit it when all details are ready.'
+})
 </script>
 
 <style scoped>
