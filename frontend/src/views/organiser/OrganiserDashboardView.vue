@@ -3,7 +3,7 @@
     <div class="dashboard-layout">
 
       <aside class="sidebar-nav">
-      <a
+        <a
           v-for="tab in tabs"
           :key="tab.key"
           href="#"
@@ -37,6 +37,55 @@
             <strong>{{ avgRating }} ★</strong>
             <p>From 0 responses</p>
           </article>
+        </div>
+
+                <div v-if="currentTab === 'events'" class="page-section">
+          <div class="section-heading">
+            <h2>My Events</h2>
+            <router-link to="/organiser/create-event" class="button button-primary">
+              + Create Event
+            </router-link>
+          </div>
+
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Event Name</th>
+                  <th>Date</th>
+                  <th>Capacity</th>
+                  <th>Registered</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="ev in societyEvents" :key="ev.id">
+                  <td>
+                    <router-link :to="`/organiser/event-detail/${ev.id}`" style="font-weight:700;color:var(--text);text-decoration:none;">
+                      {{ ev.title }}
+                    </router-link>
+                    <br />
+                    <span :class="['badge', ev.category === 'Sports' ? 'badge-yellow' : 'badge-blue']" style="font-size:0.68rem;margin-top:6px;">
+                      {{ ev.category || 'Academic' }}
+                    </span>
+                  </td>
+                  <td>
+                    {{ ev.eventDate || 'Not set' }}
+                    <br />
+                    <span style="color:var(--muted);font-size:0.78rem;">{{ ev.startTime || '--' }} - {{ ev.endTime || '--' }}</span>
+                  </td>
+                  <td>{{ ev.capacity }}</td>
+                  <td>
+                    {{ ev.registrations }}
+                    <span style="color:var(--muted);font-size:0.78rem;">({{ ev.capacity ? Math.round((ev.registrations / ev.capacity) * 100) : 0 }}%)</span>
+                  </td>
+                  <td><span :class="['badge', badgeForStatus(ev.status)]">{{ statusLabel(ev.status) }}</span></td>
+                  <td><router-link :to="`/organiser/event-detail/${ev.id}`" class="button button-secondary">Edit</router-link></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -77,6 +126,18 @@ const tabs = [
 
 const currentTab = ref('events')
 const societyEvents = ref(defaultEvents)
+
+function badgeForStatus(status) {
+  if (status === 'published') return 'badge-green'
+  if (status === 'pending_approval') return 'badge-yellow'
+  if (status === 'completed') return 'badge-purple'
+  if (status === 'rejected' || status === 'cancelled') return 'badge-red'
+  return 'badge-blue'
+}
+
+function statusLabel(status) {
+  return status.replace('_', ' ')
+}
 
 // ===== Stats (computed) =====
 const totalEvents = computed(() => societyEvents.value.length)
