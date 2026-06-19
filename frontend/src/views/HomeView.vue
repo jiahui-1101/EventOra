@@ -79,6 +79,15 @@
         </button>
       </div>
     </section>
+
+    <section class="event-grid">
+      <article
+        v-for="event in events"
+        :key="event.id"
+        class="event-card"
+      >
+      </article>
+    </section>
   </main>
 </template>
 
