@@ -39,6 +39,8 @@
             <div class="input-label">Confirm <input type="password" v-model="confirmPw" /></div>
           </div>
 
+          <div v-if="errorMessage" class="auth-error">{{ errorMessage }}</div>
+
           <div class="profile-actions">
             <router-link class="button button-ghost" :to="roleConfig.dashboard">Cancel</router-link>
             <button class="button button-primary" @click="handleSave">Save changes</button>
@@ -64,6 +66,7 @@ const society = ref('')
 const currentPw = ref('')
 const newPw = ref('')
 const confirmPw = ref('')
+const errorMessage = ref('')
 
 const roleMap = {
   organiser: { label: 'Organiser', avatar: 'OR', dashboard: '/organiser/dashboard' },
@@ -82,7 +85,32 @@ onMounted(() => {
   society.value = user?.society || ''
 })
 
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
 function handleSave() {
-  // Logic to be implemented
+  errorMessage.value = ''
+
+  if (!firstName.value || !lastName.value || !email.value) {
+    errorMessage.value = 'First name, last name, and email are required.'
+    return
+  }
+  if (!isValidEmail(email.value)) {
+    errorMessage.value = 'Please enter a valid email address.'
+    return
+  }
+  if (newPw.value && !currentPw.value) {
+    errorMessage.value = 'Enter your current password before changing password.'
+    return
+  }
+  if (newPw.value && newPw.value.length < 8) {
+    errorMessage.value = 'Password must be at least 8 characters.'
+    return
+  }
+  if (newPw.value && newPw.value !== confirmPw.value) {
+    errorMessage.value = 'Passwords do not match.'
+    return
+  }
 }
 </script>
