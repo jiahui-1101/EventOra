@@ -188,7 +188,7 @@
           <div class="review-item"><span>Venue</span><strong>{{ form.location || 'Not set' }}</strong></div>
           <div class="review-item"><span>Capacity</span><strong>{{ form.capacity || 0 }} attendees</strong></div>
           <div class="review-item"><span>Ticket</span><strong>{{ form.feeType === 'Paid' ? `RM ${form.feeAmount || 0}` : 'Free' }}</strong></div>
-          <div class="review-item"><span>Deadline</span><strong>{{ formattedDeadline }}</strong></div>
+                    <div class="review-item"><span>Deadline</span><strong>{{ formattedDeadline }}</strong></div>
           <div class="review-item"><span>Status</span><strong>Draft</strong></div>
         </div>
       </article>
@@ -207,18 +207,21 @@
         <div class="create-actions">
           <button class="button button-ghost" @click="prevStep">Back</button>
           <div style="display:flex;gap:10px;">
-            <button class="button button-secondary">Save Draft</button>
-            <button class="button button-primary">Submit for Approval</button>
+            <button class="button button-secondary" @click="submitEvent('draft')">Save Draft</button>
+            <button class="button button-primary" @click="submitEvent('submitted')">Submit for Approval</button>
           </div>
         </div>
       </aside>
     </section>
-
   </main>
 </template>
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const eventsStorageKey = 'eventora_society_events_v2'
 
 const steps = [
   { key: 'basic', label: 'Basic Info' },
@@ -248,6 +251,7 @@ const form = reactive({
   instructions: '',
 })
 
+// ── Computed: formatted date range for Review step ────────────────────────────
 const formattedDateRange = computed(() => {
   if (!form.startDateTime) return 'Not set'
   const start = new Date(form.startDateTime)
@@ -258,6 +262,7 @@ const formattedDateRange = computed(() => {
   return `${dateStr}, ${startTime} - ${endTime}`
 })
 
+// ── Computed: formatted deadline for Review step (Fix 1) ──────────────────────
 const formattedDeadline = computed(() => {
   if (!form.deadline) return 'Not set'
   return new Date(form.deadline).toLocaleDateString('en-GB', {
@@ -269,6 +274,7 @@ const formattedDeadline = computed(() => {
   })
 })
 
+// ── Step navigation ───────────────────────────────────────────────────────────
 function nextStep() {
   stepError.value = ''
 
@@ -292,6 +298,43 @@ function nextStep() {
 function prevStep() {
   stepError.value = ''
   currentStep.value--
+}
+
+// ── Submit (Fix 2: contactName, contactEmail, instructions added) ──────────────
+function submitEvent(action) {
+  const events = JSON.parse(localStorage.getItem(eventsStorageKey) || 'null') || []
+
+  events.unshift({
+    id: Date.now(),
+    title: form.title,
+    category: form.category,
+    location: form.location,
+    description: form.description,
+    eventDate: form.startDateTime
+      ? new Date(form.startDateTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      : '',
+    startTime: form.startDateTime
+      ? new Date(form.startDateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      : '',
+    endTime: form.endDateTime
+      ? new Date(form.endDateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      : '',
+    registrationDeadline: form.deadline,
+    feeType: form.feeType,
+    feeAmount: form.feeAmount,
+    waitlist: form.waitlist,
+    contactName: form.contactName,    // ✅ Fix 2
+    contactEmail: form.contactEmail,  // ✅ Fix 2
+    instructions: form.instructions,  // ✅ Fix 2
+    status: action === 'draft' ? 'draft' : 'pending_approval',
+    registrations: 0,
+    checkedIn: 0,
+    avgRating: null,
+    capacity: form.capacity,
+  })
+
+  localStorage.setItem(eventsStorageKey, JSON.stringify(events))
+  router.push({ path: '/organiser/dashboard', query: { eventSaved: action } })
 }
 </script>
 
