@@ -39,6 +39,8 @@
             <a href="#" class="auth-link">Forgot password?</a>
           </div>
 
+          <div v-if="errorMessage" class="auth-error">{{ errorMessage }}</div>
+
           <button class="button button-primary full-width auth-submit" @click="handleLogin" aria-label="Sign in">
             Sign in
           </button>
@@ -73,6 +75,7 @@ import { ref } from 'vue'
 const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
+const errorMessage = ref('')
 const selectedRole = ref('attendee')
 
 const roles = [
@@ -81,7 +84,20 @@ const roles = [
   { value: 'faculty_admin', label: 'Faculty Admin' },
 ]
 
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
 function handleLogin() {
-  // Logic to be implemented
+  errorMessage.value = ''
+
+  if (!email.value || !password.value) {
+    errorMessage.value = 'Please enter both email and password.'
+    return
+  }
+  if (!isValidEmail(email.value)) {
+    errorMessage.value = 'Please enter a valid email address.'
+    return
+  }
 }
 </script>
