@@ -40,6 +40,28 @@
       </div>
     </section>
 
+    <section class="page-section">
+      <div class="section-heading">
+        <h2>Society Activity Overview</h2>
+        <span class="badge badge-blue">This Semester</span>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table" aria-label="Society activity overview">
+          <thead>
+            <tr>
+              <th>Society</th>
+              <th>Events Held</th>
+              <th>Total Registered</th>
+              <th>Total Attended</th>
+              <th>Attendance Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </main>
 </template>
 
