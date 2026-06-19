@@ -3,7 +3,7 @@
     <div class="dashboard-layout">
 
       <aside class="sidebar-nav">
-        <a
+       <a 
           v-for="tab in tabs"
           :key="tab.key"
           href="#"
@@ -114,6 +114,35 @@
           </div>
         </div>
 
+                <div v-if="currentTab === 'attendance'" class="page-section">
+          <div class="section-heading">
+            <div>
+              <h2>Attendance Report</h2>
+              <p style="color:var(--muted);margin:4px 0 0;">
+                {{ attendanceList.length }} / {{ confirmedRegistrations }} confirmed attendees checked in
+              </p>
+            </div>
+            <button class="button button-primary" @click="exportCSV(attendanceList, 'attendance.csv')">
+              Export Attendance CSV
+            </button>
+          </div>
+          <div class="capacity-bar" style="margin-bottom:1rem;">
+            <span :style="{ width: attendanceTabRate + '%' }"></span>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Attendee</th><th>Checked In At</th><th>Verified By</th></tr></thead>
+              <tbody>
+                <tr v-for="a in attendanceList" :key="a.attendee">
+                  <td>{{ a.attendee }}</td>
+                  <td>{{ a.checkedInAt }}</td>
+                  <td>{{ a.verifiedBy }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   </main>
@@ -147,6 +176,11 @@ const registrationsList = [
   { name: 'Aina Rahman', email: 'aina@utm.my', status: 'confirmed', ticketCode: 'EVT-9F4K-2Q8M-X7P1' },
   { name: 'Nurul Iman', email: 'nurul@utm.my', status: 'confirmed', ticketCode: 'EVT-3H7J-1L9N-P5R2' },
   { name: 'Kevin Tan', email: 'kevin@utm.my', status: 'waitlist', ticketCode: '' },
+]
+
+const attendanceList = [
+  { attendee: 'Aina Rahman', checkedInAt: '7:18 PM, 12 Jun', verifiedBy: 'Mei Shuet' },
+  { attendee: 'Nurul Iman', checkedInAt: '7:22 PM, 12 Jun', verifiedBy: 'Mei Shuet' },
 ]
 
 const tabs = [
@@ -185,6 +219,13 @@ const avgRating = computed(() => {
   if (!ratings.length) return '0.0'
   return (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(1)
 })
+
+const confirmedRegistrations = computed(
+  () => registrationsList.filter((r) => r.status === 'confirmed').length
+)
+const attendanceTabRate = computed(() =>
+  confirmedRegistrations.value ? Math.round((attendanceList.length / confirmedRegistrations.value) * 100) : 0
+)
 
 // ===== CSV export =====
 function escapeCsv(value) {
