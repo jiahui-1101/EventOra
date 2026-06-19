@@ -48,6 +48,12 @@
           </div>
 
           <div v-if="errorMessage" class="auth-error">{{ errorMessage }}</div>
+          <div
+            v-if="showSuccess"
+            style="display:block;margin:10px 0;padding:10px 14px;border-radius:var(--radius-sm);background:var(--success-soft);color:#065f46;font-size:0.84rem;"
+          >
+            Account created successfully. Redirecting to sign in...
+          </div>
 
           <button class="button button-primary full-width auth-submit" @click="handleRegister">
             Create account
@@ -64,6 +70,11 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
 
 const firstName = ref('')
 const lastName = ref('')
@@ -72,6 +83,7 @@ const password = ref('')
 const confirm = ref('')
 const role = ref('attendee')
 const errorMessage = ref('')
+const showSuccess = ref(false)
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
@@ -79,6 +91,7 @@ function isValidEmail(value) {
 
 function handleRegister() {
   errorMessage.value = ''
+  showSuccess.value = false
 
   if (!firstName.value || !lastName.value || !email.value || !password.value || !confirm.value) {
     errorMessage.value = 'Please fill in all fields.'
@@ -96,5 +109,17 @@ function handleRegister() {
     errorMessage.value = 'Passwords do not match.'
     return
   }
+
+  authStore.register({
+    firstName: firstName.value,
+    lastName: lastName.value,
+    email: email.value,
+    matric: '',
+    role: role.value,
+    society: role.value === 'organiser' ? 'Pending society assignment' : 'General Attendee',
+  })
+
+  showSuccess.value = true
+  setTimeout(() => router.push('/login'), 900)
 }
 </script>
