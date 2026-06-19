@@ -3,7 +3,7 @@
     <div class="dashboard-layout">
 
       <aside class="sidebar-nav">
-        <a
+      <a  
           v-for="tab in tabs"
           :key="tab.key"
           href="#"
@@ -15,8 +15,31 @@
       </aside>
 
       <div class="dashboard-main">
-      </div>
 
+                <div class="od-stats-grid">
+          <article class="od-stat-card">
+            <span>Total Events</span>
+            <strong>0</strong>
+            <p>0 published · 0 pending</p>
+          </article>
+          <article class="od-stat-card">
+            <span>Total Registrations</span>
+            <strong>0</strong>
+            <p>Across all events</p>
+          </article>
+          <article class="od-stat-card">
+            <span>Total Attendance</span>
+            <strong>0</strong>
+            <p>0% attendance rate</p>
+          </article>
+          <article class="od-stat-card">
+            <span>Avg. Feedback Rating</span>
+            <strong>0 ★</strong>
+            <p>From 0 responses</p>
+          </article>
+        </div>
+
+      </div>
     </div>
   </main>
 </template>
