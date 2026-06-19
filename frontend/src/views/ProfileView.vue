@@ -7,15 +7,15 @@
           <p class="eyebrow">Account settings</p>
           <h2>Edit Profile</h2>
         </div>
-        <span class="badge badge-blue">Student</span>
+        <span class="badge badge-blue">{{ roleConfig.label }}</span>
       </div>
 
       <div class="profile-layout">
 
         <div class="profile-avatar-card">
-          <div class="avatar-circle">ST</div>
+          <div class="avatar-circle">{{ roleConfig.avatar }}</div>
           <strong>{{ firstName }} {{ lastName }}</strong>
-          <span class="badge badge-blue">Student</span>
+          <span class="badge badge-blue">{{ roleConfig.label }}</span>
           <p class="profile-society">{{ society || 'EventOra member' }}</p>
           <button class="button button-ghost full-width" style="margin-top:8px;">Change photo</button>
         </div>
@@ -40,7 +40,7 @@
           </div>
 
           <div class="profile-actions">
-            <router-link class="button button-ghost" to="/">Cancel</router-link>
+            <router-link class="button button-ghost" :to="roleConfig.dashboard">Cancel</router-link>
             <button class="button button-primary" @click="handleSave">Save changes</button>
           </div>
         </div>
@@ -51,7 +51,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 const firstName = ref('')
 const lastName = ref('')
@@ -61,6 +64,14 @@ const society = ref('')
 const currentPw = ref('')
 const newPw = ref('')
 const confirmPw = ref('')
+
+const roleMap = {
+  organiser: { label: 'Organiser', avatar: 'OR', dashboard: '/organiser/dashboard' },
+  faculty_admin: { label: 'Faculty Admin', avatar: 'AD', dashboard: '/admin' },
+  attendee: { label: 'Student', avatar: 'ST', dashboard: '/' },
+}
+
+const roleConfig = computed(() => roleMap[authStore.user?.role] || roleMap.attendee)
 
 function handleSave() {
   // Logic to be implemented
