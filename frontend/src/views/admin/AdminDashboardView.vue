@@ -63,7 +63,12 @@
               <td>{{ s.registered }}</td>
               <td>{{ s.attended }}</td>
               <td>
-                <strong>{{ rate(s) }}%</strong>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="flex:1;height:6px;border-radius:999px;background:var(--border);overflow:hidden;">
+                    <div :style="{ width: rate(s) + '%', height: '100%', background: 'var(--primary)', borderRadius: '999px' }"></div>
+                  </div>
+                  <strong>{{ rate(s) }}%</strong>
+                </div>
               </td>
             </tr>
           </tbody>
