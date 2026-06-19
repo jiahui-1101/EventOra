@@ -20,7 +20,7 @@
           </div>
         </div>
 
-        <div class="info-grid">
+      <div class="info-grid">
           <div class="info-item">
             <span>Date &amp; Time</span>
             <strong>{{ selectedEvent?.eventDate || 'Not set' }}, {{ selectedEvent?.startTime || '--' }} - {{ selectedEvent?.endTime || '--' }}</strong>
@@ -71,8 +71,8 @@
         <h2 class="section-title">Available Actions</h2>
         <div class="action-list">
           <router-link to="/organiser/create-event" class="button button-secondary full-width">Edit Event</router-link>
-          <button class="button button-primary full-width">Submit for Approval</button>
-          <button class="button button-danger full-width">Delete Draft</button>
+          <button class="button button-primary full-width" @click="handleAction('submit')">Submit for Approval</button>
+          <button class="button button-danger full-width" @click="handleAction('delete')">Delete Draft</button>
         </div>
       </aside>
     </section>
@@ -81,9 +81,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 
 const eventsStorageKey = 'eventora_society_events_v2'
 
@@ -219,6 +220,15 @@ const approvalNoteText = computed(() => {
   }
   return map[status.value] || 'This event is still editable. Submit it when all details are ready.'
 })
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function saveEvents() {
+  localStorage.setItem(eventsStorageKey, JSON.stringify(societyEvents.value))
+}
+
+function handleAction(action) {
+  // Logic to be implemented
+}
 </script>
 
 <style scoped>
