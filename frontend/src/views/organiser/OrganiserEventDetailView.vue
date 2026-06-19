@@ -20,7 +20,7 @@
           </div>
         </div>
 
-      <div class="info-grid">
+        <div class="info-grid">
           <div class="info-item">
             <span>Date &amp; Time</span>
             <strong>{{ selectedEvent?.eventDate || 'Not set' }}, {{ selectedEvent?.startTime || '--' }} - {{ selectedEvent?.endTime || '--' }}</strong>
@@ -70,9 +70,55 @@
 
         <h2 class="section-title">Available Actions</h2>
         <div class="action-list">
-          <router-link to="/organiser/create-event" class="button button-secondary full-width">Edit Event</router-link>
-          <button class="button button-primary full-width" @click="handleAction('submit')">Submit for Approval</button>
-          <button class="button button-danger full-width" @click="handleAction('delete')">Delete Draft</button>
+
+                    <router-link
+            v-if="status !== 'cancelled' && status !== 'completed'"
+            :to="`/organiser/create-event?edit=${selectedEvent?.id}`"
+            class="button button-secondary full-width"
+          >
+            Edit Event
+          </router-link>
+
+                    <button
+            v-if="status === 'draft' || status === 'rejected'"
+            class="button button-primary full-width"
+            @click="handleAction('submit')"
+          >
+            {{ status === 'rejected' ? 'Resubmit for Approval' : 'Submit for Approval' }}
+          </button>
+
+                    <button
+            v-if="status === 'draft' || status === 'rejected'"
+            class="button button-danger full-width"
+            @click="handleAction('delete')"
+          >
+            Delete Draft
+          </button>
+
+                    <span
+            v-if="status === 'pending_approval'"
+            class="badge badge-yellow"
+            style="justify-content:center;width:100%;"
+          >
+            Waiting for Admin
+          </span>
+
+                    <button
+            v-if="status === 'published'"
+            class="button button-danger full-width"
+            @click="handleAction('cancel')"
+          >
+            Cancel Event
+          </button>
+
+                    <span
+            v-if="status === 'cancelled' || status === 'completed'"
+            class="badge badge-gray"
+            style="justify-content:center;width:100%;"
+          >
+            No available actions
+          </span>
+
         </div>
       </aside>
     </section>
@@ -153,6 +199,7 @@ const societyEvents = ref(
 )
 
 // ── Selected event (by route param or query) ─────────────────────────────────
+// Supports both /organiser/event/:id  and  /organiser/event?id=1
 const selectedEvent = computed(() => {
   const id = route.params.id || route.query.id
   if (id) {
@@ -227,7 +274,30 @@ function saveEvents() {
 }
 
 function handleAction(action) {
-  // Logic to be implemented
+  const id = selectedEvent.value?.id
+
+  if (action === 'submit') {
+    societyEvents.value = societyEvents.value.map((ev) =>
+      ev.id === id ? { ...ev, status: 'pending_approval' } : ev
+    )
+    saveEvents()
+    router.push({ path: '/organiser/dashboard', query: { eventAction: 'submitted' } })
+  }
+
+  if (action === 'delete') {
+    societyEvents.value = societyEvents.value.filter((ev) => ev.id !== id)
+    saveEvents()
+    router.push({ path: '/organiser/dashboard', query: { eventAction: 'deleted' } })
+  }
+
+  if (action === 'cancel') {
+    societyEvents.value = societyEvents.value.map((ev) =>
+      ev.id === id ? { ...ev, status: 'cancelled' } : ev
+    )
+    saveEvents()
+    // ✅ Fixed: dashboard now receives 'cancelled' so toast can display
+    router.push({ path: '/organiser/dashboard', query: { eventAction: 'cancelled' } })
+  }
 }
 </script>
 
