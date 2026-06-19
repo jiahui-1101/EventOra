@@ -173,6 +173,47 @@
       </div>
     </section>
 
+        <section v-if="currentStep === 3" class="review-layout">
+      <article class="create-card">
+        <h2>Public Event Preview</h2>
+        <div class="review-banner">
+          <div>
+            <span class="badge badge-blue">{{ form.category || 'Academic' }}</span>
+            <h3>{{ form.title || 'Untitled Event' }}</h3>
+            <p>{{ form.society }} · Faculty approval required</p>
+          </div>
+        </div>
+        <div class="review-grid">
+          <div class="review-item"><span>Date &amp; Time</span><strong>{{ form.startDateTime }}</strong></div>
+          <div class="review-item"><span>Venue</span><strong>{{ form.location || 'Not set' }}</strong></div>
+          <div class="review-item"><span>Capacity</span><strong>{{ form.capacity || 0 }} attendees</strong></div>
+          <div class="review-item"><span>Ticket</span><strong>{{ form.feeType === 'Paid' ? `RM ${form.feeAmount || 0}` : 'Free' }}</strong></div>
+          <div class="review-item"><span>Deadline</span><strong>{{ form.deadline }}</strong></div>
+          <div class="review-item"><span>Status</span><strong>Draft</strong></div>
+        </div>
+      </article>
+
+      <aside class="review-panel">
+        <h2>Submission Checklist</h2>
+        <div class="approval-note">
+          This event will move from draft to pending approval after submission. Faculty Admin must approve it before it appears in the public event list.
+        </div>
+        <div class="detail-list">
+          <div><dt>Basic information</dt><dd>Complete</dd></div>
+          <div><dt>Ticketing</dt><dd>{{ form.feeType }} event configured</dd></div>
+          <div><dt>Poster</dt><dd>Ready for review</dd></div>
+          <div><dt>Approval status</dt><dd>Draft → Pending approval</dd></div>
+        </div>
+        <div class="create-actions">
+          <button class="button button-ghost" @click="prevStep">Back</button>
+          <div style="display:flex;gap:10px;">
+            <button class="button button-secondary">Save Draft</button>
+            <button class="button button-primary">Submit for Approval</button>
+          </div>
+        </div>
+      </aside>
+    </section>
+
   </main>
 </template>
 
