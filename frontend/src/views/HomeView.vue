@@ -86,6 +86,8 @@
         :key="event.id"
         class="event-card"
       >
+        <div :class="['event-cover', event.coverClass]">
+        </div>
       </article>
     </section>
   </main>
