@@ -76,6 +76,26 @@
       </div>
     </section>
 
+    <section class="page-section">
+      <div class="section-heading">
+        <h2>Most Popular Events This Semester</h2>
+        <span class="badge badge-green">Top 3</span>
+      </div>
+      <div>
+        <article class="popular-event-card">
+          <div class="popular-rank">1</div>
+          <div class="popular-info">
+            <strong>Event Title</strong>
+            <span>Society Name · Date</span>
+          </div>
+          <div class="popular-meta">
+            <span class="badge badge-purple">Category</span>
+            <strong>0 registered</strong>
+          </div>
+        </article>
+      </div>
+    </section>
+
   </main>
 </template>
 
