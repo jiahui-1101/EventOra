@@ -3,7 +3,7 @@
     <div class="dashboard-layout">
 
       <aside class="sidebar-nav">
-       <a 
+        <a
           v-for="tab in tabs"
           :key="tab.key"
           href="#"
@@ -35,7 +35,7 @@
           <article class="od-stat-card">
             <span>Avg. Feedback Rating</span>
             <strong>{{ avgRating }} ★</strong>
-            <p>From 0 responses</p>
+            <p>From {{ feedbackData.length }} responses</p>
           </article>
         </div>
 
@@ -143,6 +143,28 @@
           </div>
         </div>
 
+                <div v-if="currentTab === 'feedback'" class="page-section">
+          <div class="section-heading">
+            <div>
+              <h2>Feedback & Ratings</h2>
+              <p style="color:var(--muted);margin:4px 0 0;">
+                Average Rating: <strong>{{ avgRating }} / 5</strong> from {{ feedbackData.length }} reviews
+              </p>
+            </div>
+            <button class="button button-primary" @click="exportCSV(feedbackData, 'feedback.csv')">
+              Export Feedback CSV
+            </button>
+          </div>
+          <div class="event-grid">
+            <article v-for="(f, idx) in feedbackData" :key="idx" class="event-card">
+              <div class="event-card-body">
+                <strong>{{ '★'.repeat(f.rating) }}{{ '☆'.repeat(5 - f.rating) }}</strong>
+                <p>{{ f.comment }}</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
       </div>
     </div>
   </main>
@@ -181,6 +203,12 @@ const registrationsList = [
 const attendanceList = [
   { attendee: 'Aina Rahman', checkedInAt: '7:18 PM, 12 Jun', verifiedBy: 'Mei Shuet' },
   { attendee: 'Nurul Iman', checkedInAt: '7:22 PM, 12 Jun', verifiedBy: 'Mei Shuet' },
+]
+
+const feedbackData = [
+  { rating: 5, comment: 'Excellent workshop!' },
+  { rating: 4, comment: 'Good but short' },
+  { rating: 5, comment: 'Very inspiring' },
 ]
 
 const tabs = [
