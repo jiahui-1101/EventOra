@@ -45,7 +45,11 @@
         <h2>Society Activity Overview</h2>
         <span class="badge badge-blue">This Semester</span>
       </div>
-      <div class="admin-table-wrap">
+
+      <p v-if="loadingSocieties" style="color:var(--muted);">Loading society data...</p>
+      <p v-else-if="loadError" class="auth-error">{{ loadError }}</p>
+
+      <div v-else class="admin-table-wrap">
         <table class="admin-table" aria-label="Society activity overview">
           <thead>
             <tr>
@@ -100,17 +104,26 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
 
 const pendingCount = ref(3)
 
-const societies = ref([
-  { name: 'UTM Computing Society', events: 8, registered: 214, attended: 176 },
-  { name: 'Campus Culture Club', events: 5, registered: 312, attended: 258 },
-  { name: 'UTM Sports Society', events: 11, registered: 428, attended: 341 },
-  { name: 'Engineering Society', events: 4, registered: 98, attended: 79 },
-  { name: 'Photography Club', events: 3, registered: 152, attended: 133 },
-])
+// societies 现在改成从mock JSON抓，不是硬编码
+const societies = ref([])
+const loadingSocieties = ref(true)
+const loadError = ref('')
+
+onMounted(async () => {
+  try {
+    const response = await axios.get('/mock/societies.json')
+    societies.value = response.data
+  } catch (err) {
+    loadError.value = 'Failed to load society data. Please try again later.'
+  } finally {
+    loadingSocieties.value = false
+  }
+})
 
 const popularEvents = ref([
   { rank: 1, title: 'Campus Cultural Night', society: 'Campus Culture Club', date: '20 Jun 2026', category: 'Cultural', badgeClass: 'badge-purple', registered: 312 },
