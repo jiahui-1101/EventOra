@@ -109,7 +109,7 @@ import axios from 'axios'
 
 const pendingCount = ref(3)
 
-// societies 现在改成从mock JSON抓，不是硬编码
+// societies fetch from mock JSON file
 const societies = ref([])
 const loadingSocieties = ref(true)
 const loadError = ref('')
