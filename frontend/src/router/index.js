@@ -30,38 +30,36 @@ const routes = [
     meta: { requiresAuth: true, role: 'organiser' },
   },
   {
-  path: '/organiser/create-event',
-  name: 'create-event',
-  component: () => import('@/views/organiser/CreateEventView.vue'),
-  meta: { requiresAuth: true, role: 'organiser' },
-},
-{
-  path: '/organiser/event-detail/:id',
-  name: 'organiser-event-detail',
-  component: () => import('@/views/organiser/OrganiserEventDetailView.vue'),
-  meta: { requiresAuth: true, role: 'organiser' },
-},
+    path: '/organiser/create-event',
+    name: 'create-event',
+    component: () => import('@/views/organiser/CreateEventView.vue'),
+    meta: { requiresAuth: true, role: 'organiser' },
+  },
+  {
+    path: '/organiser/event-detail/:id',
+    name: 'organiser-event-detail',
+    component: () => import('@/views/organiser/OrganiserEventDetailView.vue'),
+    meta: { requiresAuth: true, role: 'organiser' },
+  },
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  linkActiveClass: 'active',
+  linkExactActiveClass: 'active',
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
-    next('/login')
-    return
+    return '/login'
   }
 
   if (to.meta.role && authStore.role !== to.meta.role) {
-    next('/')
-    return
+    return '/'
   }
-
-  next()
 })
 
 export default router
