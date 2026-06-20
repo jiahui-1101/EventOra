@@ -1,0 +1,5 @@
+[
+  { "id": 1, "name": "UTM Computing Society", "events": 8, "registered": 214, "attended": 176 },
+  { "id": 2, "name": "Campus Culture Club", "events": 5, "registered": 312, "attended": 258 },
+  { "id": 3, "name": "UTM Sports Society", "events": 11, "registered": 428, "attended": 341 }
+]
