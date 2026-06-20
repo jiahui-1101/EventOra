@@ -62,10 +62,18 @@ body {
   font-size: 0.86rem;
   font-weight: 600;
   text-decoration: none;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
 }
 
 .desktop-nav a:hover,
 .mobile-nav a:hover {
+  color: var(--primary);
+}
+
+.desktop-nav a.active,
+.mobile-nav a.active {
+  background: var(--primary-soft);
   color: var(--primary);
 }
 

@@ -7,6 +7,7 @@
       </router-link>
       <nav class="desktop-nav" aria-label="Main navigation">
         <router-link to="/">Events</router-link>
+        <router-link v-if="dashboardLink" :to="dashboardLink">Dashboard</router-link>
         <router-link v-if="!authStore.isLoggedIn" to="/login">Login</router-link>
         <router-link v-if="authStore.isLoggedIn" to="/profile">Profile</router-link>
         <a v-if="authStore.isLoggedIn" href="#" @click.prevent="handleLogout">Logout</a>
@@ -24,6 +25,7 @@
 
     <nav class="mobile-nav" aria-label="Mobile navigation">
       <router-link to="/">Events</router-link>
+      <router-link v-if="dashboardLink" :to="dashboardLink">Dashboard</router-link>
       <router-link v-if="!authStore.isLoggedIn" to="/login">Login</router-link>
       <router-link v-if="authStore.isLoggedIn" to="/profile">Profile</router-link>
     </nav>
@@ -31,11 +33,18 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+const dashboardLink = computed(() => {
+  if (authStore.role === 'faculty_admin') return '/admin'
+  if (authStore.role === 'organiser') return '/organiser/dashboard'
+  return null
+})
 
 function handleLogout() {
   authStore.logout()
