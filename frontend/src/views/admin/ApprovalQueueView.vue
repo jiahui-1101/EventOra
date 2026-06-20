@@ -6,7 +6,10 @@
         <span class="badge badge-yellow">{{ pendingCount }} pending</span>
       </div>
 
-      <table style="width:100%; border-collapse:collapse;">
+      <p v-if="loadingEvents" style="color:var(--muted);padding:20px 0;">Loading pending events...</p>
+      <p v-else-if="loadError" class="auth-error">{{ loadError }}</p>
+
+      <table v-else style="width:100%; border-collapse:collapse;">
         <thead>
           <tr style="border-bottom:2px solid var(--border);">
             <th>Society</th>
@@ -58,7 +61,7 @@
       <p>Most popular category: <strong>Academic</strong> (42% of registrations)</p>
     </section>
 
-        <div v-if="showModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Reject event dialog" @click.self="closeModal">
+    <div v-if="showModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Reject event dialog" @click.self="closeModal">
       <div class="modal-box">
         <div class="modal-header">
           <div>
@@ -89,18 +92,28 @@
       </div>
     </div>
 
-        <div v-if="toast.message" :class="['eo-toast', toast.type]">{{ toast.message }}</div>
+    <div v-if="toast.message" :class="['eo-toast', toast.type]">{{ toast.message }}</div>
   </main>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
 
-const approvalEvents = ref([
-  { id: 101, society: 'Robotics Club', title: 'Line Follower Workshop', date: '2026-07-10', category: 'Academic', capacity: 30, status: 'pending' },
-  { id: 102, society: 'Entrepreneurship Society', title: 'Startup Pitch Night', date: '2026-07-15', category: 'Academic', capacity: 50, status: 'approved' },
-  { id: 103, society: 'Music Club', title: 'Acoustic Night', date: '2026-07-18', category: 'Cultural', capacity: 80, status: 'rejected', reason: 'Venue booking confirmation is missing.' },
-])
+const approvalEvents = ref([])
+const loadingEvents = ref(true)
+const loadError = ref('')
+
+onMounted(async () => {
+  try {
+    const response = await axios.get('/mock/approval-events.json')
+    approvalEvents.value = response.data
+  } catch (err) {
+    loadError.value = 'Failed to load approval events. Please try again later.'
+  } finally {
+    loadingEvents.value = false
+  }
+})
 
 const pendingCount = computed(() => approvalEvents.value.filter((e) => e.status === 'pending').length)
 
