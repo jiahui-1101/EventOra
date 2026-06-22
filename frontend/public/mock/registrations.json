@@ -1,0 +1,80 @@
+[
+  {
+    "id": "registration-ai-aina",
+    "eventId": "event-ai-app-2026",
+    "attendeeId": "attendee-aina",
+    "attendeeName": "Aina Rahman",
+    "attendeeEmail": "aina@utm.my",
+    "status": "confirmed",
+    "paymentStatus": "paid",
+    "waitlistPosition": null,
+    "ticketId": "EVT-9F4K-2Q8M-X7P1",
+    "registeredAt": "2026-06-20T10:15:00+08:00",
+    "cancelledAt": null
+  },
+  {
+    "id": "registration-ai-nurul",
+    "eventId": "event-ai-app-2026",
+    "attendeeId": "attendee-nurul",
+    "attendeeName": "Nurul Iman",
+    "attendeeEmail": "nurul@utm.my",
+    "status": "confirmed",
+    "paymentStatus": "paid",
+    "waitlistPosition": null,
+    "ticketId": "EVT-3H7J-1L9N-P5R2",
+    "registeredAt": "2026-06-20T10:22:00+08:00",
+    "cancelledAt": null
+  },
+  {
+    "id": "registration-cultural-student",
+    "eventId": "event-cultural-night-2026",
+    "attendeeId": "attendee-student-demo",
+    "attendeeName": "Student User",
+    "attendeeEmail": "student@utm.my",
+    "status": "confirmed",
+    "paymentStatus": "not_required",
+    "waitlistPosition": null,
+    "ticketId": "EVT-5C8N-7L2P-A4D6",
+    "registeredAt": "2026-06-21T14:05:00+08:00",
+    "cancelledAt": null
+  },
+  {
+    "id": "registration-futsal-kevin",
+    "eventId": "event-futsal-cup-2026",
+    "attendeeId": "attendee-kevin",
+    "attendeeName": "Kevin Tan",
+    "attendeeEmail": "kevin@utm.my",
+    "status": "waitlisted",
+    "paymentStatus": "not_required",
+    "waitlistPosition": 1,
+    "ticketId": null,
+    "registeredAt": "2026-06-21T16:30:00+08:00",
+    "cancelledAt": null
+  },
+  {
+    "id": "registration-futsal-siti",
+    "eventId": "event-futsal-cup-2026",
+    "attendeeId": "attendee-siti",
+    "attendeeName": "Siti Hajar",
+    "attendeeEmail": "siti@utm.my",
+    "status": "waitlisted",
+    "paymentStatus": "not_required",
+    "waitlistPosition": 2,
+    "ticketId": null,
+    "registeredAt": "2026-06-21T16:42:00+08:00",
+    "cancelledAt": null
+  },
+  {
+    "id": "registration-ai-cancelled",
+    "eventId": "event-ai-app-2026",
+    "attendeeId": "attendee-mei",
+    "attendeeName": "Mei Shuet",
+    "attendeeEmail": "mei@utm.my",
+    "status": "cancelled",
+    "paymentStatus": "refunded",
+    "waitlistPosition": null,
+    "ticketId": "EVT-2C8R-6V4L-T1W3",
+    "registeredAt": "2026-06-19T09:10:00+08:00",
+    "cancelledAt": "2026-06-21T09:45:00+08:00"
+  }
+]
