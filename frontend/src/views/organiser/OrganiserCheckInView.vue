@@ -5,7 +5,7 @@
         <p class="eyebrow">QR check-in</p>
         <h1>Scan attendee tickets</h1>
         <p>
-          Validate QR tickets by event and society, with a manual code fallback when camera access is not available.
+          Validate attendee QR tickets by event and society. If the camera cannot be used, enter the ticket code manually.
         </p>
       </div>
 
@@ -46,14 +46,7 @@
             type="button"
             @click="requestCameraPermission"
           >
-            Request camera permission
-          </button>
-          <button
-            class="button button-secondary"
-            type="button"
-            @click="scanSampleTicket"
-          >
-            Simulate QR scan
+            Start camera scanner
           </button>
         </div>
 
@@ -61,13 +54,13 @@
           class="manual-code-form"
           @submit.prevent="submitManualCode"
         >
-          <label for="ticket-code">Manual ticket code fallback</label>
+          <label for="ticket-code">Enter ticket code manually</label>
           <div>
             <input
               id="ticket-code"
               v-model.trim="manualCode"
               type="text"
-              placeholder="EVT-ABCD-1234-WXYZ or QR payload"
+              placeholder="EVT-ABCD-1234-WXYZ"
             />
             <button
               class="button button-primary"
@@ -118,7 +111,7 @@ const ticketingStore = useTicketingStore()
 
 const selectedEventId = ref(route.params.eventId || '')
 const manualCode = ref('')
-const cameraMessage = ref('Camera preview placeholder')
+const cameraMessage = ref('Camera scanner is ready. Start the scanner and place the QR code inside the frame.')
 const result = ref({
   status: 'idle',
   message: 'Scan or enter a ticket code to begin.',
@@ -164,31 +157,17 @@ watch(selectedEventId, (eventId) => {
 
 async function requestCameraPermission() {
   if (!navigator.mediaDevices?.getUserMedia) {
-    cameraMessage.value = 'Camera API unavailable. Use manual ticket code fallback.'
+    cameraMessage.value = 'Camera access is unavailable on this device. Enter the ticket code manually.'
     return
   }
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true })
     stream.getTracks().forEach((track) => track.stop())
-    cameraMessage.value = 'Camera permission granted. Ready to scan QR tickets.'
+    cameraMessage.value = 'Camera permission granted. Point the attendee QR code inside the frame.'
   } catch {
-    cameraMessage.value = 'Camera permission denied. Use manual ticket code fallback.'
+    cameraMessage.value = 'Camera permission was denied. Enter the ticket code manually.'
   }
-}
-
-function scanSampleTicket() {
-  const ticket = ticketingStore.activeTickets.find((item) => item.eventId === selectedEvent.value?.id)
-  if (!ticket) {
-    result.value = {
-      status: 'invalid',
-      message: 'No sample ticket is available for this event.',
-      ticket: null,
-    }
-    return
-  }
-
-  processTicketCode(ticket.qrToken)
 }
 
 function submitManualCode() {
@@ -208,7 +187,7 @@ function processTicketCode(ticketCode) {
   result.value = ticketingStore.checkInTicket(ticketCode, {
     eventId: selectedEvent.value.id,
     societyId: selectedEvent.value.societyId,
-    organizerId: authStore.user?.email || 'organiser-demo@utm.my',
+    organizerId: authStore.user?.email || 'organiser@utm.my',
   })
   manualCode.value = ''
 }

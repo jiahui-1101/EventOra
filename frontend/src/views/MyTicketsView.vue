@@ -16,6 +16,13 @@
       </article>
     </section>
 
+    <div
+      v-if="ticketNotice"
+      class="ticket-notice"
+    >
+      {{ ticketNotice }}
+    </div>
+
     <section class="ticket-section">
       <div class="section-heading">
         <p class="eyebrow">Upcoming</p>
@@ -36,6 +43,13 @@
             <h3>{{ ticket.eventName }}</h3>
             <p>{{ formatDate(ticket.eventStartAt) }} · {{ ticket.venue }}</p>
             <strong>{{ ticket.id }}</strong>
+            <button
+              class="button button-secondary cancel-ticket-button"
+              type="button"
+              @click="cancelTicket(ticket)"
+            >
+              Cancel registration
+            </button>
           </div>
 
           <div class="ticket-qr-panel">
@@ -97,7 +111,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, watchEffect } from 'vue'
+import { computed, onMounted, reactive, ref, watchEffect } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTicketingStore } from '@/stores/ticketing'
 import { createTicketQrDataUrl } from '@/utils/ticketQr'
@@ -105,6 +119,7 @@ import { createTicketQrDataUrl } from '@/utils/ticketQr'
 const authStore = useAuthStore()
 const ticketingStore = useTicketingStore()
 const qrCodes = reactive({})
+const ticketNotice = ref('')
 
 const attendeeEmail = computed(() => authStore.user?.email || 'student@utm.my')
 const wallet = computed(() => ticketingStore.getTicketWalletForAttendee(attendeeEmail.value))
@@ -127,6 +142,21 @@ function formatDate(dateValue) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(dateValue))
+}
+
+function cancelTicket(ticket) {
+  try {
+    const result = ticketingStore.cancelRegistration(ticket.registrationId)
+
+    delete qrCodes[ticket.id]
+    ticketNotice.value = result.promoted
+      ? 'Registration cancelled. The first waitlisted attendee has been promoted automatically.'
+      : 'Registration cancelled. The ticket is no longer active.'
+  } catch (error) {
+    ticketNotice.value = error instanceof Error
+      ? error.message
+      : 'Unable to cancel this registration.'
+  }
 }
 </script>
 
@@ -189,6 +219,16 @@ function formatDate(dateValue) {
   margin-top: 40px;
 }
 
+.ticket-notice {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-weight: 800;
+}
+
 .section-heading {
   margin-bottom: 18px;
 }
@@ -233,6 +273,10 @@ function formatDate(dateValue) {
   color: #1d4ed8;
   background: #dbeafe;
   letter-spacing: 0.08em;
+}
+
+.cancel-ticket-button {
+  width: fit-content;
 }
 
 .ticket-status {
