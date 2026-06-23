@@ -263,57 +263,6 @@ const authStore = useAuthStore()
 const eventsStorageKey = 'eventora_society_events_v2'
 const notificationStorageKey = 'eventora_notifications'
 
-const defaultEvents = [
-  {
-    id: 1,
-    title: 'Build Your First AI App',
-    category: 'Academic',
-    location: 'N28A Innovation Lab',
-    eventDate: '12 Jun 2026',
-    startTime: '7:30 PM',
-    endTime: '9:30 PM',
-    feeType: 'Paid',
-    feeAmount: 8,
-    status: 'published',
-    registrations: 28,
-    checkedIn: 18,
-    avgRating: 4.5,
-    capacity: 40,
-  },
-  {
-    id: 2,
-    title: 'Hackathon 2026',
-    category: 'Academic',
-    location: 'FAB Lab',
-    eventDate: '5 Jul 2026',
-    startTime: '9:00 AM',
-    endTime: '6:00 PM',
-    feeType: 'Paid',
-    feeAmount: 15,
-    status: 'pending_approval',
-    registrations: 0,
-    checkedIn: 0,
-    avgRating: null,
-    capacity: 60,
-  },
-  {
-    id: 3,
-    title: 'Futsal Tournament',
-    category: 'Sports',
-    location: 'UTM Sports Hall',
-    eventDate: '28 Jun 2026',
-    startTime: '9:00 AM',
-    endTime: '1:00 PM',
-    feeType: 'Free',
-    feeAmount: 0,
-    status: 'published',
-    registrations: 40,
-    checkedIn: 32,
-    avgRating: 4.2,
-    capacity: 40,
-  },
-]
-
 const registrationsList = [
   { name: 'Aina Rahman', email: 'aina@utm.my', status: 'confirmed', ticketCode: 'EVT-9F4K-2Q8M-X7P1' },
   { name: 'Nurul Iman', email: 'nurul@utm.my', status: 'confirmed', ticketCode: 'EVT-3H7J-1L9N-P5R2' },
@@ -395,9 +344,7 @@ watch(currentTab, async (tab) => {
   }
 })
 
-const societyEvents = ref(
-  JSON.parse(localStorage.getItem(eventsStorageKey) || 'null') || defaultEvents
-)
+const societyEvents = ref([])
 
 function saveEvents() {
   localStorage.setItem(eventsStorageKey, JSON.stringify(societyEvents.value))
@@ -530,6 +477,80 @@ function addCreatedEventToDashboard(status) {
   saveEvents()
 }
 
+function normaliseEvent(rawEvent) {
+  const start = rawEvent.startAt ? new Date(rawEvent.startAt) : null
+  const end = rawEvent.endAt ? new Date(rawEvent.endAt) : null
+  const category = rawEvent.category
+    ? rawEvent.category.charAt(0).toUpperCase() + rawEvent.category.slice(1)
+    : 'Academic'
+
+  return {
+    id: rawEvent.id,
+    title: rawEvent.title,
+    category,
+    location: rawEvent.location || rawEvent.venue || 'Venue not set',
+    description: rawEvent.description || '',
+    eventDate: rawEvent.eventDate || (start ? formatDateOnly(start) : 'Not set'),
+    startTime: rawEvent.startTime || (start ? formatTimeOnly(start) : '--'),
+    endTime: rawEvent.endTime || (end ? formatTimeOnly(end) : '--'),
+    registrationDeadline: rawEvent.registrationDeadline || '',
+    feeType: rawEvent.feeType || (rawEvent.priceType === 'paid' ? 'Paid' : 'Free'),
+    feeAmount: rawEvent.feeAmount ?? rawEvent.price ?? 0,
+    status: rawEvent.status === 'pending' ? 'pending_approval' : rawEvent.status || 'draft',
+    registrations: rawEvent.registrations ?? rawEvent.confirmedCount ?? 0,
+    checkedIn: rawEvent.checkedIn ?? Math.round((rawEvent.confirmedCount ?? 0) * 0.74),
+    avgRating: rawEvent.avgRating ?? null,
+    capacity: rawEvent.capacity ?? 0,
+    coverClass: rawEvent.coverClass,
+    badgeClass: rawEvent.badgeClass,
+  }
+}
+
+function formatDateOnly(date) {
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function formatTimeOnly(date) {
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+async function loadSocietyEvents() {
+  try {
+    const response = await fetch('/mock/events.json')
+
+    if (!response.ok) return
+
+    const mockEvents = (await response.json()).map(normaliseEvent)
+    const savedEvents = JSON.parse(localStorage.getItem(eventsStorageKey) || 'null')
+
+    if (Array.isArray(savedEvents)) {
+      const savedEventsById = new Map(savedEvents.map((event) => [String(event.id), event]))
+      const mergedMockEvents = mockEvents.map((event) => ({
+        ...event,
+        ...savedEventsById.get(String(event.id)),
+      }))
+      const customEvents = savedEvents.filter(
+        (event) => !mockEvents.some((mockEvent) => String(mockEvent.id) === String(event.id))
+      )
+
+      societyEvents.value = [...customEvents, ...mergedMockEvents]
+      return
+    }
+
+    societyEvents.value = mockEvents
+    saveEvents()
+  } catch (error) {
+    societyEvents.value = []
+  }
+}
+
 async function loadNotifications() {
   try {
     const savedNotifications = JSON.parse(localStorage.getItem(notificationStorageKey) || 'null')
@@ -558,7 +579,8 @@ async function loadNotifications() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadSocietyEvents()
   loadNotifications()
   showCreateEventToast()
 })
