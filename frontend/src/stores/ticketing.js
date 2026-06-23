@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { fetchTicketingSeed } from '@/api/ticketing'
+import { addNotification } from '@/stores/notifications'
 import { parseTicketQrPayload } from '@/utils/ticketQr'
 import { createTicketSecurityFields } from '@/utils/ticketTokens'
 
@@ -270,6 +271,17 @@ export const useTicketingStore = defineStore('ticketing', () => {
     writeStoredTicketingState(createSnapshot())
   }
 
+  function notifyAttendee({ recipientEmail, title, message, type = 'Ticketing', badgeClass = 'badge-blue' }) {
+    addNotification({
+      audience: 'attendee',
+      recipientEmail: normalizeEmail(recipientEmail),
+      type,
+      title,
+      message,
+      badgeClass,
+    })
+  }
+
   function createConfirmedTicket(event, registration, issuedAt) {
     const securityFields = createTicketSecurityFields()
 
@@ -321,6 +333,12 @@ export const useTicketingStore = defineStore('ticketing', () => {
     }
 
     registrations.value.push(registration)
+    notifyAttendee({
+      recipientEmail: registration.attendeeEmail,
+      title: 'Waitlist joined',
+      message: `${event.title} is full. You are now #${registration.waitlistPosition} on the waitlist.`,
+      badgeClass: 'badge-yellow',
+    })
     persistState()
 
     return registration
@@ -359,6 +377,12 @@ export const useTicketingStore = defineStore('ticketing', () => {
     registration.ticketId = ticket.id
     registrations.value.push(registration)
     tickets.value.push(ticket)
+    notifyAttendee({
+      recipientEmail: registration.attendeeEmail,
+      title: 'Registration confirmed',
+      message: `${event.title} is confirmed. Your QR ticket is ready in My Tickets.`,
+      badgeClass: 'badge-green',
+    })
     persistState()
 
     return { registration, ticket }
@@ -394,6 +418,13 @@ export const useTicketingStore = defineStore('ticketing', () => {
     }
 
     registrations.value.push(registration)
+    notifyAttendee({
+      recipientEmail: registration.attendeeEmail,
+      title: 'Payment pending',
+      message: `${event.title} has been reserved for 10 minutes while payment is completed.`,
+      type: 'Payment',
+      badgeClass: 'badge-yellow',
+    })
     persistState()
 
     return {
@@ -423,6 +454,13 @@ export const useTicketingStore = defineStore('ticketing', () => {
     registration.paymentStatus = 'paid'
     registration.ticketId = ticket.id
     tickets.value.push(ticket)
+    notifyAttendee({
+      recipientEmail: registration.attendeeEmail,
+      title: 'Payment confirmed',
+      message: `${event.title} is confirmed. Your QR ticket is ready in My Tickets.`,
+      type: 'Payment',
+      badgeClass: 'badge-green',
+    })
     persistState()
 
     return { registration, ticket }
@@ -438,6 +476,13 @@ export const useTicketingStore = defineStore('ticketing', () => {
     registration.status = 'cancelled'
     registration.paymentStatus = 'failed'
     registration.cancelledAt = new Date().toISOString()
+    notifyAttendee({
+      recipientEmail: registration.attendeeEmail,
+      title: 'Payment unsuccessful',
+      message: 'Your registration was not completed because the payment was declined.',
+      type: 'Payment',
+      badgeClass: 'badge-red',
+    })
     persistState()
 
     return registration
@@ -465,6 +510,12 @@ export const useTicketingStore = defineStore('ticketing', () => {
     nextRegistration.ticketId = ticket.id
     tickets.value.push(ticket)
     renumberWaitlist(eventId)
+    notifyAttendee({
+      recipientEmail: nextRegistration.attendeeEmail,
+      title: 'Waitlist promoted',
+      message: `A seat opened for ${event.title}. Your registration is confirmed and your QR ticket is ready.`,
+      badgeClass: 'badge-green',
+    })
 
     return { registration: nextRegistration, ticket }
   }
@@ -502,6 +553,13 @@ export const useTicketingStore = defineStore('ticketing', () => {
     if (!wasConfirmed) {
       renumberWaitlist(registration.eventId)
     }
+
+    notifyAttendee({
+      recipientEmail: registration.attendeeEmail,
+      title: 'Registration cancelled',
+      message: `Your registration has been cancelled.`,
+      badgeClass: 'badge-gray',
+    })
 
     persistState()
 

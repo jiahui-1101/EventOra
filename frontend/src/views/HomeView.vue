@@ -289,7 +289,7 @@ onMounted(async () => {
       events.value = [...basePublicEvents]
     }
   } catch (err) {
-    console.error("Fetch mock error, using base events fallback", err)
+    console.error("Unable to load event data, using local fallback", err)
     events.value = [...basePublicEvents]
   } finally {
     loadingEvents.value = false

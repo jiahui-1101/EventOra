@@ -107,7 +107,13 @@ const roleLabel = computed(() => {
 })
 
 const visibleNotifications = computed(() =>
-  notifications.value.filter((notification) => notification.audience === currentRole.value)
+  notifications.value.filter((notification) =>
+    notification.audience === currentRole.value
+    && (
+      !notification.recipientEmail
+      || notification.recipientEmail === authStore.user?.email?.toLowerCase()
+    )
+  )
 )
 
 const unreadCount = computed(() =>

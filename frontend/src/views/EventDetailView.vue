@@ -245,7 +245,7 @@ const backupAnnualTech = {
   venue: 'Dewan Sultan Iskandar, UTM JB',
   capacity: 120,
   confirmedCount: 78,
-  description: 'Annual Tech Symposium 2026 brings together students, organisers, and faculty members for a full-day technology event. The event includes tech talks, demo booths, student project showcases, and networking sessions.',
+  description: 'Annual Tech Symposium 2026 brings together students, organisers, and faculty members for a full-day technology event. The event includes tech talks, project showcase booths, student project showcases, and networking sessions.',
   coverClass: 'academic-cover',
   badgeClass: 'badge-blue',
   waitlistEnabled: true
