@@ -205,6 +205,7 @@ export function getApprovalEventDetails(event) {
     venue: 'TBC',
     deadline: 'TBC',
     price: 'Free',
+    image: '',
     description:
       'Event description preview. Admin can open full details to review the complete submission.',
     ...(approvalEventDetails[event.id] || {}),

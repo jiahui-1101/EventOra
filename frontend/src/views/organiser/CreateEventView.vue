@@ -176,8 +176,21 @@
 
       <label class="form-label">
         Event poster *
-        <div class="upload-box">
-          <div>
+        <input
+          ref="posterInput"
+          type="file"
+          accept="image/png,image/jpeg,image/jpg"
+          class="hidden-file-input"
+          @change="handlePosterUpload"
+        />
+
+        <div
+          class="upload-box"
+          :class="{ 'has-preview': form.posterImage }"
+          @click="$refs.posterInput.click()"
+        >
+          <img v-if="form.posterImage" :src="form.posterImage" alt="Event poster preview" />
+          <div v-else>
             Drag &amp; drop poster here or <strong>browse</strong><br />
             <span>PNG, JPG up to 5MB. Recommended 1200x400px</span>
           </div>
@@ -216,8 +229,8 @@
 
         <div
           class="review-banner"
-          :style="form.bannerImage ? {
-            backgroundImage: `linear-gradient(rgba(49, 46, 129, 0.35), rgba(49, 46, 129, 0.55)), url(${form.bannerImage})`
+          :style="previewImage ? {
+            backgroundImage: `linear-gradient(rgba(49, 46, 129, 0.35), rgba(49, 46, 129, 0.55)), url(${previewImage})`
           } : {}"
         >
           <div>
@@ -318,6 +331,7 @@ const defaultEvents = [
     description:
       'A practical evening workshop where students learn how to plan, prototype, and demo a simple AI-powered application.',
     bannerImage: '',
+    posterImage: '',
     eventDate: '12 Jun 2026',
     startTime: '7:30 PM',
     endTime: '9:30 PM',
@@ -343,6 +357,7 @@ const defaultEvents = [
     description:
       'A full-day hackathon for student teams to build software prototypes, receive mentor feedback, and present solutions.',
     bannerImage: '',
+    posterImage: '',
     eventDate: '5 Jul 2026',
     startTime: '9:00 AM',
     endTime: '6:00 PM',
@@ -368,6 +383,7 @@ const defaultEvents = [
     description:
       'A sports event for student teams to compete in an interfaculty futsal tournament at UTM Sports Hall.',
     bannerImage: '',
+    posterImage: '',
     eventDate: '28 Jun 2026',
     startTime: '9:00 AM',
     endTime: '1:00 PM',
@@ -399,6 +415,7 @@ const form = reactive({
   location: '',
   description: '',
   bannerImage: '',
+  posterImage: '',
   capacity: null,
   deadline: '',
   feeType: 'Free',
@@ -445,6 +462,8 @@ const formattedDeadline = computed(() => {
   })
 })
 
+const previewImage = computed(() => form.posterImage || form.bannerImage)
+
 onMounted(() => {
   const editId = route.query.edit
   if (!editId) return
@@ -463,6 +482,7 @@ onMounted(() => {
   form.location = event.location || ''
   form.description = event.description || ''
   form.bannerImage = event.bannerImage || ''
+  form.posterImage = event.posterImage || ''
   form.capacity = event.capacity || null
   form.deadline = toDateTimeLocal(event.registrationDeadline)
   form.feeType = event.feeType || 'Free'
@@ -477,17 +497,25 @@ onMounted(() => {
 })
 
 function handleBannerUpload(event) {
+  handleImageUpload(event, 'bannerImage', 'Banner image must be less than 5MB.')
+}
+
+function handlePosterUpload(event) {
+  handleImageUpload(event, 'posterImage', 'Poster image must be less than 5MB.')
+}
+
+function handleImageUpload(event, targetField, errorMessage) {
   const file = event.target.files?.[0]
   if (!file) return
 
   if (file.size > 5 * 1024 * 1024) {
-    stepError.value = 'Banner image must be less than 5MB.'
+    stepError.value = errorMessage
     return
   }
 
   const reader = new FileReader()
   reader.onload = () => {
-    form.bannerImage = reader.result
+    form[targetField] = reader.result
   }
   reader.readAsDataURL(file)
 }
@@ -537,6 +565,7 @@ function submitEvent(action) {
     location: form.location,
     description: form.description,
     bannerImage: form.bannerImage,
+    posterImage: form.posterImage,
     eventDate: form.startDateTime
       ? new Date(form.startDateTime).toLocaleDateString('en-GB', {
           day: 'numeric',
@@ -622,6 +651,7 @@ function addEventToApprovalQueue(event) {
       venue: event.location || 'TBC',
       deadline: formattedDeadline.value,
       price: event.feeType === 'Paid' ? `RM ${Number(event.feeAmount || 0).toFixed(2)}` : 'Free',
+      image: event.posterImage || event.bannerImage || '',
       description:
         event.description ||
         'Event description preview. Admin can open full details to review the complete submission.',
