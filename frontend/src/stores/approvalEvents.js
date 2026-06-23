@@ -6,6 +6,7 @@ export const loadingApprovalEvents = ref(false)
 export const approvalLoadError = ref('')
 
 const approvalStorageKey = 'eventora_approval_events_v2'
+const societyEventsStorageKey = 'eventora_society_events_v2'
 let hasLoadedApprovalEvents = false
 
 const approvalEventDetails = {
@@ -118,6 +119,39 @@ export function updateApprovalEvent(id, status, reason = '') {
     event.status = status
     event.reason = reason
     saveApprovalEvents()
+    updateSocietyEventStatus(id, status, reason)
+  }
+}
+
+function updateSocietyEventStatus(id, approvalStatus, reason = '') {
+  const savedEvents = localStorage.getItem(societyEventsStorageKey)
+  if (!savedEvents) return
+
+  try {
+    const events = JSON.parse(savedEvents)
+    if (!Array.isArray(events)) return
+
+    const organiserStatus = {
+      approved: 'published',
+      rejected: 'rejected',
+      pending: 'pending_approval',
+    }[approvalStatus]
+
+    if (!organiserStatus) return
+
+    const updatedEvents = events.map((event) =>
+      String(event.id) === String(id)
+        ? {
+            ...event,
+            status: organiserStatus,
+            rejectionReason: approvalStatus === 'rejected' ? reason : '',
+          }
+        : event
+    )
+
+    localStorage.setItem(societyEventsStorageKey, JSON.stringify(updatedEvents))
+  } catch (err) {
+    // Ignore invalid localStorage data and keep the approval flow usable.
   }
 }
 
