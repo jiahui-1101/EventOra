@@ -62,7 +62,7 @@
         </div>
 
         <div class="capacity-labels">
-          <span>{{ event.confirmedCount }} registered</span>
+              <span>{{ registeredCount }} registered</span>
           <strong :style="{ color: seatsLeft === 0 ? '#ef4444' : 'inherit' }">
             {{ seatsLeft === 0 ? 'Fully Booked' : `${seatsLeft} seats left` }}
           </strong>

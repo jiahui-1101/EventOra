@@ -5,7 +5,7 @@
         <p class="eyebrow">My tickets</p>
         <h1>Your EventOra passes</h1>
         <p>
-          View upcoming QR tickets, past events, and the manual ticket code fallback for check-in.
+          View upcoming QR tickets, previous events, and staff-verifiable ticket codes.
         </p>
       </div>
 
@@ -62,9 +62,9 @@
               v-else
               class="qr-placeholder"
             >
-              Generating QR
+              Preparing QR
             </div>
-            <small>Manual code fallback</small>
+            <small>Ticket code for staff check-in</small>
           </div>
         </article>
       </div>

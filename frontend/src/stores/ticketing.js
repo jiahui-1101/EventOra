@@ -119,7 +119,9 @@ export const useTicketingStore = defineStore('ticketing', () => {
     const event = getEventById(eventId)
     if (!event) return null
 
-    const confirmedCount = getConfirmedRegistrationsForEvent(eventId).length
+    const confirmedRegistrationsForEvent = getConfirmedRegistrationsForEvent(eventId)
+    const seededConfirmedCount = Number(event.confirmedCount || 0)
+    const confirmedCount = Math.max(seededConfirmedCount, confirmedRegistrationsForEvent.length)
     const waitlistCount = getWaitlistedRegistrationsForEvent(eventId).length
     const remainingSeats = Math.max(event.capacity - confirmedCount, 0)
     const isFull = remainingSeats === 0

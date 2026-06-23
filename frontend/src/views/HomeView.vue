@@ -284,10 +284,7 @@ onMounted(async () => {
         .filter((event) => event.status === 'published')
         .map(toPublicEvent)
 
-      const fetchedIds = new Set(fetchedEvents.map(e => String(e.id)))
-      const untouchedBase = basePublicEvents.filter(e => !fetchedIds.has(String(e.id)))
-
-      events.value = [...fetchedEvents, ...untouchedBase]
+      events.value = mergePublicEvents(fetchedEvents, loadPublishedSocietyEvents())
     } else {
       events.value = [...basePublicEvents]
     }
@@ -317,6 +314,29 @@ function toPublicEvent(event) {
     coverClass: event.coverClass || coverForCategory(category),
     badgeClass: event.badgeClass || badgeForCategory(category),
   }
+}
+
+function loadPublishedSocietyEvents() {
+  try {
+    const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || '[]')
+    if (!Array.isArray(savedEvents)) return []
+
+    return savedEvents
+      .filter((event) => event.status === 'published')
+      .map(toPublicEvent)
+  } catch (error) {
+    return []
+  }
+}
+
+function mergePublicEvents(...eventGroups) {
+  const merged = new Map()
+
+  eventGroups.flat().forEach((event) => {
+    merged.set(String(event.id), event)
+  })
+
+  return [...merged.values()]
 }
 
 function coverForCategory(categoryName) {
