@@ -442,6 +442,16 @@ function showCreateEventToast() {
     toast.message = 'The draft event has been removed from the organiser workspace.'
   }
 
+  if (eventAction === 'submission_cancelled') {
+    toast.title = 'Submission cancelled'
+    toast.message = 'The event is back to draft and can be edited before resubmission.'
+  }
+
+  if (eventAction === 'cancelled') {
+    toast.title = 'Event cancelled'
+    toast.message = 'The published event has been cancelled and hidden from student registration.'
+  }
+
   toast.visible = true
   setTimeout(() => {
     toast.visible = false
