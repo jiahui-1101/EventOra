@@ -6,7 +6,7 @@ export const approvalEvents = ref([])
 export const loadingApprovalEvents = ref(false)
 export const approvalLoadError = ref('')
 
-const approvalStorageKey = 'eventora_approval_events_v2'
+const approvalStorageKey = 'eventora_approval_events_v3'
 const societyEventsStorageKey = 'eventora_society_events_v2'
 let hasLoadedApprovalEvents = false
 
@@ -14,12 +14,12 @@ const approvalEventDetails = {
   104: {
     submittedBy: 'Siti Noor',
     submittedAt: 'just now',
-    displayDate: '15 Jul 2026, 9:00 AM - 5:00 PM',
-    venue: 'Dewan Sultan Iskandar, UTM JB',
-    deadline: '10 Jul 2026, 11:59 PM',
-    price: 'RM 5.00',
+    displayDate: '15 Jul 2026, 10:00 AM - 4:00 PM',
+    venue: 'N28 Computer Lab',
+    deadline: '12 Jul 2026, 11:59 PM',
+    price: 'Free',
     description:
-      'Annual Tech Symposium 2026 brings together students, organisers, and faculty members for a full-day technology event. The event includes tech talks, project showcase booths, student project showcases, and networking sessions.',
+      'Data Analytics Bootcamp introduces students to spreadsheet cleaning, dashboard planning, and beginner-friendly data storytelling through guided exercises.',
   },
   101: {
     submittedBy: 'Siti Noor',
