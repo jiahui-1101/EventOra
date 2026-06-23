@@ -171,6 +171,14 @@
               Export Feedback CSV
             </button>
           </div>
+          <!-- Chart.js draws onto this single canvas element. The
+               v-if on the parent div means this canvas only exists in
+               the DOM while this tab is active - that's exactly why the
+               watch(currentTab, ...) below has to redraw on every
+               re-entry into this tab, not just on first page load. -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;height:260px;">
+            <canvas ref="feedbackChartCanvas"></canvas>
+          </div>
           <div class="event-grid">
             <article v-for="(f, idx) in feedbackData" :key="idx" class="event-card">
               <div class="event-card-body">
@@ -196,8 +204,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
+
+// Chart.js v4 is "tree-shakeable" - it does NOT auto-register every chart
+// type/scale like v2 did. If you skip this line, the bar chart silently
+// fails to render with no console error, which is a classic gotcha.
+Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
 
 const route = useRoute()
 const router = useRouter()
@@ -242,6 +256,67 @@ const feedbackData = [
   { rating: 5, comment: 'Very inspiring' },
 ]
 
+// Rubric target: "Organiser Dashboard with Chart.js feedback stats and
+// ratings" (PR1 Role Split). This computed turns the flat feedbackData
+// array into a 5-bucket count, e.g. how many people gave 1 star, how
+// many gave 2 stars, etc. Chart.js needs data already shaped into
+// "labels" + "values" arrays - it won't do the counting for you.
+const ratingDistribution = computed(() => {
+  const counts = [0, 0, 0, 0, 0] // index 0 = 1 star ... index 4 = 5 stars
+  feedbackData.forEach((f) => {
+    if (f.rating >= 1 && f.rating <= 5) counts[f.rating - 1] += 1
+  })
+  return counts
+})
+
+// This <canvas> ref is how Vue hands Chart.js a raw DOM element to draw
+// on. Chart.js itself has no idea Vue exists - it just needs a canvas.
+const feedbackChartCanvas = ref(null)
+let feedbackChartInstance = null
+
+function renderFeedbackChart() {
+  // Guard: the canvas only exists in the DOM while the Feedback tab is
+  // active (because of v-if="currentTab === 'feedback'" in the template).
+  // If we try to draw before it exists, Chart.js throws.
+  if (!feedbackChartCanvas.value) return
+
+  // If a chart was already drawn on this canvas before (e.g. user left
+  // the tab and came back), destroy the old instance first. Chart.js
+  // does not auto-clean-up - skipping this causes a memory leak and
+  // visual glitches where the old chart and new chart overlap.
+  if (feedbackChartInstance) {
+    feedbackChartInstance.destroy()
+  }
+
+  feedbackChartInstance = new Chart(feedbackChartCanvas.value, {
+    type: 'bar',
+    data: {
+      labels: ['1 ★', '2 ★', '3 ★', '4 ★', '5 ★'],
+      datasets: [
+        {
+          label: 'Number of responses',
+          data: ratingDistribution.value,
+          backgroundColor: '#6366f1',
+          borderRadius: 6,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }, // counts are whole numbers, no "1.5 responses"
+        },
+      },
+    },
+  })
+}
+
 const tabs = [
   { key: 'events', label: 'Events' },
   { key: 'registrations', label: 'Registrations' },
@@ -250,6 +325,22 @@ const tabs = [
 ]
 
 const currentTab = ref('events')
+
+// This watch must come AFTER currentTab is declared above (const is not
+// hoisted the way function declarations are - referencing it earlier
+// throws "Cannot access before initialization"). It fires every time the
+// organiser switches tabs. Because the canvas is wrapped in v-if, Vue
+// destroys/recreates it every time the tab switches, so the chart must
+// be redrawn every time "feedback" becomes active, not just once on
+// page load.
+watch(currentTab, async (tab) => {
+  if (tab === 'feedback') {
+    // nextTick waits for Vue to actually finish inserting the <canvas>
+    // into the DOM (because of v-if) before we try to draw on it.
+    await nextTick()
+    renderFeedbackChart()
+  }
+})
 
 const societyEvents = ref(
   JSON.parse(localStorage.getItem(eventsStorageKey) || 'null') || defaultEvents
