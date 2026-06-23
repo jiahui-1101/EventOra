@@ -425,13 +425,11 @@ function showCreateEventToast() {
   if (eventSaved === 'draft') {
     toast.title = 'Draft saved successfully'
     toast.message = 'The event is saved as a draft and can be edited before submission.'
-    addCreatedEventToDashboard('draft')
   }
 
   if (eventSaved === 'submitted') {
     toast.title = 'Event submitted for approval'
     toast.message = 'Faculty Admin will review the event before it appears in the public list.'
-    addCreatedEventToDashboard('pending_approval')
   }
 
   if (eventAction === 'submitted') {
@@ -449,32 +447,6 @@ function showCreateEventToast() {
     toast.visible = false
     router.replace({ path: route.path })
   }, 3500)
-}
-
-function addCreatedEventToDashboard(status) {
-  const mockId = 'created-event-annual-tech-symposium'
-  const alreadyAdded = societyEvents.value.some((ev) => ev.mockId === mockId)
-  if (alreadyAdded) return
-
-  societyEvents.value.unshift({
-    id: Date.now(),
-    mockId,
-    title: 'Annual Tech Symposium 2026',
-    category: 'Academic',
-    location: 'Dewan Sultan Iskandar, UTM JB',
-    eventDate: '15 Jul 2026',
-    startTime: '9:00 AM',
-    endTime: '5:00 PM',
-    feeType: 'Free',
-    feeAmount: 0,
-    status,
-    registrations: 0,
-    checkedIn: 0,
-    avgRating: null,
-    capacity: 120,
-  })
-
-  saveEvents()
 }
 
 function normaliseEvent(rawEvent) {
