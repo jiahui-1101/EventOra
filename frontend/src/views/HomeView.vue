@@ -280,7 +280,9 @@ onMounted(async () => {
     const res = await fetch('/mock/events.json')
     if (res.ok) {
       const rawEvents = await res.json()
-      const fetchedEvents = rawEvents.map(toPublicEvent)
+      const fetchedEvents = rawEvents
+        .filter((event) => event.status === 'published')
+        .map(toPublicEvent)
 
       const fetchedIds = new Set(fetchedEvents.map(e => String(e.id)))
       const untouchedBase = basePublicEvents.filter(e => !fetchedIds.has(String(e.id)))

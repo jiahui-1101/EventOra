@@ -96,13 +96,24 @@
             <strong>RM {{ event.price.toFixed(2) }}</strong>
           </div>
 
-          <label for="mock-card">Campus card number</label>
+          <div class="payment-methods" aria-label="Payment method">
+            <button
+              v-for="method in paymentMethods"
+              :key="method.id"
+              :class="{ active: paymentMethod === method.id }"
+              type="button"
+              @click="paymentMethod = method.id"
+            >
+              {{ method.label }}
+            </button>
+          </div>
+
+          <label for="payment-reference">{{ selectedPaymentMethod.referenceLabel }}</label>
           <input
-            id="mock-card"
-            v-model="mockCardNumber"
+            id="payment-reference"
+            v-model="paymentReference"
             type="text"
-            inputmode="numeric"
-            placeholder="4242 4242 4242 4242"
+            :placeholder="selectedPaymentMethod.placeholder"
           />
 
           <div class="checkout-actions">
@@ -111,14 +122,14 @@
               type="button"
               @click="approvePayment"
             >
-              Pay and issue ticket
+              Pay now
             </button>
             <button
               class="button button-secondary full-width"
               type="button"
               @click="declinePayment"
             >
-              Cancel payment
+              Cancel
             </button>
           </div>
         </div>
@@ -167,11 +178,32 @@ const favorites = ref([])
 const shareToast = ref(false)
 const pendingRegistration = ref(null)
 const confirmedTicket = ref(null)
-const mockCardNumber = ref('4242 4242 4242 4242')
+const paymentMethod = ref('campus-card')
+const paymentReference = ref('4242 4242 4242 4242')
 const registrationNotice = ref({
   type: '',
   message: '',
 })
+const paymentMethods = [
+  {
+    id: 'campus-card',
+    label: 'Campus Card',
+    referenceLabel: 'Campus card number',
+    placeholder: '4242 4242 4242 4242',
+  },
+  {
+    id: 'online-banking',
+    label: 'Online Banking',
+    referenceLabel: 'Bank reference',
+    placeholder: 'FPX reference number',
+  },
+  {
+    id: 'ewallet',
+    label: 'E-wallet',
+    referenceLabel: 'Wallet phone number',
+    placeholder: '+60 12 345 6789',
+  },
+]
 
 const favKey = 'eventora_favs_v2'
 
@@ -232,9 +264,12 @@ const isFavorited = computed(() => event.value ? favorites.value.includes(event.
 
 const formattedDate = computed(() => event.value ? new Date(event.value.startAt).toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' }) : '')
 const formattedDeadline = computed(() => event.value ? new Date(event.value.registrationDeadline).toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' }) : '')
+const selectedPaymentMethod = computed(() =>
+  paymentMethods.find((method) => method.id === paymentMethod.value) || paymentMethods[0]
+)
 
 const buttonLabel = computed(() => {
-  if (seatsLeft.value > 0) return event.value.priceType === 'paid' ? 'Proceed to Mock Checkout' : 'Confirm Free Registration'
+  if (seatsLeft.value > 0) return event.value.priceType === 'paid' ? 'Proceed to secure checkout' : 'Confirm Free Registration'
   return event.value.waitlistEnabled ? 'Join Waitlist' : 'Registration Closed'
 })
 
@@ -299,7 +334,7 @@ function reserveSeat() {
       }
 
       pendingRegistration.value = result.registration
-      setNotice('info', 'Your seat is held while you complete the mock payment.')
+      setNotice('info', 'Your seat is held while you complete payment.')
       return
     }
 
@@ -319,6 +354,11 @@ function approvePayment() {
   if (!pendingRegistration.value) return
 
   try {
+    if (!paymentReference.value.trim()) {
+      setNotice('error', 'Enter a valid payment reference to continue.')
+      return
+    }
+
     const result = ticketingStore.completeMockPayment(pendingRegistration.value.id)
     confirmedTicket.value = result.ticket
     pendingRegistration.value = null
@@ -418,6 +458,30 @@ function declinePayment() {
   border-radius: 12px;
   padding: 12px;
   font: inherit;
+}
+
+.payment-methods {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.payment-methods button {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 8px;
+  color: #475569;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.payment-methods button.active {
+  border-color: #4f46e5;
+  color: #3730a3;
+  background: #eef2ff;
 }
 
 .checkout-actions {
