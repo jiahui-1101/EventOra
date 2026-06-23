@@ -50,7 +50,7 @@ function createRegistrationId(eventId, attendeeId) {
 }
 
 function normalizeEmail(email) {
-  return email.trim().toLowerCase()
+  return String(email || '').trim().toLowerCase()
 }
 
 function compareTicketEventTime(first, second) {
@@ -123,14 +123,20 @@ export const useTicketingStore = defineStore('ticketing', () => {
     const confirmedRegistrationsForEvent = getConfirmedRegistrationsForEvent(eventId)
     const seededConfirmedCount = Number(event.confirmedCount || 0)
     const confirmedCount = Math.max(seededConfirmedCount, confirmedRegistrationsForEvent.length)
+    const pendingPaymentCount = registrations.value.filter((registration) =>
+      registration.eventId === eventId && registration.status === 'pending_payment'
+    ).length
+    const occupiedCount = confirmedCount + pendingPaymentCount
     const waitlistCount = getWaitlistedRegistrationsForEvent(eventId).length
-    const remainingSeats = Math.max(event.capacity - confirmedCount, 0)
+    const remainingSeats = Math.max(event.capacity - occupiedCount, 0)
     const isFull = remainingSeats === 0
 
     return {
       eventId,
       capacity: event.capacity,
       confirmedCount,
+      pendingPaymentCount,
+      occupiedCount,
       waitlistCount,
       remainingSeats,
       isFull,
@@ -139,7 +145,9 @@ export const useTicketingStore = defineStore('ticketing', () => {
   }
 
   function getTicketsForAttendee(email) {
-    return tickets.value.filter((ticket) => ticket.attendeeEmail === email)
+    const attendeeEmail = normalizeEmail(email)
+
+    return tickets.value.filter((ticket) => normalizeEmail(ticket.attendeeEmail) === attendeeEmail)
   }
 
   function getActiveTicketsForAttendee(email) {
@@ -271,6 +279,51 @@ export const useTicketingStore = defineStore('ticketing', () => {
     writeStoredTicketingState(createSnapshot())
   }
 
+  function adjustConfirmedCount(eventId, delta) {
+    const event = getEventById(eventId)
+    if (!event) return
+
+    const currentCount = Number(event.confirmedCount || 0)
+    event.confirmedCount = Math.max(currentCount + delta, 0)
+  }
+
+  function ensureEventAvailable(eventPayload) {
+    if (!eventPayload?.id) return null
+
+    const existingEvent = getEventById(eventPayload.id)
+    const normalisedEvent = {
+      ...eventPayload,
+      title: eventPayload.title,
+      description: eventPayload.description || 'Event details will be shared by the organiser.',
+      societyId: eventPayload.societyId || eventPayload.society || 'CUSTOM-SOCIETY',
+      societyName: eventPayload.societyName || eventPayload.society || 'EventOra Society',
+      category: eventPayload.category || 'academic',
+      priceType: eventPayload.priceType || (Number(eventPayload.price || eventPayload.feeAmount || 0) > 0 ? 'paid' : 'free'),
+      price: Number(eventPayload.price ?? eventPayload.feeAmount ?? 0),
+      currency: eventPayload.currency || 'MYR',
+      startAt: eventPayload.startAt || eventPayload.date || new Date().toISOString(),
+      endAt: eventPayload.endAt || eventPayload.date || eventPayload.startAt || new Date().toISOString(),
+      registrationDeadline: eventPayload.registrationDeadline || eventPayload.deadline || eventPayload.date || new Date().toISOString(),
+      venue: eventPayload.venue || eventPayload.location || 'Venue not set',
+      capacity: Number(eventPayload.capacity || 0),
+      confirmedCount: Number(eventPayload.confirmedCount ?? eventPayload.registrations ?? 0),
+      waitlistEnabled: eventPayload.waitlistEnabled ?? eventPayload.waitlist !== 'disabled',
+      status: eventPayload.status || 'published',
+      coverClass: eventPayload.coverClass || 'academic-cover',
+      badgeClass: eventPayload.badgeClass || 'badge-blue',
+    }
+
+    if (existingEvent) {
+      Object.assign(existingEvent, normalisedEvent)
+      persistState()
+      return existingEvent
+    }
+
+    events.value.push(normalisedEvent)
+    persistState()
+    return normalisedEvent
+  }
+
   function notifyAttendee({ recipientEmail, title, message, type = 'Ticketing', badgeClass = 'badge-blue' }) {
     addNotification({
       audience: 'attendee',
@@ -377,6 +430,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     registration.ticketId = ticket.id
     registrations.value.push(registration)
     tickets.value.push(ticket)
+    adjustConfirmedCount(eventId, 1)
     notifyAttendee({
       recipientEmail: registration.attendeeEmail,
       title: 'Registration confirmed',
@@ -454,6 +508,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     registration.paymentStatus = 'paid'
     registration.ticketId = ticket.id
     tickets.value.push(ticket)
+    adjustConfirmedCount(registration.eventId, 1)
     notifyAttendee({
       recipientEmail: registration.attendeeEmail,
       title: 'Payment confirmed',
@@ -509,6 +564,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     nextRegistration.waitlistPosition = null
     nextRegistration.ticketId = ticket.id
     tickets.value.push(ticket)
+    adjustConfirmedCount(eventId, 1)
     renumberWaitlist(eventId)
     notifyAttendee({
       recipientEmail: nextRegistration.attendeeEmail,
@@ -545,6 +601,10 @@ export const useTicketingStore = defineStore('ticketing', () => {
     if (ticket) {
       ticket.status = 'cancelled'
       ticket.cancelledAt = cancelledAt
+    }
+
+    if (wasConfirmed) {
+      adjustConfirmedCount(registration.eventId, -1)
     }
 
     const promoted = wasConfirmed
@@ -619,6 +679,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     checkInTicket,
     getActiveRegistrationForAttendee,
     persistState,
+    ensureEventAvailable,
     joinWaitlist,
     registerFreeEvent,
     beginPaidRegistration,

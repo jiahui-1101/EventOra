@@ -308,7 +308,7 @@ function toPublicEvent(event) {
     category,
     price: event.price ?? 0,
     priceType: event.priceType ?? 'free',
-    date: event.startAt || new Date().toISOString(),
+    date: event.startAt || event.date || new Date().toISOString(),
     venue: event.venue || 'Venue not set',
     seatsLeft: Math.max(capacity - confirmed, 0),
     coverClass: event.coverClass || coverForCategory(category),

@@ -188,11 +188,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTicketingStore } from '@/stores/ticketing'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const ticketingStore = useTicketingStore()
 const loading = ref(true)
@@ -231,6 +232,7 @@ const paymentMethods = [
 ]
 
 const favKey = 'eventora_favs_v2'
+const societyEventsStorageKey = 'eventora_society_events_v2'
 
 const backupAnnualTech = {
   id: 'event-annual-tech-2026',
@@ -257,18 +259,21 @@ onMounted(async () => {
     await ticketingStore.loadSeedData()
     const res = await fetch('/mock/events.json')
     const all = await res.json()
+    const localEvents = loadPublishedSocietyEvents()
     
-    let target = all.find(e => String(e.id) === String(route.params.id))
+    let target = [...all.filter((candidate) => candidate.status === 'published'), ...localEvents]
+      .find(e => String(e.id) === String(route.params.id))
     
     if (!target && route.params.id === 'event-annual-tech-2026') {
       target = backupAnnualTech
     }
     
-    event.value = target || null
+    event.value = target ? ticketingStore.ensureEventAvailable(target) : null
   } catch(e) {
     console.error(e)
     if (route.params.id === 'event-annual-tech-2026') {
       event.value = backupAnnualTech
+      ticketingStore.ensureEventAvailable(backupAnnualTech)
     }
   } finally {
     loading.value = false
@@ -351,6 +356,17 @@ function addToGoogleCalendar() {
   window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.value.title)}&dates=${s}/${e}&details=${encodeURIComponent(event.value.description)}&location=${encodeURIComponent(event.value.venue)}`, '_blank')
 }
 
+function loadPublishedSocietyEvents() {
+  try {
+    const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || '[]')
+    if (!Array.isArray(savedEvents)) return []
+
+    return savedEvents.filter((savedEvent) => savedEvent.status === 'published')
+  } catch (error) {
+    return []
+  }
+}
+
 function attendeePayload() {
   const user = authStore.user
 
@@ -367,6 +383,17 @@ function setNotice(type, message) {
 
 function reserveSeat() {
   if (!event.value) return
+
+  if (!authStore.isLoggedIn) {
+    setNotice('error', 'Please sign in before registering for this event.')
+    router.push({ name: 'login' })
+    return
+  }
+
+  if (authStore.role !== 'attendee') {
+    setNotice('error', 'Only attendee accounts can register for events.')
+    return
+  }
 
   try {
     if (event.value.priceType === 'paid' && seatsLeft.value > 0) {
