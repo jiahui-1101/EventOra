@@ -64,11 +64,7 @@ const routes = [
     name: 'my-completed',
     component: () => import('@/views/MyCompletedEventsView.vue'),
   },
-  {
-    path: '/organiser/feedback',
-    name: 'organiser-feedback',
-    component: () => import('@/views/organiser/OrganiserFeedbackView.vue'),
-  },
+  
 ]
 
 const router = createRouter({
