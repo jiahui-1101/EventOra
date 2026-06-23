@@ -34,6 +34,21 @@
           </select>
         </div>
 
+        <div class="checkin-stats" aria-label="Check-in progress">
+          <article>
+            <span>Tickets issued</span>
+            <strong>{{ selectedEventTickets.length }}</strong>
+          </article>
+          <article>
+            <span>Checked in</span>
+            <strong>{{ checkedInTickets.length }}</strong>
+          </article>
+          <article>
+            <span>Remaining</span>
+            <strong>{{ pendingCheckIns.length }}</strong>
+          </article>
+        </div>
+
         <div class="scanner-window">
           <div class="scanner-corners"></div>
           <div class="scanner-line"></div>
@@ -93,6 +108,22 @@
             <dd>{{ formatDate(result.ticket.checkedInAt) }}</dd>
           </div>
         </dl>
+
+        <div
+          v-if="recentCheckIns.length"
+          class="recent-checkins"
+        >
+          <h3>Recent check-ins</h3>
+          <ul>
+            <li
+              v-for="ticket in recentCheckIns"
+              :key="ticket.id"
+            >
+              <span>{{ ticket.attendeeName }}</span>
+              <small>{{ formatTime(ticket.checkedInAt) }}</small>
+            </li>
+          </ul>
+        </div>
       </aside>
     </section>
   </main>
@@ -126,6 +157,20 @@ const organiserEvents = computed(() =>
 
 const selectedEvent = computed(() =>
   ticketingStore.getEventById(selectedEventId.value) || organiserEvents.value[0] || null
+)
+const selectedEventTickets = computed(() =>
+  ticketingStore.activeTickets.filter((ticket) => ticket.eventId === selectedEvent.value?.id)
+)
+const checkedInTickets = computed(() =>
+  selectedEventTickets.value.filter((ticket) => ticket.checkedInAt)
+)
+const pendingCheckIns = computed(() =>
+  selectedEventTickets.value.filter((ticket) => !ticket.checkedInAt)
+)
+const recentCheckIns = computed(() =>
+  [...checkedInTickets.value]
+    .sort((first, second) => new Date(second.checkedInAt).getTime() - new Date(first.checkedInAt).getTime())
+    .slice(0, 4)
 )
 
 const resultLabel = computed(() => {
@@ -196,6 +241,13 @@ function formatDate(dateValue) {
   return new Intl.DateTimeFormat('en-MY', {
     dateStyle: 'medium',
     timeStyle: 'short',
+  }).format(new Date(dateValue))
+}
+
+function formatTime(dateValue) {
+  return new Intl.DateTimeFormat('en-MY', {
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(dateValue))
 }
 </script>
@@ -279,6 +331,34 @@ function formatDate(dateValue) {
   border-radius: 14px;
   padding: 12px 14px;
   font: inherit;
+}
+
+.checkin-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.checkin-stats article {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.checkin-stats span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.checkin-stats strong {
+  color: #0f172a;
+  font-size: 1.5rem;
 }
 
 .scanner-window {
@@ -385,6 +465,37 @@ function formatDate(dateValue) {
   font-weight: 800;
 }
 
+.recent-checkins {
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.recent-checkins h3 {
+  margin: 0 0 10px;
+  color: #0f172a;
+}
+
+.recent-checkins ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recent-checkins li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.recent-checkins small {
+  color: #64748b;
+  font-weight: 700;
+}
+
 @keyframes scan-line {
   0% {
     top: 25%;
@@ -400,6 +511,10 @@ function formatDate(dateValue) {
 @media (max-width: 820px) {
   .checkin-hero,
   .checkin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .checkin-stats {
     grid-template-columns: 1fr;
   }
 }
