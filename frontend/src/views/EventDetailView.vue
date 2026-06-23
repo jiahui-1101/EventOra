@@ -72,11 +72,78 @@
           <span :style="{ width: `${occupancyRate}%`, background: seatsLeft === 0 ? '#ef4444' : '#3b82f6' }"></span>
         </div>
 
+        <div
+          v-if="registrationNotice.message"
+          :class="['registration-notice', registrationNotice.type]"
+        >
+          {{ registrationNotice.message }}
+        </div>
+
+        <div
+          v-if="pendingRegistration"
+          class="checkout-card"
+        >
+          <div class="checkout-row">
+            <span>Ticket price</span>
+            <strong>RM {{ event.price.toFixed(2) }}</strong>
+          </div>
+          <div class="checkout-row">
+            <span>Processing fee</span>
+            <strong>RM 0.00</strong>
+          </div>
+          <div class="checkout-total">
+            <span>Total</span>
+            <strong>RM {{ event.price.toFixed(2) }}</strong>
+          </div>
+
+          <label for="mock-card">Campus card number</label>
+          <input
+            id="mock-card"
+            v-model="mockCardNumber"
+            type="text"
+            inputmode="numeric"
+            placeholder="4242 4242 4242 4242"
+          />
+
+          <div class="checkout-actions">
+            <button
+              class="button button-primary full-width"
+              type="button"
+              @click="approvePayment"
+            >
+              Pay and issue ticket
+            </button>
+            <button
+              class="button button-secondary full-width"
+              type="button"
+              @click="declinePayment"
+            >
+              Cancel payment
+            </button>
+          </div>
+        </div>
+
+        <div
+          v-if="confirmedTicket"
+          class="ticket-created-card"
+        >
+          <span>Ticket issued</span>
+          <strong>{{ confirmedTicket.id }}</strong>
+          <p>Your QR ticket is ready in My Tickets.</p>
+          <router-link
+            class="button button-secondary full-width"
+            to="/tickets"
+          >
+            View My Tickets
+          </router-link>
+        </div>
+
         <button 
+          v-if="!pendingRegistration && !confirmedTicket"
           class="button button-primary full-width" 
           style="justify-content: center;"
           :disabled="seatsLeft === 0 && !event.waitlistEnabled"
-          @click="proceedFlow"
+          @click="reserveSeat"
         >
           {{ buttonLabel }}
         </button>
@@ -88,12 +155,23 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { useTicketingStore } from '@/stores/ticketing'
 
 const route = useRoute()
+const authStore = useAuthStore()
+const ticketingStore = useTicketingStore()
 const loading = ref(true)
 const event = ref(null)
 const favorites = ref([])
 const shareToast = ref(false)
+const pendingRegistration = ref(null)
+const confirmedTicket = ref(null)
+const mockCardNumber = ref('4242 4242 4242 4242')
+const registrationNotice = ref({
+  type: '',
+  message: '',
+})
 
 const favKey = 'eventora_favs_v2'
 
@@ -119,6 +197,7 @@ const backupAnnualTech = {
 onMounted(async () => {
   favorites.value = JSON.parse(localStorage.getItem(favKey) || '[]')
   try {
+    await ticketingStore.loadSeedData()
     const res = await fetch('/mock/events.json')
     const all = await res.json()
     
@@ -139,8 +218,16 @@ onMounted(async () => {
   }
 })
 
-const seatsLeft = computed(() => event.value ? Math.max(event.value.capacity - event.value.confirmedCount, 0) : 0)
-const occupancyRate = computed(() => event.value ? Math.min(Math.round((event.value.confirmedCount / event.value.capacity) * 100), 100) : 0)
+const capacitySummary = computed(() =>
+  event.value ? ticketingStore.getEventCapacitySummary(event.value.id) : null
+)
+const registeredCount = computed(() => capacitySummary.value?.confirmedCount ?? event.value?.confirmedCount ?? 0)
+const seatsLeft = computed(() =>
+  event.value ? Math.max(event.value.capacity - registeredCount.value, 0) : 0
+)
+const occupancyRate = computed(() =>
+  event.value ? Math.min(Math.round((registeredCount.value / event.value.capacity) * 100), 100) : 0
+)
 const isFavorited = computed(() => event.value ? favorites.value.includes(event.value.id) : false)
 
 const formattedDate = computed(() => event.value ? new Date(event.value.startAt).toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' }) : '')
@@ -186,13 +273,171 @@ function addToGoogleCalendar() {
   window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.value.title)}&dates=${s}/${e}&details=${encodeURIComponent(event.value.description)}&location=${encodeURIComponent(event.value.venue)}`, '_blank')
 }
 
-function proceedFlow() {
-  if (seatsLeft.value === 0 && event.value.waitlistEnabled) {
-    window.location.href = '/src/pages/waitlist-demo.html'
-  } else if (event.value.priceType === 'paid') {
-    window.location.href = `/src/pages/checkout-demo.html?event=${event.value.id}`
-  } else {
-    window.location.href = `/src/pages/tickets.html?status=free-confirmed`
+function attendeePayload() {
+  const user = authStore.user
+
+  return {
+    id: user?.matric || user?.email || 'attendee-student-demo',
+    name: user ? `${user.firstName} ${user.lastName}` : 'Student User',
+    email: user?.email || 'student@utm.my',
+  }
+}
+
+function setNotice(type, message) {
+  registrationNotice.value = { type, message }
+}
+
+function reserveSeat() {
+  if (!event.value) return
+
+  try {
+    if (event.value.priceType === 'paid' && seatsLeft.value > 0) {
+      const result = ticketingStore.beginPaidRegistration(event.value.id, attendeePayload())
+      if (result.payment === null) {
+        setNotice('warning', `You have joined the waitlist at position #${result.registration.waitlistPosition}.`)
+        return
+      }
+
+      pendingRegistration.value = result.registration
+      setNotice('info', 'Your seat is held while you complete the mock payment.')
+      return
+    }
+
+    const result = ticketingStore.registerFreeEvent(event.value.id, attendeePayload())
+    if (result.ticket) {
+      confirmedTicket.value = result.ticket
+      setNotice('success', 'Registration confirmed. Your QR ticket has been issued.')
+    } else {
+      setNotice('warning', `You have joined the waitlist at position #${result.registration.waitlistPosition}.`)
+    }
+  } catch (error) {
+    setNotice('error', error instanceof Error ? error.message : 'Registration failed.')
+  }
+}
+
+function approvePayment() {
+  if (!pendingRegistration.value) return
+
+  try {
+    const result = ticketingStore.completeMockPayment(pendingRegistration.value.id)
+    confirmedTicket.value = result.ticket
+    pendingRegistration.value = null
+    setNotice('success', 'Payment approved. Your QR ticket has been issued.')
+  } catch (error) {
+    setNotice('error', error instanceof Error ? error.message : 'Payment could not be completed.')
+  }
+}
+
+function declinePayment() {
+  if (!pendingRegistration.value) return
+
+  try {
+    ticketingStore.declineMockPayment(pendingRegistration.value.id)
+    pendingRegistration.value = null
+    setNotice('error', 'Payment cancelled. No ticket was issued.')
+  } catch (error) {
+    setNotice('error', error instanceof Error ? error.message : 'Payment could not be cancelled.')
   }
 }
 </script>
+
+<style scoped>
+.registration-notice {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.registration-notice.success,
+.ticket-created-card {
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.registration-notice.info {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.registration-notice.warning {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.registration-notice.error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.checkout-card,
+.ticket-created-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 18px;
+}
+
+.checkout-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.checkout-row,
+.checkout-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.checkout-row {
+  color: #64748b;
+}
+
+.checkout-total {
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.checkout-card label {
+  color: #475569;
+  font-weight: 800;
+}
+
+.checkout-card input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px;
+  font: inherit;
+}
+
+.checkout-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.ticket-created-card span {
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ticket-created-card strong {
+  color: #064e3b;
+  letter-spacing: 0.08em;
+}
+
+.ticket-created-card p {
+  margin: 0;
+  color: #047857;
+}
+</style>
