@@ -174,9 +174,19 @@
 
       <div
         v-if="filteredEvents.length === 0"
-        style="padding:40px;text-align:center;"
+        class="empty-state-card"
       >
-        No events found.
+        <span class="empty-icon">📭</span>
+        <h3>No matching events found</h3>
+        <p>We couldn't find any society activities matching your current filters or search query.</p>
+        
+        <button 
+          class="button button-secondary" 
+          @click="clearFilters"
+          style="margin-top: 16px;"
+        >
+          Reset All Filters
+        </button>
       </div>
     </section>
   </main>
@@ -448,5 +458,53 @@ function capitalize(text) {
 .filter-bar select:focus {
   border-color: var(--primary, #2563eb);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.empty-state-card {
+  grid-column: 1 / -1; 
+  width: 100%;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 20px;
+  background-color: var(--bg-surface, #f8fafc);
+  border: 2px dashed var(--border, #cbd5e1);
+  border-radius: 16px;
+  text-align: center;
+  margin: 16px 0;
+  transition: border-color 0.2s ease;
+}
+
+.empty-state-card:hover {
+  border-color: #94a3b8;
+}
+
+.empty-icon {
+  font-size: 2.8rem;
+  margin-bottom: 12px;
+  display: inline-block;
+  animation: float 3s ease-in-out infinite;
+}
+
+.empty-state-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.35rem;
+  color: var(--text, #1e293b);
+  font-weight: 700;
+}
+
+.empty-state-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 </style>
