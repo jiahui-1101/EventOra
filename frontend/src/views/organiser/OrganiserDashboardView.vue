@@ -299,7 +299,8 @@ const liveAvgRating = computed(() => {
 
 const ratingDistribution = computed(() => {
   const counts = [0, 0, 0, 0, 0]
-  feedbackData.forEach((f) => {
+  
+  feedbackData.value.forEach((f) => {
     if (f.rating >= 1 && f.rating <= 5) counts[f.rating - 1] += 1
   })
   return counts
