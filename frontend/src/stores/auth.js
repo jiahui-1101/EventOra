@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-const demoProfiles = {
+const roleProfiles = {
   attendee: {
     firstName: 'Student',
     lastName: 'User',
@@ -42,7 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
     const baseProfile =
       registeredUser.value && registeredUser.value.email === email
         ? registeredUser.value
-        : demoProfiles[selectedRole]
+        : roleProfiles[selectedRole]
 
     const sessionUser = { ...baseProfile, email, role: selectedRole }
 

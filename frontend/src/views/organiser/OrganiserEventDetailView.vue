@@ -180,7 +180,7 @@ const defaultEvents = [
     society: 'Computer Society UTM',
     location: 'N28A Innovation Lab',
     description:
-      'A practical evening workshop where students learn how to plan, prototype, and demo a simple AI-powered application.',
+      'A practical evening workshop where students learn how to plan, working version, and present a simple AI-powered application.',
     bannerImage: '',
     posterImage: '',
     eventDate: '12 Jun 2026',
@@ -200,7 +200,7 @@ const defaultEvents = [
     society: 'Computer Society UTM',
     location: 'FAB Lab',
     description:
-      'A full-day hackathon for student teams to build software prototypes, receive mentor feedback, and present solutions.',
+      'A full-day hackathon for student teams to build working software builds, receive mentor feedback, and present solutions.',
     bannerImage: '',
     posterImage: '',
     eventDate: '5 Jul 2026',

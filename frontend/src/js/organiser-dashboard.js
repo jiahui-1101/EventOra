@@ -364,14 +364,14 @@ function renderCurrentTab(tab) {
 }
 
 function addCreatedEventToDashboard(status) {
-  const mockCreatedId = "created-event-annual-tech-symposium";
+  const seedCreatedId = "created-event-annual-tech-symposium";
 
-  const alreadyAdded = societyEvents.some(ev => ev.mockId === mockCreatedId);
+  const alreadyAdded = societyEvents.some(ev => ev.seedId === seedCreatedId);
   if (alreadyAdded) return;
 
   societyEvents.unshift({
     id: Date.now(),
-    mockId: mockCreatedId,
+    seedId: seedCreatedId,
     title: "Annual Tech Symposium 2026",
     category: "Academic",
     location: "Dewan Sultan Iskandar, UTM JB",

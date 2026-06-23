@@ -522,24 +522,24 @@ async function loadSocietyEvents() {
 
     if (!response.ok) return
 
-    const mockEvents = (await response.json()).map(normaliseEvent)
+    const seedEvents = (await response.json()).map(normaliseEvent)
     const savedEvents = JSON.parse(localStorage.getItem(eventsStorageKey) || 'null')
 
     if (Array.isArray(savedEvents)) {
       const savedEventsById = new Map(savedEvents.map((event) => [String(event.id), event]))
-      const mergedMockEvents = mockEvents.map((event) => ({
+      const mergedSeedEvents = seedEvents.map((event) => ({
         ...event,
         ...savedEventsById.get(String(event.id)),
       }))
       const customEvents = savedEvents.filter(
-        (event) => !mockEvents.some((mockEvent) => String(mockEvent.id) === String(event.id))
+        (event) => !seedEvents.some((seedEvent) => String(seedEvent.id) === String(event.id))
       )
 
-      societyEvents.value = [...customEvents, ...mergedMockEvents]
+      societyEvents.value = [...customEvents, ...mergedSeedEvents]
       return
     }
 
-    societyEvents.value = mockEvents
+    societyEvents.value = seedEvents
     saveEvents()
   } catch (error) {
     societyEvents.value = []

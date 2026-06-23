@@ -13,8 +13,8 @@ const defaultNotifications = [
     id: 2,
     audience: "attendee",
     type: "Payment",
-    title: "Mock payment successful",
-    message: "Your RM 8 mock payment for Build Your First AI App has been completed.",
+    title: "Payment confirmation successful",
+    message: "Your RM 8 payment confirmation for Build Your First AI App has been completed.",
     time: "Today, 10:22 AM",
     badgeClass: "badge-green",
     unread: true
