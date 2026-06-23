@@ -14,8 +14,8 @@
       <article class="detail-card">
         <div
           class="poster-preview"
-          :style="selectedEvent?.bannerImage ? {
-            backgroundImage: `linear-gradient(rgba(49, 46, 129, 0.35), rgba(49, 46, 129, 0.55)), url(${selectedEvent.bannerImage})`
+          :style="eventImage ? {
+            backgroundImage: `linear-gradient(rgba(49, 46, 129, 0.35), rgba(49, 46, 129, 0.55)), url(${eventImage})`
           } : {}"
         >
           <div>
@@ -174,6 +174,7 @@ const defaultEvents = [
     description:
       'A practical evening workshop where students learn how to plan, prototype, and demo a simple AI-powered application.',
     bannerImage: '',
+    posterImage: '',
     eventDate: '12 Jun 2026',
     startTime: '7:30 PM',
     endTime: '9:30 PM',
@@ -193,6 +194,7 @@ const defaultEvents = [
     description:
       'A full-day hackathon for student teams to build software prototypes, receive mentor feedback, and present solutions.',
     bannerImage: '',
+    posterImage: '',
     eventDate: '5 Jul 2026',
     startTime: '9:00 AM',
     endTime: '6:00 PM',
@@ -212,6 +214,7 @@ const defaultEvents = [
     description:
       'A sports event for student teams to compete in an interfaculty futsal tournament at UTM Sports Hall.',
     bannerImage: '',
+    posterImage: '',
     eventDate: '28 Jun 2026',
     startTime: '9:00 AM',
     endTime: '1:00 PM',
@@ -238,6 +241,7 @@ const selectedEvent = computed(() => {
 
 const status = computed(() => selectedEvent.value?.status || 'draft')
 const category = computed(() => selectedEvent.value?.category || 'Academic')
+const eventImage = computed(() => selectedEvent.value?.posterImage || selectedEvent.value?.bannerImage)
 
 const description = computed(
   () => selectedEvent.value?.description || 'No description has been added for this event yet.'

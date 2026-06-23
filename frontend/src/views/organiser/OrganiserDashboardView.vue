@@ -252,6 +252,7 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { loadNotifications as loadStoredNotifications } from '@/stores/notifications'
 import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
@@ -261,7 +262,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const eventsStorageKey = 'eventora_society_events_v2'
-const notificationStorageKey = 'eventora_notifications'
 
 const registrationsList = [
   { name: 'Aina Rahman', email: 'aina@utm.my', status: 'confirmed', ticketCode: 'EVT-9F4K-2Q8M-X7P1' },
@@ -425,13 +425,11 @@ function showCreateEventToast() {
   if (eventSaved === 'draft') {
     toast.title = 'Draft saved successfully'
     toast.message = 'The event is saved as a draft and can be edited before submission.'
-    addCreatedEventToDashboard('draft')
   }
 
   if (eventSaved === 'submitted') {
     toast.title = 'Event submitted for approval'
     toast.message = 'Faculty Admin will review the event before it appears in the public list.'
-    addCreatedEventToDashboard('pending_approval')
   }
 
   if (eventAction === 'submitted') {
@@ -444,37 +442,21 @@ function showCreateEventToast() {
     toast.message = 'The draft event has been removed from the organiser workspace.'
   }
 
+  if (eventAction === 'submission_cancelled') {
+    toast.title = 'Submission cancelled'
+    toast.message = 'The event is back to draft and can be edited before resubmission.'
+  }
+
+  if (eventAction === 'cancelled') {
+    toast.title = 'Event cancelled'
+    toast.message = 'The published event has been cancelled and hidden from student registration.'
+  }
+
   toast.visible = true
   setTimeout(() => {
     toast.visible = false
     router.replace({ path: route.path })
   }, 3500)
-}
-
-function addCreatedEventToDashboard(status) {
-  const mockId = 'created-event-annual-tech-symposium'
-  const alreadyAdded = societyEvents.value.some((ev) => ev.mockId === mockId)
-  if (alreadyAdded) return
-
-  societyEvents.value.unshift({
-    id: Date.now(),
-    mockId,
-    title: 'Annual Tech Symposium 2026',
-    category: 'Academic',
-    location: 'Dewan Sultan Iskandar, UTM JB',
-    eventDate: '15 Jul 2026',
-    startTime: '9:00 AM',
-    endTime: '5:00 PM',
-    feeType: 'Free',
-    feeAmount: 0,
-    status,
-    registrations: 0,
-    checkedIn: 0,
-    avgRating: null,
-    capacity: 120,
-  })
-
-  saveEvents()
 }
 
 function normaliseEvent(rawEvent) {
@@ -553,27 +535,7 @@ async function loadSocietyEvents() {
 
 async function loadNotifications() {
   try {
-    const savedNotifications = JSON.parse(localStorage.getItem(notificationStorageKey) || 'null')
-    const response = await fetch('/mock/notifications.json')
-
-    if (!response.ok) return
-
-    const mockNotifications = await response.json()
-
-    if (Array.isArray(savedNotifications) && savedNotifications.every((item) => item.audience)) {
-      notifications.value = mockNotifications.map((mockNotification) => {
-        const savedNotification = savedNotifications.find(
-          (notification) => notification.id === mockNotification.id
-        )
-
-        return savedNotification
-          ? { ...mockNotification, unread: savedNotification.unread }
-          : mockNotification
-      })
-      return
-    }
-
-    notifications.value = mockNotifications
+    notifications.value = await loadStoredNotifications()
   } catch (error) {
     notifications.value = []
   }

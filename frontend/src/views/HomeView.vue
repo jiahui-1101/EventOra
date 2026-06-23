@@ -168,8 +168,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { loadNotifications } from '@/stores/notifications'
 
 const authStore = useAuthStore()
 
@@ -178,58 +179,8 @@ const category = ref('all')
 const price = ref('all')
 const dateFilter = ref('all')
 
-const notificationStorageKey = 'eventora_notifications'
-
-const defaultNotifications = [
-  {
-    id: 1,
-    audience: 'attendee',
-    type: 'Registration',
-    title: 'Registration successful',
-    message: 'You have successfully registered for Build Your First AI App.',
-    time: 'Today, 10:20 AM',
-    badgeClass: 'badge-green',
-    unread: true,
-  },
-  {
-    id: 2,
-    audience: 'attendee',
-    type: 'Payment',
-    title: 'Mock payment successful',
-    message: 'Your RM 8 mock payment for Build Your First AI App has been completed.',
-    time: 'Today, 10:22 AM',
-    badgeClass: 'badge-green',
-    unread: true,
-  },
-  {
-    id: 6,
-    audience: 'organiser',
-    type: 'Approval',
-    title: 'Event approved',
-    message: 'Hackathon 2026 has been approved by Faculty Admin.',
-    time: 'Yesterday, 2:30 PM',
-    badgeClass: 'badge-green',
-    unread: true,
-  },
-  {
-    id: 9,
-    audience: 'faculty_admin',
-    type: 'Approval',
-    title: 'New event pending approval',
-    message: 'Line Follower Workshop submitted by Robotics Club is waiting for Faculty Admin review.',
-    time: 'Today, 9:45 AM',
-    badgeClass: 'badge-yellow',
-    unread: true,
-  },
-]
-
-const savedNotifications = JSON.parse(localStorage.getItem(notificationStorageKey) || 'null')
-
-const notifications = ref(
-  Array.isArray(savedNotifications) && savedNotifications.every((item) => item.audience)
-    ? savedNotifications
-    : defaultNotifications
-)
+const societyEventsStorageKey = 'eventora_society_events_v2'
+const notifications = ref([])
 
 const unreadCount = computed(() =>
   notifications.value.filter(
@@ -239,7 +190,11 @@ const unreadCount = computed(() =>
   ).length
 )
 
-const events = ref([
+onMounted(async () => {
+  notifications.value = await loadNotifications()
+})
+
+const basePublicEvents = [
   {
     id: 1,
     title: 'Build Your First AI App',
@@ -279,7 +234,65 @@ const events = ref([
     coverClass: 'sports-cover',
     badgeClass: 'badge-green',
   },
-])
+]
+
+const events = ref(loadPublicEvents())
+
+function loadPublicEvents() {
+  const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || 'null')
+
+  if (!Array.isArray(savedEvents)) {
+    return basePublicEvents
+  }
+
+  const savedIds = new Set(savedEvents.map((event) => String(event.id)))
+  const savedPublishedEvents = savedEvents
+    .filter((event) => event.status === 'published')
+    .map(toPublicEvent)
+
+  const untouchedBaseEvents = basePublicEvents.filter((event) => !savedIds.has(String(event.id)))
+
+  return [...savedPublishedEvents, ...untouchedBaseEvents]
+}
+
+function toPublicEvent(event) {
+  const category = (event.category || 'academic').toLowerCase()
+  const registrations = event.registrations ?? event.confirmedCount ?? 0
+  const capacity = event.capacity ?? 0
+
+  return {
+    id: event.id,
+    title: event.title,
+    society: event.society || event.societyName || 'UTM Society',
+    category,
+    price: event.feeAmount ?? event.price ?? 0,
+    priceType:
+      (event.feeType || event.priceType || 'free').toLowerCase() === 'paid' ? 'paid' : 'free',
+    date: event.startAt || parsePublicDate(event.eventDate, event.startTime),
+    venue: event.location || event.venue || 'Venue not set',
+    seatsLeft: Math.max(capacity - registrations, 0),
+    coverClass: event.coverClass || coverForCategory(category),
+    badgeClass: event.badgeClass || badgeForCategory(category),
+  }
+}
+
+function parsePublicDate(dateText, timeText) {
+  if (!dateText) return new Date().toISOString()
+  const date = new Date(`${dateText} ${timeText || ''}`)
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString()
+}
+
+function coverForCategory(categoryName) {
+  if (categoryName === 'sports') return 'sports-cover'
+  if (categoryName === 'cultural') return 'culture-cover'
+  return 'academic-cover'
+}
+
+function badgeForCategory(categoryName) {
+  if (categoryName === 'sports') return 'badge-green'
+  if (categoryName === 'cultural') return 'badge-purple'
+  return 'badge-blue'
+}
 
 function isInDateRange(eventDate, filter) {
   const today = new Date()
