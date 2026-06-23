@@ -9,24 +9,24 @@ function readSavedNotifications() {
   }
 }
 
-function mergeNotifications(mockNotifications, savedNotifications) {
-  if (!Array.isArray(savedNotifications)) return mockNotifications
+function mergeNotifications(seedNotifications, savedNotifications) {
+  if (!Array.isArray(savedNotifications)) return seedNotifications
 
-  const mockIds = new Set(mockNotifications.map((notification) => String(notification.id)))
+  const seedIds = new Set(seedNotifications.map((notification) => String(notification.id)))
   const savedById = new Map(
     savedNotifications.map((notification) => [String(notification.id), notification])
   )
 
   const customNotifications = savedNotifications.filter(
-    (notification) => !mockIds.has(String(notification.id))
+    (notification) => !seedIds.has(String(notification.id))
   )
 
-  const mergedMockNotifications = mockNotifications.map((notification) => ({
+  const mergedSeedNotifications = seedNotifications.map((notification) => ({
     ...notification,
     ...(savedById.get(String(notification.id)) || {}),
   }))
 
-  return [...customNotifications, ...mergedMockNotifications]
+  return [...customNotifications, ...mergedSeedNotifications]
 }
 
 export async function loadNotifications() {
@@ -39,8 +39,8 @@ export async function loadNotifications() {
       return Array.isArray(savedNotifications) ? savedNotifications : []
     }
 
-    const mockNotifications = await response.json()
-    return mergeNotifications(mockNotifications, savedNotifications)
+    const seedNotifications = await response.json()
+    return mergeNotifications(seedNotifications, savedNotifications)
   } catch (err) {
     return Array.isArray(savedNotifications) ? savedNotifications : []
   }

@@ -19,7 +19,7 @@ const approvalEventDetails = {
     deadline: '10 Jul 2026, 11:59 PM',
     price: 'RM 5.00',
     description:
-      'Annual Tech Symposium 2026 brings together students, organisers, and faculty members for a full-day technology event. The event includes tech talks, demo booths, student project showcases, and networking sessions.',
+      'Annual Tech Symposium 2026 brings together students, organisers, and faculty members for a full-day technology event. The event includes tech talks, project showcase booths, student project showcases, and networking sessions.',
   },
   101: {
     submittedBy: 'Siti Noor',
@@ -62,20 +62,20 @@ function readSavedApprovalEvents() {
   }
 }
 
-function mergeApprovalEvents(mockEvents, savedEvents) {
-  if (!Array.isArray(savedEvents)) return mockEvents
+function mergeApprovalEvents(seedEvents, savedEvents) {
+  if (!Array.isArray(savedEvents)) return seedEvents
 
-  const mockById = new Map(mockEvents.map((event) => [String(event.id), event]))
+  const seedById = new Map(seedEvents.map((event) => [String(event.id), event]))
   const savedIds = new Set(savedEvents.map((event) => String(event.id)))
 
   const savedWithMockFields = savedEvents.map((event) => ({
-    ...(mockById.get(String(event.id)) || {}),
+    ...(seedById.get(String(event.id)) || {}),
     ...event,
   }))
 
-  const mockOnlyEvents = mockEvents.filter((event) => !savedIds.has(String(event.id)))
+  const seedOnlyEvents = seedEvents.filter((event) => !savedIds.has(String(event.id)))
 
-  return [...savedWithMockFields, ...mockOnlyEvents]
+  return [...savedWithMockFields, ...seedOnlyEvents]
 }
 
 export function saveApprovalEvents() {

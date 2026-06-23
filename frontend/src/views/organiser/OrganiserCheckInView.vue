@@ -5,7 +5,7 @@
         <p class="eyebrow">QR check-in</p>
         <h1>Scan attendee tickets</h1>
         <p>
-          Validate QR tickets by event and society, with a manual code fallback when camera access is not available.
+          Validate attendee QR tickets by event and society. If the camera cannot be used, enter the ticket code manually.
         </p>
       </div>
 
@@ -34,6 +34,21 @@
           </select>
         </div>
 
+        <div class="checkin-stats" aria-label="Check-in progress">
+          <article>
+            <span>Tickets issued</span>
+            <strong>{{ selectedEventTickets.length }}</strong>
+          </article>
+          <article>
+            <span>Checked in</span>
+            <strong>{{ checkedInTickets.length }}</strong>
+          </article>
+          <article>
+            <span>Remaining</span>
+            <strong>{{ pendingCheckIns.length }}</strong>
+          </article>
+        </div>
+
         <div class="scanner-window">
           <div class="scanner-corners"></div>
           <div class="scanner-line"></div>
@@ -46,14 +61,7 @@
             type="button"
             @click="requestCameraPermission"
           >
-            Request camera permission
-          </button>
-          <button
-            class="button button-secondary"
-            type="button"
-            @click="scanSampleTicket"
-          >
-            Simulate QR scan
+            Start camera scanner
           </button>
         </div>
 
@@ -61,13 +69,13 @@
           class="manual-code-form"
           @submit.prevent="submitManualCode"
         >
-          <label for="ticket-code">Manual ticket code fallback</label>
+          <label for="ticket-code">Enter ticket code manually</label>
           <div>
             <input
               id="ticket-code"
               v-model.trim="manualCode"
               type="text"
-              placeholder="EVT-ABCD-1234-WXYZ or QR payload"
+              placeholder="EVT-ABCD-1234-WXYZ"
             />
             <button
               class="button button-primary"
@@ -100,6 +108,22 @@
             <dd>{{ formatDate(result.ticket.checkedInAt) }}</dd>
           </div>
         </dl>
+
+        <div
+          v-if="recentCheckIns.length"
+          class="recent-checkins"
+        >
+          <h3>Recent check-ins</h3>
+          <ul>
+            <li
+              v-for="ticket in recentCheckIns"
+              :key="ticket.id"
+            >
+              <span>{{ ticket.attendeeName }}</span>
+              <small>{{ formatTime(ticket.checkedInAt) }}</small>
+            </li>
+          </ul>
+        </div>
       </aside>
     </section>
   </main>
@@ -118,7 +142,7 @@ const ticketingStore = useTicketingStore()
 
 const selectedEventId = ref(route.params.eventId || '')
 const manualCode = ref('')
-const cameraMessage = ref('Camera preview placeholder')
+const cameraMessage = ref('Camera scanner is ready. Start the scanner and place the QR code inside the frame.')
 const result = ref({
   status: 'idle',
   message: 'Scan or enter a ticket code to begin.',
@@ -133,6 +157,20 @@ const organiserEvents = computed(() =>
 
 const selectedEvent = computed(() =>
   ticketingStore.getEventById(selectedEventId.value) || organiserEvents.value[0] || null
+)
+const selectedEventTickets = computed(() =>
+  ticketingStore.activeTickets.filter((ticket) => ticket.eventId === selectedEvent.value?.id)
+)
+const checkedInTickets = computed(() =>
+  selectedEventTickets.value.filter((ticket) => ticket.checkedInAt)
+)
+const pendingCheckIns = computed(() =>
+  selectedEventTickets.value.filter((ticket) => !ticket.checkedInAt)
+)
+const recentCheckIns = computed(() =>
+  [...checkedInTickets.value]
+    .sort((first, second) => new Date(second.checkedInAt).getTime() - new Date(first.checkedInAt).getTime())
+    .slice(0, 4)
 )
 
 const resultLabel = computed(() => {
@@ -164,31 +202,17 @@ watch(selectedEventId, (eventId) => {
 
 async function requestCameraPermission() {
   if (!navigator.mediaDevices?.getUserMedia) {
-    cameraMessage.value = 'Camera API unavailable. Use manual ticket code fallback.'
+    cameraMessage.value = 'Camera access is unavailable on this device. Enter the ticket code manually.'
     return
   }
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true })
     stream.getTracks().forEach((track) => track.stop())
-    cameraMessage.value = 'Camera permission granted. Ready to scan QR tickets.'
+    cameraMessage.value = 'Camera permission granted. Point the attendee QR code inside the frame.'
   } catch {
-    cameraMessage.value = 'Camera permission denied. Use manual ticket code fallback.'
+    cameraMessage.value = 'Camera permission was denied. Enter the ticket code manually.'
   }
-}
-
-function scanSampleTicket() {
-  const ticket = ticketingStore.activeTickets.find((item) => item.eventId === selectedEvent.value?.id)
-  if (!ticket) {
-    result.value = {
-      status: 'invalid',
-      message: 'No sample ticket is available for this event.',
-      ticket: null,
-    }
-    return
-  }
-
-  processTicketCode(ticket.qrToken)
 }
 
 function submitManualCode() {
@@ -208,7 +232,7 @@ function processTicketCode(ticketCode) {
   result.value = ticketingStore.checkInTicket(ticketCode, {
     eventId: selectedEvent.value.id,
     societyId: selectedEvent.value.societyId,
-    organizerId: authStore.user?.email || 'organiser-demo@utm.my',
+    organizerId: authStore.user?.email || 'organiser@utm.my',
   })
   manualCode.value = ''
 }
@@ -217,6 +241,13 @@ function formatDate(dateValue) {
   return new Intl.DateTimeFormat('en-MY', {
     dateStyle: 'medium',
     timeStyle: 'short',
+  }).format(new Date(dateValue))
+}
+
+function formatTime(dateValue) {
+  return new Intl.DateTimeFormat('en-MY', {
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(dateValue))
 }
 </script>
@@ -300,6 +331,34 @@ function formatDate(dateValue) {
   border-radius: 14px;
   padding: 12px 14px;
   font: inherit;
+}
+
+.checkin-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.checkin-stats article {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.checkin-stats span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.checkin-stats strong {
+  color: #0f172a;
+  font-size: 1.5rem;
 }
 
 .scanner-window {
@@ -406,6 +465,37 @@ function formatDate(dateValue) {
   font-weight: 800;
 }
 
+.recent-checkins {
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.recent-checkins h3 {
+  margin: 0 0 10px;
+  color: #0f172a;
+}
+
+.recent-checkins ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recent-checkins li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.recent-checkins small {
+  color: #64748b;
+  font-weight: 700;
+}
+
 @keyframes scan-line {
   0% {
     top: 25%;
@@ -421,6 +511,10 @@ function formatDate(dateValue) {
 @media (max-width: 820px) {
   .checkin-hero,
   .checkin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .checkin-stats {
     grid-template-columns: 1fr;
   }
 }

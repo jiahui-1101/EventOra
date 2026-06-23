@@ -62,7 +62,7 @@
         </div>
 
         <div class="capacity-labels">
-          <span>{{ event.confirmedCount }} registered</span>
+              <span>{{ registeredCount }} registered</span>
           <strong :style="{ color: seatsLeft === 0 ? '#ef4444' : 'inherit' }">
             {{ seatsLeft === 0 ? 'Fully Booked' : `${seatsLeft} seats left` }}
           </strong>
@@ -71,6 +71,12 @@
         <div class="capacity-bar" style="margin-bottom: 24px;">
           <span :style="{ width: `${occupancyRate}%`, background: seatsLeft === 0 ? '#ef4444' : '#3b82f6' }"></span>
         </div>
+
+        <ol class="checkout-steps" aria-label="Registration progress">
+          <li :class="{ active: checkoutStep === 'reserve', done: checkoutStep !== 'reserve' }">Reserve</li>
+          <li :class="{ active: checkoutStep === 'payment', done: checkoutStep === 'issued' }">Payment</li>
+          <li :class="{ active: checkoutStep === 'issued' }">Ticket</li>
+        </ol>
 
         <div
           v-if="registrationNotice.message"
@@ -83,6 +89,14 @@
           v-if="pendingRegistration"
           class="checkout-card"
         >
+          <div class="checkout-secure-header">
+            <div>
+              <span>Secure checkout</span>
+              <strong>{{ orderReference }}</strong>
+            </div>
+            <small>Seat held until {{ holdExpiryLabel }}</small>
+          </div>
+
           <div class="checkout-row">
             <span>Ticket price</span>
             <strong>RM {{ event.price.toFixed(2) }}</strong>
@@ -96,29 +110,49 @@
             <strong>RM {{ event.price.toFixed(2) }}</strong>
           </div>
 
-          <label for="mock-card">Campus card number</label>
+          <div class="payment-methods" aria-label="Payment method">
+            <button
+              v-for="method in paymentMethods"
+              :key="method.id"
+              :class="{ active: paymentMethod === method.id }"
+              type="button"
+              @click="paymentMethod = method.id"
+            >
+              {{ method.label }}
+            </button>
+          </div>
+
+          <label for="payment-reference">{{ selectedPaymentMethod.referenceLabel }}</label>
           <input
-            id="mock-card"
-            v-model="mockCardNumber"
+            id="payment-reference"
+            v-model="paymentReference"
             type="text"
-            inputmode="numeric"
-            placeholder="4242 4242 4242 4242"
+            :placeholder="selectedPaymentMethod.placeholder"
           />
+
+          <label class="checkout-consent">
+            <input
+              v-model="paymentConsent"
+              type="checkbox"
+            />
+            <span>I confirm the payment details and agree to receive an EventOra QR ticket after payment approval.</span>
+          </label>
 
           <div class="checkout-actions">
             <button
               class="button button-primary full-width"
               type="button"
+              :disabled="!canSubmitPayment"
               @click="approvePayment"
             >
-              Pay and issue ticket
+              Pay now
             </button>
             <button
               class="button button-secondary full-width"
               type="button"
               @click="declinePayment"
             >
-              Cancel payment
+              Cancel
             </button>
           </div>
         </div>
@@ -167,11 +201,34 @@ const favorites = ref([])
 const shareToast = ref(false)
 const pendingRegistration = ref(null)
 const confirmedTicket = ref(null)
-const mockCardNumber = ref('4242 4242 4242 4242')
+const paymentMethod = ref('campus-card')
+const paymentReference = ref('4242 4242 4242 4242')
+const paymentConsent = ref(false)
+const holdExpiresAt = ref(null)
 const registrationNotice = ref({
   type: '',
   message: '',
 })
+const paymentMethods = [
+  {
+    id: 'campus-card',
+    label: 'Campus Card',
+    referenceLabel: 'Campus card number',
+    placeholder: '4242 4242 4242 4242',
+  },
+  {
+    id: 'online-banking',
+    label: 'Online Banking',
+    referenceLabel: 'Bank reference',
+    placeholder: 'FPX reference number',
+  },
+  {
+    id: 'ewallet',
+    label: 'E-wallet',
+    referenceLabel: 'Wallet phone number',
+    placeholder: '+60 12 345 6789',
+  },
+]
 
 const favKey = 'eventora_favs_v2'
 
@@ -188,7 +245,7 @@ const backupAnnualTech = {
   venue: 'Dewan Sultan Iskandar, UTM JB',
   capacity: 120,
   confirmedCount: 78,
-  description: 'Annual Tech Symposium 2026 brings together students, organisers, and faculty members for a full-day technology event. The event includes tech talks, demo booths, student project showcases, and networking sessions.',
+  description: 'Annual Tech Symposium 2026 brings together students, organisers, and faculty members for a full-day technology event. The event includes tech talks, project showcase booths, student project showcases, and networking sessions.',
   coverClass: 'academic-cover',
   badgeClass: 'badge-blue',
   waitlistEnabled: true
@@ -232,9 +289,30 @@ const isFavorited = computed(() => event.value ? favorites.value.includes(event.
 
 const formattedDate = computed(() => event.value ? new Date(event.value.startAt).toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' }) : '')
 const formattedDeadline = computed(() => event.value ? new Date(event.value.registrationDeadline).toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' }) : '')
+const selectedPaymentMethod = computed(() =>
+  paymentMethods.find((method) => method.id === paymentMethod.value) || paymentMethods[0]
+)
+const checkoutStep = computed(() => {
+  if (confirmedTicket.value) return 'issued'
+  if (pendingRegistration.value) return 'payment'
+  return 'reserve'
+})
+const orderReference = computed(() =>
+  pendingRegistration.value
+    ? `EO-${pendingRegistration.value.id.slice(-8).toUpperCase()}`
+    : ''
+)
+const holdExpiryLabel = computed(() =>
+  holdExpiresAt.value
+    ? holdExpiresAt.value.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })
+    : '--:--'
+)
+const canSubmitPayment = computed(() =>
+  Boolean(paymentReference.value.trim() && paymentConsent.value)
+)
 
 const buttonLabel = computed(() => {
-  if (seatsLeft.value > 0) return event.value.priceType === 'paid' ? 'Proceed to Mock Checkout' : 'Confirm Free Registration'
+  if (seatsLeft.value > 0) return event.value.priceType === 'paid' ? 'Proceed to secure checkout' : 'Confirm Free Registration'
   return event.value.waitlistEnabled ? 'Join Waitlist' : 'Registration Closed'
 })
 
@@ -299,7 +377,9 @@ function reserveSeat() {
       }
 
       pendingRegistration.value = result.registration
-      setNotice('info', 'Your seat is held while you complete the mock payment.')
+      holdExpiresAt.value = new Date(Date.now() + 10 * 60 * 1000)
+      paymentConsent.value = false
+      setNotice('info', 'Your seat is held while you complete payment.')
       return
     }
 
@@ -319,9 +399,15 @@ function approvePayment() {
   if (!pendingRegistration.value) return
 
   try {
+    if (!canSubmitPayment.value) {
+      setNotice('error', 'Confirm the payment details before continuing.')
+      return
+    }
+
     const result = ticketingStore.completeMockPayment(pendingRegistration.value.id)
     confirmedTicket.value = result.ticket
     pendingRegistration.value = null
+    holdExpiresAt.value = null
     setNotice('success', 'Payment approved. Your QR ticket has been issued.')
   } catch (error) {
     setNotice('error', error instanceof Error ? error.message : 'Payment could not be completed.')
@@ -334,6 +420,8 @@ function declinePayment() {
   try {
     ticketingStore.declineMockPayment(pendingRegistration.value.id)
     pendingRegistration.value = null
+    holdExpiresAt.value = null
+    paymentConsent.value = false
     setNotice('error', 'Payment cancelled. No ticket was issued.')
   } catch (error) {
     setNotice('error', error instanceof Error ? error.message : 'Payment could not be cancelled.')
@@ -375,6 +463,36 @@ function declinePayment() {
   border: 1px solid #fecaca;
 }
 
+.checkout-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.checkout-steps li {
+  padding: 9px 10px;
+  border-radius: 999px;
+  color: #64748b;
+  background: #f1f5f9;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.checkout-steps li.active {
+  color: #3730a3;
+  background: #eef2ff;
+}
+
+.checkout-steps li.done {
+  color: #047857;
+  background: #d1fae5;
+}
+
 .checkout-card,
 .ticket-created-card {
   display: grid;
@@ -387,6 +505,31 @@ function declinePayment() {
 .checkout-card {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
+}
+
+.checkout-secure-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.checkout-secure-header div {
+  display: grid;
+  gap: 4px;
+}
+
+.checkout-secure-header span,
+.checkout-secure-header small {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.checkout-secure-header strong {
+  color: #0f172a;
 }
 
 .checkout-row,
@@ -418,6 +561,44 @@ function declinePayment() {
   border-radius: 12px;
   padding: 12px;
   font: inherit;
+}
+
+.payment-methods {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.payment-methods button {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 8px;
+  color: #475569;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.payment-methods button.active {
+  border-color: #4f46e5;
+  color: #3730a3;
+  background: #eef2ff;
+}
+
+.checkout-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #475569;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.checkout-consent input {
+  width: auto;
+  margin-top: 3px;
 }
 
 .checkout-actions {

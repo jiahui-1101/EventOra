@@ -280,17 +280,16 @@ onMounted(async () => {
     const res = await fetch('/mock/events.json')
     if (res.ok) {
       const rawEvents = await res.json()
-      const fetchedEvents = rawEvents.map(toPublicEvent)
+      const fetchedEvents = rawEvents
+        .filter((event) => event.status === 'published')
+        .map(toPublicEvent)
 
-      const fetchedIds = new Set(fetchedEvents.map(e => String(e.id)))
-      const untouchedBase = basePublicEvents.filter(e => !fetchedIds.has(String(e.id)))
-
-      events.value = [...fetchedEvents, ...untouchedBase]
+      events.value = mergePublicEvents(fetchedEvents, loadPublishedSocietyEvents())
     } else {
       events.value = [...basePublicEvents]
     }
   } catch (err) {
-    console.error("Fetch mock error, using base events fallback", err)
+    console.error("Unable to load event data, using local fallback", err)
     events.value = [...basePublicEvents]
   } finally {
     loadingEvents.value = false
@@ -315,6 +314,29 @@ function toPublicEvent(event) {
     coverClass: event.coverClass || coverForCategory(category),
     badgeClass: event.badgeClass || badgeForCategory(category),
   }
+}
+
+function loadPublishedSocietyEvents() {
+  try {
+    const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || '[]')
+    if (!Array.isArray(savedEvents)) return []
+
+    return savedEvents
+      .filter((event) => event.status === 'published')
+      .map(toPublicEvent)
+  } catch (error) {
+    return []
+  }
+}
+
+function mergePublicEvents(...eventGroups) {
+  const merged = new Map()
+
+  eventGroups.flat().forEach((event) => {
+    merged.set(String(event.id), event)
+  })
+
+  return [...merged.values()]
 }
 
 function coverForCategory(categoryName) {

@@ -132,7 +132,7 @@
   }
 
   .detail-layout,
-  .mock-modal,
+  .payment-panel,
   .scanner-layout {
     grid-template-columns: minmax(0, 1fr) minmax(340px, 380px);
   }

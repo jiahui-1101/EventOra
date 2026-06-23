@@ -58,7 +58,7 @@
     "capacity": 40,
     "confirmedCount": 40,
     "waitlistEnabled": true,
-    "status": "cancelled",
+    "status": "published",
     "coverClass": "sports-cover",
     "badgeClass": "badge-green"
   },

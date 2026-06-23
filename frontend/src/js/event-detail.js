@@ -52,13 +52,13 @@ END:VCALENDAR`;
 
   function registerForEvent() {
     if (event.seatsLeft === 0) {
-      window.location.href = "waitlist-demo.html";
+      window.location.href = "waitlist.html";
       return;
     }
     if (event.priceType === "free") {
       window.location.href = "tickets.html?status=free-confirmed";
     } else {
-      window.location.href = `checkout-demo.html?event=${event.id}`;
+      window.location.href = `checkout.html?event=${event.id}`;
     }
   }
 

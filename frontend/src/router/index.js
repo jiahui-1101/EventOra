@@ -74,6 +74,7 @@ const routes = [
     path: '/my-completed',
     name: 'my-completed',
     component: () => import('@/views/MyCompletedEventsView.vue'),
+    meta: { requiresAuth: true },
   },
 ]
 

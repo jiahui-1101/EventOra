@@ -53,6 +53,13 @@
       </article>
     </section>
 
+    <p
+      v-if="!loading && !myEvents.length"
+      class="empty-state"
+    >
+      Completed events will appear here after your ticket has been checked in.
+    </p>
+
     <div v-if="activeEvent" class="modal-overlay">
       <div class="modal-content">
         <h3 style="margin-top: 0; color: #1e293b;">Rate: {{ activeEvent.title }}</h3>
@@ -87,21 +94,25 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useTicketingStore } from '@/stores/ticketing'
 
 const loading = ref(true)
-const rawEvents = ref([])
 const feedbacks = ref([])
 const activeEvent = ref(null)
 const currentRating = ref(0)
 const currentComment = ref('')
 
 const fbKey = 'eventora_feedbacks_v2'
+const authStore = useAuthStore()
+const ticketingStore = useTicketingStore()
+const attendeeEmail = computed(() => authStore.user?.email || '')
+const attendeeName = computed(() => authStore.user?.name || authStore.user?.email || 'EventOra attendee')
 
 onMounted(async () => {
   feedbacks.value = JSON.parse(localStorage.getItem(fbKey) || '[]')
   try {
-    const res = await fetch('/mock/events.json')
-    if (res.ok) rawEvents.value = await res.json()
+    await ticketingStore.loadSeedData()
   } catch (e) {
     console.error(e)
   } finally {
@@ -110,12 +121,28 @@ onMounted(async () => {
 })
 
 const myEvents = computed(() => {
-  return rawEvents.value.map((ev, index) => {
-    const isCheckedIn = index < 2 
-    const fb = feedbacks.value.find(f => f.eventId === ev.id)
+  const now = Date.now()
+
+  return ticketingStore
+    .getTicketsForAttendee(attendeeEmail.value)
+    .filter((ticket) =>
+      ticket.status === 'active'
+      && (ticket.checkedInAt || new Date(ticket.eventStartAt).getTime() < now)
+    )
+    .map((ticket) => {
+    const event = ticketingStore.getEventById(ticket.eventId) || {}
+    const fb = feedbacks.value.find(f => f.eventId === ticket.eventId)
+
     return {
-      ...ev,
-      checkedIn: isCheckedIn,
+      id: ticket.eventId,
+      title: ticket.eventName,
+      societyName: event.societyName || 'EventOra Society',
+      category: event.category || 'event',
+      venue: ticket.venue,
+      startAt: ticket.eventStartAt,
+      checkedIn: Boolean(ticket.checkedInAt),
+      coverClass: event.coverClass || 'academic-cover',
+      badgeClass: event.badgeClass || 'badge-blue',
       hasRated: !!fb,
       myRating: fb ? fb.rating : 0
     }
@@ -184,7 +211,7 @@ function downloadCert(ev) {
         <h1>CERTIFICATE OF PARTICIPATION</h1>
         <div class="eyebrow">Universiti Teknologi Malaysia</div>
         <p style="color: #475569; font-size: 1.1rem;">This is proudly presented to</p>
-        <div class="awardee">Loh Su Ting (A24CS0106)</div>
+        <div class="awardee">${attendeeName.value}</div>
         <p style="color: #475569; font-size: 1.1rem;">for verified attendance and active completion of</p>
         <div class="event-title">${ev.title}</div>
         <p style="color: #64748b; font-style: italic;">organized by ${ev.societyName} on ${dateStr}</p>
