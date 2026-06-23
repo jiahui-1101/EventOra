@@ -47,6 +47,14 @@ function createRegistrationId(eventId, attendeeId) {
   return `registration-${eventId}-${attendeeId}-${Date.now()}`
 }
 
+function normalizeEmail(email) {
+  return email.trim().toLowerCase()
+}
+
+function compareTicketEventTime(first, second) {
+  return new Date(first.eventStartAt).getTime() - new Date(second.eventStartAt).getTime()
+}
+
 export const useTicketingStore = defineStore('ticketing', () => {
   const events = ref([])
   const registrations = ref([])
@@ -96,6 +104,16 @@ export const useTicketingStore = defineStore('ticketing', () => {
     )
   }
 
+  function getOrderedWaitlistForEvent(eventId) {
+    return [...getWaitlistedRegistrationsForEvent(eventId)].sort((first, second) => {
+      const firstPosition = first.waitlistPosition ?? Number.MAX_SAFE_INTEGER
+      const secondPosition = second.waitlistPosition ?? Number.MAX_SAFE_INTEGER
+
+      if (firstPosition !== secondPosition) return firstPosition - secondPosition
+      return new Date(first.registeredAt).getTime() - new Date(second.registeredAt).getTime()
+    })
+  }
+
   function getEventCapacitySummary(eventId) {
     const event = getEventById(eventId)
     if (!event) return null
@@ -118,6 +136,47 @@ export const useTicketingStore = defineStore('ticketing', () => {
 
   function getTicketsForAttendee(email) {
     return tickets.value.filter((ticket) => ticket.attendeeEmail === email)
+  }
+
+  function getActiveTicketsForAttendee(email) {
+    const attendeeEmail = normalizeEmail(email)
+
+    return activeTickets.value
+      .filter((ticket) => normalizeEmail(ticket.attendeeEmail) === attendeeEmail)
+      .sort(compareTicketEventTime)
+  }
+
+  function getTicketWalletForAttendee(email, now = new Date()) {
+    const currentTime = now.getTime()
+    const attendeeTickets = getActiveTicketsForAttendee(email)
+
+    return {
+      upcoming: attendeeTickets.filter((ticket) =>
+        new Date(ticket.eventStartAt).getTime() >= currentTime
+      ),
+      past: attendeeTickets
+        .filter((ticket) => new Date(ticket.eventStartAt).getTime() < currentTime)
+        .sort((first, second) => compareTicketEventTime(second, first)),
+    }
+  }
+
+  function getActiveRegistrationForAttendee(eventId, attendee) {
+    const attendeeEmail = normalizeEmail(attendee.email)
+
+    return activeRegistrations.value.find((registration) =>
+      registration.eventId === eventId
+        && (
+          registration.attendeeId === attendee.id
+          || normalizeEmail(registration.attendeeEmail) === attendeeEmail
+        )
+    ) || null
+  }
+
+  function assertCanRegister(eventId, attendee) {
+    const existingRegistration = getActiveRegistrationForAttendee(eventId, attendee)
+    if (existingRegistration) {
+      throw new Error('You are already registered for this event.')
+    }
   }
 
   function createSnapshot() {
@@ -162,14 +221,52 @@ export const useTicketingStore = defineStore('ticketing', () => {
     }
   }
 
+  function joinWaitlist(eventId, attendee) {
+    const event = getEventById(eventId)
+    if (!event) throw new Error('Event not found.')
+    assertCanRegister(eventId, attendee)
+
+    const capacitySummary = getEventCapacitySummary(eventId)
+    if (!capacitySummary?.isFull) {
+      throw new Error('Seats are still available for this event.')
+    }
+    if (!capacitySummary.canJoinWaitlist) {
+      throw new Error('This event is full and waitlist is not available.')
+    }
+
+    const registeredAt = new Date().toISOString()
+    const registration = {
+      id: createRegistrationId(eventId, attendee.id),
+      eventId,
+      attendeeId: attendee.id,
+      attendeeName: attendee.name,
+      attendeeEmail: attendee.email,
+      status: 'waitlisted',
+      paymentStatus: event.priceType === 'paid' ? 'unpaid' : 'not_required',
+      waitlistPosition: capacitySummary.waitlistCount + 1,
+      ticketId: null,
+      registeredAt,
+      cancelledAt: null,
+    }
+
+    registrations.value.push(registration)
+    persistState()
+
+    return registration
+  }
+
   function registerFreeEvent(eventId, attendee) {
     const event = getEventById(eventId)
     if (!event) throw new Error('Event not found.')
     if (event.priceType !== 'free') throw new Error('This event requires payment.')
+    assertCanRegister(eventId, attendee)
 
     const capacitySummary = getEventCapacitySummary(eventId)
     if (capacitySummary?.isFull) {
-      throw new Error('This event is full.')
+      return {
+        registration: joinWaitlist(eventId, attendee),
+        ticket: null,
+      }
     }
 
     const registeredAt = new Date().toISOString()
@@ -200,10 +297,14 @@ export const useTicketingStore = defineStore('ticketing', () => {
     const event = getEventById(eventId)
     if (!event) throw new Error('Event not found.')
     if (event.priceType !== 'paid') throw new Error('This event does not require payment.')
+    assertCanRegister(eventId, attendee)
 
     const capacitySummary = getEventCapacitySummary(eventId)
     if (capacitySummary?.isFull) {
-      throw new Error('This event is full.')
+      return {
+        registration: joinWaitlist(eventId, attendee),
+        payment: null,
+      }
     }
 
     const registeredAt = new Date().toISOString()
@@ -232,6 +333,108 @@ export const useTicketingStore = defineStore('ticketing', () => {
         eventTitle: event.title,
       },
     }
+  }
+
+  function completeMockPayment(registrationId) {
+    const registration = registrations.value.find((item) => item.id === registrationId)
+    if (!registration) throw new Error('Registration not found.')
+    if (registration.status !== 'pending_payment') {
+      throw new Error('Only pending payments can be completed.')
+    }
+
+    const event = getEventById(registration.eventId)
+    if (!event) throw new Error('Event not found.')
+
+    const paidAt = new Date().toISOString()
+    const ticket = createConfirmedTicket(event, registration, paidAt)
+
+    registration.status = 'confirmed'
+    registration.paymentStatus = 'paid'
+    registration.ticketId = ticket.id
+    tickets.value.push(ticket)
+    persistState()
+
+    return { registration, ticket }
+  }
+
+  function declineMockPayment(registrationId) {
+    const registration = registrations.value.find((item) => item.id === registrationId)
+    if (!registration) throw new Error('Registration not found.')
+    if (registration.status !== 'pending_payment') {
+      throw new Error('Only pending payments can be declined.')
+    }
+
+    registration.status = 'cancelled'
+    registration.paymentStatus = 'failed'
+    registration.cancelledAt = new Date().toISOString()
+    persistState()
+
+    return registration
+  }
+
+  function renumberWaitlist(eventId) {
+    getOrderedWaitlistForEvent(eventId).forEach((registration, index) => {
+      registration.waitlistPosition = index + 1
+    })
+  }
+
+  function promoteNextWaitlistedRegistration(eventId) {
+    const event = getEventById(eventId)
+    if (!event) throw new Error('Event not found.')
+
+    const nextRegistration = getOrderedWaitlistForEvent(eventId)[0]
+    if (!nextRegistration) return null
+
+    const promotedAt = new Date().toISOString()
+    const ticket = createConfirmedTicket(event, nextRegistration, promotedAt)
+
+    nextRegistration.status = 'confirmed'
+    nextRegistration.paymentStatus = event.priceType === 'paid' ? 'paid' : 'not_required'
+    nextRegistration.waitlistPosition = null
+    nextRegistration.ticketId = ticket.id
+    tickets.value.push(ticket)
+    renumberWaitlist(eventId)
+
+    return { registration: nextRegistration, ticket }
+  }
+
+  function cancelRegistration(registrationId) {
+    const registration = registrations.value.find((item) => item.id === registrationId)
+    if (!registration) throw new Error('Registration not found.')
+    if (registration.status === 'cancelled') {
+      throw new Error('This registration has already been cancelled.')
+    }
+
+    const cancelledAt = new Date().toISOString()
+    const wasConfirmed = registration.status === 'confirmed'
+    const ticket = registration.ticketId
+      ? tickets.value.find((item) => item.id === registration.ticketId)
+      : null
+
+    registration.status = 'cancelled'
+    registration.cancelledAt = cancelledAt
+
+    if (registration.paymentStatus === 'paid') {
+      registration.paymentStatus = 'refunded'
+    } else if (registration.paymentStatus === 'unpaid') {
+      registration.paymentStatus = 'cancelled'
+    }
+
+    if (ticket) {
+      ticket.status = 'cancelled'
+      ticket.cancelledAt = cancelledAt
+    }
+
+    const promoted = wasConfirmed
+      ? promoteNextWaitlistedRegistration(registration.eventId)
+      : null
+    if (!wasConfirmed) {
+      renumberWaitlist(registration.eventId)
+    }
+
+    persistState()
+
+    return { registration, ticket, promoted }
   }
 
   async function loadSeedData({ force = false } = {}) {
@@ -277,11 +480,20 @@ export const useTicketingStore = defineStore('ticketing', () => {
     getActiveRegistrationsForEvent,
     getConfirmedRegistrationsForEvent,
     getWaitlistedRegistrationsForEvent,
+    getOrderedWaitlistForEvent,
     getEventCapacitySummary,
     getTicketsForAttendee,
+    getActiveTicketsForAttendee,
+    getTicketWalletForAttendee,
+    getActiveRegistrationForAttendee,
     persistState,
+    joinWaitlist,
     registerFreeEvent,
     beginPaidRegistration,
+    completeMockPayment,
+    declineMockPayment,
+    promoteNextWaitlistedRegistration,
+    cancelRegistration,
     loadSeedData,
   }
 })
