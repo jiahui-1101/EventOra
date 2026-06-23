@@ -47,6 +47,10 @@ function createRegistrationId(eventId, attendeeId) {
   return `registration-${eventId}-${attendeeId}-${Date.now()}`
 }
 
+function normalizeEmail(email) {
+  return email.trim().toLowerCase()
+}
+
 export const useTicketingStore = defineStore('ticketing', () => {
   const events = ref([])
   const registrations = ref([])
@@ -120,6 +124,25 @@ export const useTicketingStore = defineStore('ticketing', () => {
     return tickets.value.filter((ticket) => ticket.attendeeEmail === email)
   }
 
+  function getActiveRegistrationForAttendee(eventId, attendee) {
+    const attendeeEmail = normalizeEmail(attendee.email)
+
+    return activeRegistrations.value.find((registration) =>
+      registration.eventId === eventId
+        && (
+          registration.attendeeId === attendee.id
+          || normalizeEmail(registration.attendeeEmail) === attendeeEmail
+        )
+    ) || null
+  }
+
+  function assertCanRegister(eventId, attendee) {
+    const existingRegistration = getActiveRegistrationForAttendee(eventId, attendee)
+    if (existingRegistration) {
+      throw new Error('You are already registered for this event.')
+    }
+  }
+
   function createSnapshot() {
     return {
       events: cloneCollection(events.value),
@@ -166,6 +189,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     const event = getEventById(eventId)
     if (!event) throw new Error('Event not found.')
     if (event.priceType !== 'free') throw new Error('This event requires payment.')
+    assertCanRegister(eventId, attendee)
 
     const capacitySummary = getEventCapacitySummary(eventId)
     if (capacitySummary?.isFull) {
@@ -200,6 +224,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     const event = getEventById(eventId)
     if (!event) throw new Error('Event not found.')
     if (event.priceType !== 'paid') throw new Error('This event does not require payment.')
+    assertCanRegister(eventId, attendee)
 
     const capacitySummary = getEventCapacitySummary(eventId)
     if (capacitySummary?.isFull) {
@@ -316,6 +341,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     getWaitlistedRegistrationsForEvent,
     getEventCapacitySummary,
     getTicketsForAttendee,
+    getActiveRegistrationForAttendee,
     persistState,
     registerFreeEvent,
     beginPaidRegistration,
