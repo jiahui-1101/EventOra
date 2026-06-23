@@ -54,6 +54,32 @@
         </div>
       </div>
 
+      <div 
+        v-if="roleConfig.label === 'Student'"
+        class="profile-action-card" 
+        style="margin-top: 32px; padding: 24px; background: #f8fafc; border-radius: 16px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);"
+      >
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.5rem;">🎓</span>
+              <h3 style="margin: 0; color: #0f172a; font-size: 1.2rem; font-weight: 700;">My Coursework & Completed Events</h3>
+            </div>
+            <p style="margin: 6px 0 0 34px; color: #64748b; font-size: 0.95rem; max-width: 600px;">
+              Access your verified attendance logs, submit post-event feedback ratings, and download official UTM E-Certificates.
+            </p>
+          </div>
+          
+          <router-link 
+            to="/my-completed" 
+            class="button button-primary" 
+            style="padding: 12px 24px; font-weight: 600; text-decoration: none;"
+          >
+            🏆 Open Completed Portal &rarr;
+          </router-link>
+        </div>
+      </div>
+
     </section>
   </main>
 </template>

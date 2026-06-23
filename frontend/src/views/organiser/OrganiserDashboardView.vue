@@ -44,6 +44,18 @@
       </aside>
 
       <div class="organiser-main">
+      <div class="dashboard-banner" style="margin-bottom: 24px; padding: 20px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+  <div>
+    <h3 style="margin: 0; color: #1e3a8a;">📊 Post-Event Intelligence Ready</h3>
+    <p style="margin: 4px 0 0 0; color: #3b82f6; font-size: 0.9rem;">
+      Review attendee feedback distribution and export formal UTM attendance CSV reports.
+    </p>
+  </div>
+  
+  <router-link to="/organiser/feedback" class="button button-primary" style="background: #1e3a8a;">
+    Open Feedback Analytics &rarr;
+  </router-link>
+</div>
         <div class="od-stats-grid redesigned-stats">
           <article class="od-stat-card stat-accent-purple">
             <span>Total Events</span>
