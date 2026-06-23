@@ -1,6 +1,19 @@
 <template>
   <main class="app-shell organiser-shell">
     <section class="organiser-hero">
+      <router-link
+        to="/notifications"
+        class="dashboard-notification-button"
+        aria-label="Notifications"
+        title="Notifications"
+      >
+        🔔
+        <span
+          v-if="unreadCount > 0"
+          class="notification-dot"
+        ></span>
+      </router-link>
+
       <div>
         <p class="eyebrow">Organiser Workspace</p>
         <h1>Organiser Dashboard</h1>
@@ -238,14 +251,17 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const eventsStorageKey = 'eventora_society_events_v2'
+const notificationStorageKey = 'eventora_notifications'
 
 const defaultEvents = [
   {
@@ -370,6 +386,7 @@ const tabs = [
 ]
 
 const currentTab = ref('events')
+const notifications = ref([])
 
 watch(currentTab, async (tab) => {
   if (tab === 'feedback') {
@@ -421,6 +438,12 @@ const confirmedRegistrations = computed(
 )
 const attendanceTabRate = computed(() =>
   confirmedRegistrations.value ? Math.round((attendanceList.length / confirmedRegistrations.value) * 100) : 0
+)
+
+const unreadCount = computed(() =>
+  notifications.value.filter(
+    (notification) => notification.audience === authStore.role && notification.unread
+  ).length
 )
 
 function escapeCsv(value) {
@@ -507,7 +530,36 @@ function addCreatedEventToDashboard(status) {
   saveEvents()
 }
 
+async function loadNotifications() {
+  try {
+    const savedNotifications = JSON.parse(localStorage.getItem(notificationStorageKey) || 'null')
+    const response = await fetch('/mock/notifications.json')
+
+    if (!response.ok) return
+
+    const mockNotifications = await response.json()
+
+    if (Array.isArray(savedNotifications) && savedNotifications.every((item) => item.audience)) {
+      notifications.value = mockNotifications.map((mockNotification) => {
+        const savedNotification = savedNotifications.find(
+          (notification) => notification.id === mockNotification.id
+        )
+
+        return savedNotification
+          ? { ...mockNotification, unread: savedNotification.unread }
+          : mockNotification
+      })
+      return
+    }
+
+    notifications.value = mockNotifications
+  } catch (error) {
+    notifications.value = []
+  }
+}
+
 onMounted(() => {
+  loadNotifications()
   showCreateEventToast()
 })
 </script>
@@ -519,6 +571,7 @@ onMounted(() => {
 }
 
 .organiser-hero {
+  position: relative;
   margin-bottom: 20px;
   padding: 24px;
   border: 1px solid var(--border);
@@ -531,6 +584,42 @@ onMounted(() => {
   margin: 6px 0;
   font-size: 1.8rem;
   letter-spacing: -0.03em;
+}
+
+.dashboard-notification-button {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  font-size: 1.1rem;
+  z-index: 3;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-notification-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.notification-dot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--danger);
+  border: 2px solid #fff;
 }
 
 .organiser-layout {

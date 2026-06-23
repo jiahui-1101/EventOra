@@ -1,0 +1,132 @@
+[
+  {
+    "id": 1,
+    "audience": "attendee",
+    "type": "Registration",
+    "title": "Registration successful",
+    "message": "You have successfully registered for Build Your First AI App.",
+    "time": "Today, 10:20 AM",
+    "badgeClass": "badge-green",
+    "unread": true
+  },
+  {
+    "id": 2,
+    "audience": "attendee",
+    "type": "Payment",
+    "title": "Mock payment successful",
+    "message": "Your RM 8 mock payment for Build Your First AI App has been completed.",
+    "time": "Today, 10:22 AM",
+    "badgeClass": "badge-green",
+    "unread": true
+  },
+  {
+    "id": 3,
+    "audience": "attendee",
+    "type": "Waitlist",
+    "title": "Waitlist seat confirmed",
+    "message": "A seat opened for Interfaculty Futsal Cup. Your waitlist status has been converted to confirmed.",
+    "time": "Yesterday, 4:15 PM",
+    "badgeClass": "badge-blue",
+    "unread": true
+  },
+  {
+    "id": 4,
+    "audience": "attendee",
+    "type": "Cancellation",
+    "title": "Event cancelled",
+    "message": "Campus Cultural Night was cancelled by the organiser. Your registration is no longer active.",
+    "time": "6 Jun 2026, 9:00 AM",
+    "badgeClass": "badge-red",
+    "unread": false
+  },
+  {
+    "id": 5,
+    "audience": "attendee",
+    "type": "Reminder",
+    "title": "Event starts soon",
+    "message": "Build Your First AI App starts tomorrow at 7:30 PM at N28A Innovation Lab.",
+    "time": "5 Jun 2026, 8:00 PM",
+    "badgeClass": "badge-purple",
+    "unread": true
+  },
+  {
+    "id": 6,
+    "audience": "organiser",
+    "type": "Approval",
+    "title": "Event submitted for approval",
+    "message": "Annual Tech Symposium 2026 has been submitted and is waiting for Faculty Admin review.",
+    "time": "Today, 8:45 PM",
+    "badgeClass": "badge-yellow",
+    "unread": true
+  },
+  {
+    "id": 7,
+    "audience": "organiser",
+    "type": "Approval",
+    "title": "Event approved",
+    "message": "Build Your First AI App has been approved and is now visible to students.",
+    "time": "Yesterday, 2:30 PM",
+    "badgeClass": "badge-green",
+    "unread": true
+  },
+  {
+    "id": 8,
+    "audience": "organiser",
+    "type": "Revision",
+    "title": "Event rejected",
+    "message": "Hackathon 2026 was rejected by Faculty Admin. Reason: venue booking confirmation is missing.",
+    "time": "5 Jun 2026, 3:40 PM",
+    "badgeClass": "badge-red",
+    "unread": false
+  },
+  {
+    "id": 9,
+    "audience": "organiser",
+    "type": "Registration",
+    "title": "New registration received",
+    "message": "A student registered for Futsal Tournament. Total registrations are now 40.",
+    "time": "4 Jun 2026, 11:15 AM",
+    "badgeClass": "badge-blue",
+    "unread": true
+  },
+  {
+    "id": 10,
+    "audience": "faculty_admin",
+    "type": "Approval",
+    "title": "New event pending approval",
+    "message": "Annual Tech Symposium 2026 submitted by Computer Society UTM is waiting for review.",
+    "time": "Today, 8:45 PM",
+    "badgeClass": "badge-yellow",
+    "unread": true
+  },
+  {
+    "id": 11,
+    "audience": "faculty_admin",
+    "type": "Approval",
+    "title": "Pending approval queue updated",
+    "message": "There are 3 event submissions waiting for Faculty Admin approval.",
+    "time": "Today, 9:00 AM",
+    "badgeClass": "badge-blue",
+    "unread": true
+  },
+  {
+    "id": 12,
+    "audience": "faculty_admin",
+    "type": "Decision",
+    "title": "Event approved successfully",
+    "message": "Line Follower Workshop has been approved. The organiser has been notified.",
+    "time": "Yesterday, 4:20 PM",
+    "badgeClass": "badge-green",
+    "unread": false
+  },
+  {
+    "id": 13,
+    "audience": "faculty_admin",
+    "type": "Decision",
+    "title": "Event rejected",
+    "message": "Acoustic Night was rejected because the venue booking confirmation was missing.",
+    "time": "5 Jun 2026, 3:40 PM",
+    "badgeClass": "badge-red",
+    "unread": false
+  }
+]

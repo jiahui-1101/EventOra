@@ -1,6 +1,20 @@
 <template>
   <main class="app-shell">
     <section class="hero-section">
+      <router-link
+        v-if="authStore.isLoggedIn"
+        to="/notifications"
+        class="hero-notification-button"
+        aria-label="Notifications"
+        title="Notifications"
+      >
+        🔔
+        <span
+          v-if="unreadCount > 0"
+          class="notification-dot"
+        ></span>
+      </router-link>
+
       <div>
         <p class="eyebrow">Discover events</p>
         <h1>What's happening at UTM?</h1>
@@ -155,11 +169,75 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 const keyword = ref('')
 const category = ref('all')
 const price = ref('all')
 const dateFilter = ref('all')
+
+const notificationStorageKey = 'eventora_notifications'
+
+const defaultNotifications = [
+  {
+    id: 1,
+    audience: 'attendee',
+    type: 'Registration',
+    title: 'Registration successful',
+    message: 'You have successfully registered for Build Your First AI App.',
+    time: 'Today, 10:20 AM',
+    badgeClass: 'badge-green',
+    unread: true,
+  },
+  {
+    id: 2,
+    audience: 'attendee',
+    type: 'Payment',
+    title: 'Mock payment successful',
+    message: 'Your RM 8 mock payment for Build Your First AI App has been completed.',
+    time: 'Today, 10:22 AM',
+    badgeClass: 'badge-green',
+    unread: true,
+  },
+  {
+    id: 6,
+    audience: 'organiser',
+    type: 'Approval',
+    title: 'Event approved',
+    message: 'Hackathon 2026 has been approved by Faculty Admin.',
+    time: 'Yesterday, 2:30 PM',
+    badgeClass: 'badge-green',
+    unread: true,
+  },
+  {
+    id: 9,
+    audience: 'faculty_admin',
+    type: 'Approval',
+    title: 'New event pending approval',
+    message: 'Line Follower Workshop submitted by Robotics Club is waiting for Faculty Admin review.',
+    time: 'Today, 9:45 AM',
+    badgeClass: 'badge-yellow',
+    unread: true,
+  },
+]
+
+const savedNotifications = JSON.parse(localStorage.getItem(notificationStorageKey) || 'null')
+
+const notifications = ref(
+  Array.isArray(savedNotifications) && savedNotifications.every((item) => item.audience)
+    ? savedNotifications
+    : defaultNotifications
+)
+
+const unreadCount = computed(() =>
+  notifications.value.filter(
+    (notification) =>
+      notification.audience === authStore.role &&
+      notification.unread
+  ).length
+)
 
 const events = ref([
   {
@@ -202,9 +280,9 @@ const events = ref([
     badgeClass: 'badge-green',
   },
 ])
+
 function isInDateRange(eventDate, filter) {
   const today = new Date()
-
   const eventDay = new Date(eventDate)
 
   if (filter === 'week') {
@@ -284,3 +362,45 @@ function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 </script>
+
+<style scoped>
+.hero-section {
+  position: relative;
+}
+
+.hero-notification-button {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  font-size: 1.1rem;
+  z-index: 3;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-notification-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.notification-dot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--danger);
+  border: 2px solid #fff;
+}
+</style>

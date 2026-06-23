@@ -24,10 +24,10 @@
     <router-view />
 
     <nav class="mobile-nav" aria-label="Mobile navigation">
-      <router-link to="/">Events</router-link>
-      <router-link v-if="dashboardLink" :to="dashboardLink">Dashboard</router-link>
-      <router-link v-if="!authStore.isLoggedIn" to="/login">Login</router-link>
-      <router-link v-if="authStore.isLoggedIn" to="/profile">Profile</router-link>
+  <router-link to="/">Events</router-link>
+  <router-link v-if="dashboardLink" :to="dashboardLink">Dashboard</router-link>
+  <router-link v-if="!authStore.isLoggedIn" to="/login">Login</router-link>
+  <router-link v-if="authStore.isLoggedIn" to="/profile">Profile</router-link>
     </nav>
   </div>
 </template>
