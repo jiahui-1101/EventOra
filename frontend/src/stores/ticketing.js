@@ -100,6 +100,16 @@ export const useTicketingStore = defineStore('ticketing', () => {
     )
   }
 
+  function getOrderedWaitlistForEvent(eventId) {
+    return [...getWaitlistedRegistrationsForEvent(eventId)].sort((first, second) => {
+      const firstPosition = first.waitlistPosition ?? Number.MAX_SAFE_INTEGER
+      const secondPosition = second.waitlistPosition ?? Number.MAX_SAFE_INTEGER
+
+      if (firstPosition !== secondPosition) return firstPosition - secondPosition
+      return new Date(first.registeredAt).getTime() - new Date(second.registeredAt).getTime()
+    })
+  }
+
   function getEventCapacitySummary(eventId) {
     const event = getEventById(eventId)
     if (!event) return null
@@ -336,6 +346,32 @@ export const useTicketingStore = defineStore('ticketing', () => {
     return registration
   }
 
+  function renumberWaitlist(eventId) {
+    getOrderedWaitlistForEvent(eventId).forEach((registration, index) => {
+      registration.waitlistPosition = index + 1
+    })
+  }
+
+  function promoteNextWaitlistedRegistration(eventId) {
+    const event = getEventById(eventId)
+    if (!event) throw new Error('Event not found.')
+
+    const nextRegistration = getOrderedWaitlistForEvent(eventId)[0]
+    if (!nextRegistration) return null
+
+    const promotedAt = new Date().toISOString()
+    const ticket = createConfirmedTicket(event, nextRegistration, promotedAt)
+
+    nextRegistration.status = 'confirmed'
+    nextRegistration.paymentStatus = event.priceType === 'paid' ? 'paid' : 'not_required'
+    nextRegistration.waitlistPosition = null
+    nextRegistration.ticketId = ticket.id
+    tickets.value.push(ticket)
+    renumberWaitlist(eventId)
+
+    return { registration: nextRegistration, ticket }
+  }
+
   function cancelRegistration(registrationId) {
     const registration = registrations.value.find((item) => item.id === registrationId)
     if (!registration) throw new Error('Registration not found.')
@@ -344,6 +380,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     }
 
     const cancelledAt = new Date().toISOString()
+    const wasConfirmed = registration.status === 'confirmed'
     const ticket = registration.ticketId
       ? tickets.value.find((item) => item.id === registration.ticketId)
       : null
@@ -362,9 +399,16 @@ export const useTicketingStore = defineStore('ticketing', () => {
       ticket.cancelledAt = cancelledAt
     }
 
+    const promoted = wasConfirmed
+      ? promoteNextWaitlistedRegistration(registration.eventId)
+      : null
+    if (!wasConfirmed) {
+      renumberWaitlist(registration.eventId)
+    }
+
     persistState()
 
-    return { registration, ticket }
+    return { registration, ticket, promoted }
   }
 
   async function loadSeedData({ force = false } = {}) {
@@ -410,6 +454,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     getActiveRegistrationsForEvent,
     getConfirmedRegistrationsForEvent,
     getWaitlistedRegistrationsForEvent,
+    getOrderedWaitlistForEvent,
     getEventCapacitySummary,
     getTicketsForAttendee,
     getActiveRegistrationForAttendee,
@@ -419,6 +464,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     beginPaidRegistration,
     completeMockPayment,
     declineMockPayment,
+    promoteNextWaitlistedRegistration,
     cancelRegistration,
     loadSeedData,
   }
