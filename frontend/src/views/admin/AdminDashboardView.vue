@@ -67,20 +67,20 @@
 
             <article class="admin-stat-card">
               <span>Active Societies</span>
-              <strong>12</strong>
+              <strong>{{ activeSocietyCount }}</strong>
               <p>Under Faculty of Computing</p>
             </article>
 
             <article class="admin-stat-card">
               <span>Total Registrations</span>
-              <strong>1,204</strong>
+              <strong>{{ totalRegistrations }}</strong>
               <p>This semester</p>
             </article>
 
             <article class="admin-stat-card">
               <span>Overall Attendance Rate</span>
-              <strong>82%</strong>
-              <p>987 of 1,204 attended</p>
+              <strong>{{ overallAttendanceRate }}%</strong>
+              <p>{{ totalCheckedIn }} of {{ totalRegistrations }} attended</p>
             </article>
           </div>
         </section>
@@ -164,6 +164,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useTicketingStore } from '@/stores/ticketing'
 import {
   approvalEvents,
   loadApprovalEvents,
@@ -173,6 +174,7 @@ import axios from 'axios'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const ticketingStore = useTicketingStore()
 
 const societies = ref([])
 const loadingSocieties = ref(true)
@@ -181,6 +183,7 @@ const notifications = ref([])
 
 onMounted(async () => {
   loadApprovalEvents()
+  ticketingStore.loadSeedData()
 
   try {
     const response = await axios.get('/mock/societies.json')
@@ -194,11 +197,37 @@ onMounted(async () => {
   loadNotifications()
 })
 
-const popularEvents = ref([
-  { rank: 1, title: 'Campus Cultural Night', society: 'Campus Culture Club', date: '20 Jun 2026', category: 'Cultural', badgeClass: 'badge-purple', registered: 312 },
-  { rank: 2, title: 'UTM Sports Day', society: 'UTM Sports Society', date: '5 Jul 2026', category: 'Sports', badgeClass: 'badge-green', registered: 284 },
-  { rank: 3, title: 'Build Your First AI App', society: 'UTM Computing Society', date: '12 Jun 2026', category: 'Academic', badgeClass: 'badge-blue', registered: 198 },
-])
+const activeSocietyCount = computed(() => societies.value.length || 12)
+const totalRegistrations = computed(() =>
+  ticketingStore.events.reduce((sum, event) => {
+    const summary = ticketingStore.getEventCapacitySummary(event.id)
+    return sum + (summary?.occupiedCount || 0) + (summary?.waitlistCount || 0)
+  }, 0)
+)
+const totalCheckedIn = computed(() =>
+  ticketingStore.tickets.filter((ticket) => ticket.status === 'active' && ticket.checkedInAt).length
+)
+const overallAttendanceRate = computed(() =>
+  totalRegistrations.value ? Math.round((totalCheckedIn.value / totalRegistrations.value) * 100) : 0
+)
+
+const popularEvents = computed(() =>
+  ticketingStore.events
+    .map((event) => {
+      const summary = ticketingStore.getEventCapacitySummary(event.id)
+      return {
+        title: event.title,
+        society: event.societyName,
+        date: new Date(event.startAt).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }),
+        category: event.category,
+        badgeClass: event.badgeClass,
+        registered: (summary?.occupiedCount || 0) + (summary?.waitlistCount || 0),
+      }
+    })
+    .sort((first, second) => second.registered - first.registered)
+    .slice(0, 3)
+    .map((event, index) => ({ ...event, rank: index + 1 }))
+)
 
 const unreadCount = computed(() =>
   notifications.value.filter(

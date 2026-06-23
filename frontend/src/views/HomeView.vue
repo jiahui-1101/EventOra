@@ -34,11 +34,11 @@
         <div style="margin-top: 14px; display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">🔥 Highlight:</span>
           <router-link 
-            to="/event/event-annual-tech-2026" 
+            to="/event/event-ai-app-2026" 
             class="badge badge-blue" 
             style="text-decoration: none; font-size: 0.85rem; padding: 5px 10px; font-weight: 600; cursor: pointer;"
           >
-            Annual Tech Symposium 2026 &rarr;
+            Build Your First AI App &rarr;
           </router-link>
         </div>
       </div>
@@ -308,7 +308,7 @@ function toPublicEvent(event) {
     category,
     price: event.price ?? 0,
     priceType: event.priceType ?? 'free',
-    date: event.startAt || new Date().toISOString(),
+    date: event.startAt || event.date || new Date().toISOString(),
     venue: event.venue || 'Venue not set',
     seatsLeft: Math.max(capacity - confirmed, 0),
     coverClass: event.coverClass || coverForCategory(category),

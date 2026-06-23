@@ -166,9 +166,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useTicketingStore } from '@/stores/ticketing'
 
 const route = useRoute()
 const router = useRouter()
+const ticketingStore = useTicketingStore()
 
 const eventsStorageKey = 'eventora_society_events_v2'
 
@@ -358,6 +360,20 @@ function handleAction(action) {
     societyEvents.value = societyEvents.value.map((ev) =>
       ev.id === id ? { ...ev, status: 'cancelled' } : ev
     )
+    const eventForTicketing = {
+      ...selectedEvent.value,
+      status: 'published',
+      title: selectedEvent.value?.title,
+      society: selectedEvent.value?.society,
+      category: selectedEvent.value?.category,
+      priceType: (selectedEvent.value?.feeType || '').toLowerCase() === 'paid' ? 'paid' : 'free',
+      price: selectedEvent.value?.feeAmount || 0,
+      date: selectedEvent.value?.date || selectedEvent.value?.startAt,
+      venue: selectedEvent.value?.location,
+      confirmedCount: selectedEvent.value?.registrations || 0,
+    }
+    ticketingStore.ensureEventAvailable(eventForTicketing)
+    ticketingStore.cancelEvent(id)
     saveEvents()
     router.push({ path: '/organiser/dashboard', query: { eventAction: 'cancelled' } })
   }

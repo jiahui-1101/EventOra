@@ -50,6 +50,14 @@
         </div>
 
         <div class="scanner-window">
+          <video
+            v-show="scannerActive"
+            ref="videoRef"
+            autoplay
+            muted
+            playsinline
+            class="scanner-video"
+          ></video>
           <div class="scanner-corners"></div>
           <div class="scanner-line"></div>
           <p>{{ cameraMessage }}</p>
@@ -130,7 +138,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTicketingStore } from '@/stores/ticketing'
@@ -139,10 +147,15 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const ticketingStore = useTicketingStore()
+const societyEventsStorageKey = 'eventora_society_events_v2'
 
 const selectedEventId = ref(route.params.eventId || '')
 const manualCode = ref('')
 const cameraMessage = ref('Camera scanner is ready. Start the scanner and place the QR code inside the frame.')
+const videoRef = ref(null)
+const scannerActive = ref(false)
+let scannerStream = null
+let scannerFrame = 0
 const result = ref({
   status: 'idle',
   message: 'Scan or enter a ticket code to begin.',
@@ -189,10 +202,24 @@ const resultLabel = computed(() => {
 
 onMounted(async () => {
   await ticketingStore.loadSeedData()
+  loadPublishedSocietyEvents()
   if (!selectedEventId.value && organiserEvents.value[0]) {
     selectedEventId.value = organiserEvents.value[0].id
   }
 })
+
+function loadPublishedSocietyEvents() {
+  try {
+    const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || '[]')
+    if (!Array.isArray(savedEvents)) return
+
+    savedEvents
+      .filter((event) => event.status === 'published')
+      .forEach((event) => ticketingStore.ensureEventAvailable(event))
+  } catch (error) {
+    // Keep the scanner usable even if local event data is unavailable.
+  }
+}
 
 watch(selectedEventId, (eventId) => {
   if (eventId && eventId !== route.params.eventId) {
@@ -206,13 +233,58 @@ async function requestCameraPermission() {
     return
   }
 
+  if (!('BarcodeDetector' in window)) {
+    cameraMessage.value = 'Camera permission is available, but QR detection is not supported here. Enter the ticket code manually.'
+    return
+  }
+
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-    stream.getTracks().forEach((track) => track.stop())
-    cameraMessage.value = 'Camera permission granted. Point the attendee QR code inside the frame.'
+    stopScanner()
+    scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' },
+    })
+    videoRef.value.srcObject = scannerStream
+    scannerActive.value = true
+    cameraMessage.value = 'Scanning QR ticket. Hold the code inside the frame.'
+    scanQrLoop(new window.BarcodeDetector({ formats: ['qr_code'] }))
   } catch {
     cameraMessage.value = 'Camera permission was denied. Enter the ticket code manually.'
   }
+}
+
+async function scanQrLoop(detector) {
+  if (!scannerActive.value || !videoRef.value) return
+
+  try {
+    if (videoRef.value.readyState >= 2) {
+      const codes = await detector.detect(videoRef.value)
+      const firstCode = codes[0]
+      if (firstCode?.rawValue) {
+        processTicketCode(firstCode.rawValue)
+        stopScanner()
+        cameraMessage.value = 'QR ticket captured. Result is shown on the right.'
+        return
+      }
+    }
+  } catch {
+    cameraMessage.value = 'Unable to read the QR code. Enter the ticket code manually.'
+  }
+
+  scannerFrame = requestAnimationFrame(() => scanQrLoop(detector))
+}
+
+function stopScanner() {
+  if (scannerFrame) {
+    cancelAnimationFrame(scannerFrame)
+    scannerFrame = 0
+  }
+
+  if (scannerStream) {
+    scannerStream.getTracks().forEach((track) => track.stop())
+    scannerStream = null
+  }
+
+  scannerActive.value = false
 }
 
 function submitManualCode() {
@@ -250,6 +322,10 @@ function formatTime(dateValue) {
     minute: '2-digit',
   }).format(new Date(dateValue))
 }
+
+onUnmounted(() => {
+  stopScanner()
+})
 </script>
 
 <style scoped>
@@ -373,6 +449,15 @@ function formatTime(dateValue) {
   background:
     linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.7)),
     radial-gradient(circle, rgba(79, 70, 229, 0.5), transparent 55%);
+}
+
+.scanner-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.72;
 }
 
 .scanner-corners {

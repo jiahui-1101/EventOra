@@ -158,6 +158,22 @@
         </div>
 
         <div
+          v-if="waitlistedRegistration"
+          class="waitlist-status-card"
+        >
+          <span>Waitlist active</span>
+          <strong>Position #{{ waitlistedRegistration.waitlistPosition }}</strong>
+          <p>We will notify you when a seat becomes available.</p>
+          <button
+            class="button button-secondary full-width"
+            type="button"
+            @click="cancelCurrentRegistration"
+          >
+            Leave waitlist
+          </button>
+        </div>
+
+        <div
           v-if="confirmedTicket"
           class="ticket-created-card"
         >
@@ -173,10 +189,10 @@
         </div>
 
         <button 
-          v-if="!pendingRegistration && !confirmedTicket"
+          v-if="!pendingRegistration && !confirmedTicket && !waitlistedRegistration"
           class="button button-primary full-width" 
           style="justify-content: center;"
-          :disabled="seatsLeft === 0 && !event.waitlistEnabled"
+          :disabled="Boolean(registrationClosedReason) || (seatsLeft === 0 && !event.waitlistEnabled)"
           @click="reserveSeat"
         >
           {{ buttonLabel }}
@@ -188,11 +204,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTicketingStore } from '@/stores/ticketing'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const ticketingStore = useTicketingStore()
 const loading = ref(true)
@@ -201,6 +218,7 @@ const favorites = ref([])
 const shareToast = ref(false)
 const pendingRegistration = ref(null)
 const confirmedTicket = ref(null)
+const waitlistedRegistration = ref(null)
 const paymentMethod = ref('campus-card')
 const paymentReference = ref('4242 4242 4242 4242')
 const paymentConsent = ref(false)
@@ -231,6 +249,7 @@ const paymentMethods = [
 ]
 
 const favKey = 'eventora_favs_v2'
+const societyEventsStorageKey = 'eventora_society_events_v2'
 
 const backupAnnualTech = {
   id: 'event-annual-tech-2026',
@@ -245,6 +264,8 @@ const backupAnnualTech = {
   venue: 'Dewan Sultan Iskandar, UTM JB',
   capacity: 120,
   confirmedCount: 78,
+  status: 'published',
+  societyId: 'UTM-CS',
   description: 'Annual Tech Symposium 2026 brings together students, organisers, and faculty members for a full-day technology event. The event includes tech talks, project showcase booths, student project showcases, and networking sessions.',
   coverClass: 'academic-cover',
   badgeClass: 'badge-blue',
@@ -257,18 +278,23 @@ onMounted(async () => {
     await ticketingStore.loadSeedData()
     const res = await fetch('/mock/events.json')
     const all = await res.json()
+    const localEvents = loadPublishedSocietyEvents()
     
-    let target = all.find(e => String(e.id) === String(route.params.id))
+    let target = [...all.filter((candidate) => candidate.status === 'published'), ...localEvents]
+      .find(e => String(e.id) === String(route.params.id))
     
     if (!target && route.params.id === 'event-annual-tech-2026') {
       target = backupAnnualTech
     }
     
-    event.value = target || null
+    event.value = target ? ticketingStore.ensureEventAvailable(target) : null
+    hydrateExistingRegistration()
   } catch(e) {
     console.error(e)
     if (route.params.id === 'event-annual-tech-2026') {
       event.value = backupAnnualTech
+      ticketingStore.ensureEventAvailable(backupAnnualTech)
+      hydrateExistingRegistration()
     }
   } finally {
     loading.value = false
@@ -280,7 +306,7 @@ const capacitySummary = computed(() =>
 )
 const registeredCount = computed(() => capacitySummary.value?.confirmedCount ?? event.value?.confirmedCount ?? 0)
 const seatsLeft = computed(() =>
-  event.value ? Math.max(event.value.capacity - registeredCount.value, 0) : 0
+  capacitySummary.value?.remainingSeats ?? (event.value ? Math.max(event.value.capacity - registeredCount.value, 0) : 0)
 )
 const occupancyRate = computed(() =>
   event.value ? Math.min(Math.round((registeredCount.value / event.value.capacity) * 100), 100) : 0
@@ -312,8 +338,24 @@ const canSubmitPayment = computed(() =>
 )
 
 const buttonLabel = computed(() => {
+  if (registrationClosedReason.value) return 'Registration Closed'
   if (seatsLeft.value > 0) return event.value.priceType === 'paid' ? 'Proceed to secure checkout' : 'Confirm Free Registration'
   return event.value.waitlistEnabled ? 'Join Waitlist' : 'Registration Closed'
+})
+
+const registrationClosedReason = computed(() => {
+  if (!event.value) return ''
+
+  const now = Date.now()
+  if (event.value.status !== 'published') return 'Registration is only available for published events.'
+  if (event.value.registrationDeadline && new Date(event.value.registrationDeadline).getTime() < now) {
+    return 'Registration has closed for this event.'
+  }
+  if (event.value.startAt && new Date(event.value.startAt).getTime() <= now) {
+    return 'Registration is closed because this event has already started.'
+  }
+
+  return ''
 })
 
 function toggleFavorite() {
@@ -351,6 +393,17 @@ function addToGoogleCalendar() {
   window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.value.title)}&dates=${s}/${e}&details=${encodeURIComponent(event.value.description)}&location=${encodeURIComponent(event.value.venue)}`, '_blank')
 }
 
+function loadPublishedSocietyEvents() {
+  try {
+    const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || '[]')
+    if (!Array.isArray(savedEvents)) return []
+
+    return savedEvents.filter((savedEvent) => savedEvent.status === 'published')
+  } catch (error) {
+    return []
+  }
+}
+
 function attendeePayload() {
   const user = authStore.user
 
@@ -365,8 +418,60 @@ function setNotice(type, message) {
   registrationNotice.value = { type, message }
 }
 
+function hydrateExistingRegistration() {
+  pendingRegistration.value = null
+  confirmedTicket.value = null
+  waitlistedRegistration.value = null
+
+  if (!event.value || !authStore.isLoggedIn || authStore.role !== 'attendee') return
+
+  ticketingStore.expirePendingPayments()
+  const registration = ticketingStore.getActiveRegistrationForAttendee(event.value.id, attendeePayload())
+  if (!registration) return
+
+  if (registration.status === 'pending_payment') {
+    pendingRegistration.value = registration
+    holdExpiresAt.value = registration.paymentHoldExpiresAt
+      ? new Date(registration.paymentHoldExpiresAt)
+      : null
+    setNotice('info', 'You already have a reserved seat. Complete payment to receive your QR ticket.')
+    return
+  }
+
+  if (registration.status === 'waitlisted') {
+    waitlistedRegistration.value = registration
+    setNotice('warning', `You are on the waitlist at position #${registration.waitlistPosition}.`)
+    return
+  }
+
+  if (registration.status === 'confirmed') {
+    confirmedTicket.value = ticketingStore
+      .getTicketsForAttendee(registration.attendeeEmail)
+      .find((ticket) => ticket.registrationId === registration.id) || null
+    if (confirmedTicket.value) {
+      setNotice('success', 'You are already registered. Your QR ticket is ready in My Tickets.')
+    }
+  }
+}
+
 function reserveSeat() {
   if (!event.value) return
+
+  if (!authStore.isLoggedIn) {
+    setNotice('error', 'Please sign in before registering for this event.')
+    router.push({ name: 'login' })
+    return
+  }
+
+  if (authStore.role !== 'attendee') {
+    setNotice('error', 'Only attendee accounts can register for events.')
+    return
+  }
+
+  if (registrationClosedReason.value) {
+    setNotice('error', registrationClosedReason.value)
+    return
+  }
 
   try {
     if (event.value.priceType === 'paid' && seatsLeft.value > 0) {
@@ -377,7 +482,9 @@ function reserveSeat() {
       }
 
       pendingRegistration.value = result.registration
-      holdExpiresAt.value = new Date(Date.now() + 10 * 60 * 1000)
+      holdExpiresAt.value = result.registration.paymentHoldExpiresAt
+        ? new Date(result.registration.paymentHoldExpiresAt)
+        : new Date(Date.now() + 10 * 60 * 1000)
       paymentConsent.value = false
       setNotice('info', 'Your seat is held while you complete payment.')
       return
@@ -388,6 +495,7 @@ function reserveSeat() {
       confirmedTicket.value = result.ticket
       setNotice('success', 'Registration confirmed. Your QR ticket has been issued.')
     } else {
+      waitlistedRegistration.value = result.registration
       setNotice('warning', `You have joined the waitlist at position #${result.registration.waitlistPosition}.`)
     }
   } catch (error) {
@@ -427,6 +535,22 @@ function declinePayment() {
     setNotice('error', error instanceof Error ? error.message : 'Payment could not be cancelled.')
   }
 }
+
+function cancelCurrentRegistration() {
+  const registration = pendingRegistration.value || waitlistedRegistration.value
+  if (!registration) return
+
+  try {
+    ticketingStore.cancelRegistration(registration.id)
+    pendingRegistration.value = null
+    waitlistedRegistration.value = null
+    holdExpiresAt.value = null
+    paymentConsent.value = false
+    setNotice('info', 'Your registration has been cancelled.')
+  } catch (error) {
+    setNotice('error', error instanceof Error ? error.message : 'Unable to cancel this registration.')
+  }
+}
 </script>
 
 <style scoped>
@@ -439,7 +563,8 @@ function declinePayment() {
 }
 
 .registration-notice.success,
-.ticket-created-card {
+.ticket-created-card,
+.waitlist-status-card {
   color: #047857;
   background: #ecfdf5;
   border: 1px solid #a7f3d0;
@@ -494,7 +619,8 @@ function declinePayment() {
 }
 
 .checkout-card,
-.ticket-created-card {
+.ticket-created-card,
+.waitlist-status-card {
   display: grid;
   gap: 12px;
   margin-bottom: 16px;
@@ -606,18 +732,21 @@ function declinePayment() {
   gap: 10px;
 }
 
-.ticket-created-card span {
+.ticket-created-card span,
+.waitlist-status-card span {
   font-size: 0.75rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-.ticket-created-card strong {
+.ticket-created-card strong,
+.waitlist-status-card strong {
   color: #064e3b;
   letter-spacing: 0.08em;
 }
 
-.ticket-created-card p {
+.ticket-created-card p,
+.waitlist-status-card p {
   margin: 0;
   color: #047857;
 }

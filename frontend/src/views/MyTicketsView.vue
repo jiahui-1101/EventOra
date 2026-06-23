@@ -79,6 +79,70 @@
 
     <section class="ticket-section">
       <div class="section-heading">
+        <p class="eyebrow">Registrations</p>
+        <h2>Payment and waitlist status</h2>
+      </div>
+
+      <div
+        v-if="registrationCards.length"
+        class="registration-status-list"
+      >
+        <article
+          v-for="registration in registrationCards"
+          :key="registration.id"
+          class="registration-status-card"
+        >
+          <div>
+            <span :class="['ticket-status', statusClass(registration.status)]">
+              {{ statusLabel(registration) }}
+            </span>
+            <h3>{{ registration.event.title || registration.eventId }}</h3>
+            <p>{{ registration.event.venue || registration.event.location || 'Venue not set' }}</p>
+            <small v-if="registration.status === 'waitlisted'">
+              Waitlist position #{{ registration.waitlistPosition }}
+            </small>
+            <small v-else-if="registration.status === 'pending_payment'">
+              Payment hold expires {{ formatDate(registration.paymentHoldExpiresAt) }}
+            </small>
+          </div>
+
+          <div class="registration-status-actions">
+            <router-link
+              v-if="registration.status === 'pending_payment'"
+              class="button button-primary"
+              :to="`/event/${registration.eventId}`"
+            >
+              Continue payment
+            </router-link>
+            <router-link
+              v-else-if="registration.status === 'waitlisted'"
+              class="button button-secondary"
+              :to="`/event/${registration.eventId}`"
+            >
+              View waitlist
+            </router-link>
+            <button
+              v-if="registration.status === 'pending_payment' || registration.status === 'waitlisted'"
+              class="button button-secondary"
+              type="button"
+              @click="cancelRegistration(registration)"
+            >
+              Cancel
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <p
+        v-else
+        class="empty-state"
+      >
+        Pending payments and waitlist entries will appear here.
+      </p>
+    </section>
+
+    <section class="ticket-section">
+      <div class="section-heading">
         <p class="eyebrow">Past</p>
         <h2>Previous events</h2>
       </div>
@@ -123,6 +187,14 @@ const ticketNotice = ref('')
 
 const attendeeEmail = computed(() => authStore.user?.email || 'student@utm.my')
 const wallet = computed(() => ticketingStore.getTicketWalletForAttendee(attendeeEmail.value))
+const registrationWallet = computed(() => ticketingStore.getRegistrationWalletForAttendee(attendeeEmail.value))
+const registrationCards = computed(() =>
+  registrationWallet.value.filter((registration) =>
+    registration.status === 'pending_payment'
+    || registration.status === 'waitlisted'
+    || registration.status === 'cancelled'
+  )
+)
 const totalActiveTickets = computed(() => wallet.value.upcoming.length + wallet.value.past.length)
 
 onMounted(() => {
@@ -157,6 +229,32 @@ function cancelTicket(ticket) {
       ? error.message
       : 'Unable to cancel this registration.'
   }
+}
+
+function cancelRegistration(registration) {
+  try {
+    ticketingStore.cancelRegistration(registration.id)
+    ticketNotice.value = 'Registration cancelled. Your seat or waitlist position has been released.'
+  } catch (error) {
+    ticketNotice.value = error instanceof Error
+      ? error.message
+      : 'Unable to cancel this registration.'
+  }
+}
+
+function statusLabel(registration) {
+  if (registration.status === 'pending_payment') return 'Payment pending'
+  if (registration.status === 'waitlisted') return 'Waitlisted'
+  if (registration.status === 'cancelled' && registration.paymentStatus === 'expired') return 'Payment expired'
+  if (registration.status === 'cancelled') return 'Cancelled'
+  return registration.status
+}
+
+function statusClass(status) {
+  if (status === 'waitlisted') return 'waitlisted'
+  if (status === 'pending_payment') return 'pending-payment'
+  if (status === 'cancelled') return 'cancelled'
+  return ''
 }
 </script>
 
@@ -290,6 +388,57 @@ function cancelTicket(ticket) {
   text-transform: uppercase;
 }
 
+.ticket-status.waitlisted {
+  color: #b45309;
+  background: #fef3c7;
+}
+
+.ticket-status.pending-payment {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.ticket-status.cancelled {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+.registration-status-list {
+  display: grid;
+  gap: 14px;
+}
+
+.registration-status-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.registration-status-card h3 {
+  margin: 10px 0 6px;
+  color: #0f172a;
+}
+
+.registration-status-card p,
+.registration-status-card small {
+  display: block;
+  margin: 0;
+  color: #64748b;
+}
+
+.registration-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .ticket-qr-panel {
   display: grid;
   justify-items: center;
@@ -351,8 +500,10 @@ function cancelTicket(ticket) {
 
 @media (max-width: 760px) {
   .tickets-hero,
-  .ticket-card {
+  .ticket-card,
+  .registration-status-card {
     grid-template-columns: 1fr;
+    flex-direction: column;
   }
 }
 </style>
