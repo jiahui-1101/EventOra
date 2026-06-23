@@ -109,7 +109,6 @@ onMounted(async () => {
   }
 })
 
-// 映射列表：前 2 个模拟为已签到，后 2 个模拟为未签到（方便 Lecturers 审查两种状态的UI限制）
 const myEvents = computed(() => {
   return rawEvents.value.map((ev, index) => {
     const isCheckedIn = index < 2 
