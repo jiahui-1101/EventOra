@@ -7,6 +7,8 @@ import { createTicketSecurityFields } from '@/utils/ticketTokens'
 
 const TICKETING_STORAGE_KEY = 'eventora_ticketing_state'
 const ACTIVE_REGISTRATION_STATUSES = ['confirmed', 'waitlisted', 'pending_payment']
+const PAYMENT_HOLD_MINUTES = 10
+const PAYMENT_HOLD_MS = PAYMENT_HOLD_MINUTES * 60 * 1000
 
 function cloneCollection(collection) {
   return collection.map((item) => ({ ...item }))
@@ -55,6 +57,24 @@ function normalizeEmail(email) {
 
 function compareTicketEventTime(first, second) {
   return new Date(first.eventStartAt).getTime() - new Date(second.eventStartAt).getTime()
+}
+
+function addMinutes(dateValue, minutes) {
+  return new Date(new Date(dateValue).getTime() + minutes * 60 * 1000).toISOString()
+}
+
+function resolveSocietyId(eventPayload) {
+  if (eventPayload.societyId) return eventPayload.societyId
+
+  const societyName = eventPayload.societyName || eventPayload.society || ''
+  const societyKey = societyName.toLowerCase()
+
+  if (societyKey.includes('computing') || societyKey.includes('computer')) return 'UTM-CS'
+  if (societyKey.includes('sport')) return 'UTM-SPORTS'
+  if (societyKey.includes('culture')) return 'UTM-CULTURE'
+  if (societyKey.includes('robot')) return 'UTM-ROBOTICS'
+
+  return societyName || 'CUSTOM-SOCIETY'
 }
 
 export const useTicketingStore = defineStore('ticketing', () => {
@@ -117,6 +137,8 @@ export const useTicketingStore = defineStore('ticketing', () => {
   }
 
   function getEventCapacitySummary(eventId) {
+    expirePendingPayments()
+
     const event = getEventById(eventId)
     if (!event) return null
 
@@ -156,6 +178,31 @@ export const useTicketingStore = defineStore('ticketing', () => {
     return activeTickets.value
       .filter((ticket) => normalizeEmail(ticket.attendeeEmail) === attendeeEmail)
       .sort(compareTicketEventTime)
+  }
+
+  function getRegistrationsForAttendee(email) {
+    const attendeeEmail = normalizeEmail(email)
+
+    return registrations.value
+      .filter((registration) => normalizeEmail(registration.attendeeEmail) === attendeeEmail)
+      .sort((first, second) => new Date(second.registeredAt).getTime() - new Date(first.registeredAt).getTime())
+  }
+
+  function getRegistrationWalletForAttendee(email, now = new Date()) {
+    expirePendingPayments(now)
+
+    return getRegistrationsForAttendee(email).map((registration) => {
+      const event = getEventById(registration.eventId) || {}
+      const ticket = registration.ticketId
+        ? tickets.value.find((item) => item.id === registration.ticketId)
+        : null
+
+      return {
+        ...registration,
+        event,
+        ticket,
+      }
+    })
   }
 
   function getTicketWalletForAttendee(email, now = new Date()) {
@@ -279,6 +326,44 @@ export const useTicketingStore = defineStore('ticketing', () => {
     writeStoredTicketingState(createSnapshot())
   }
 
+  function expirePendingPayments(now = new Date()) {
+    let changed = false
+    const currentTime = now.getTime()
+
+    registrations.value.forEach((registration) => {
+      if (registration.status !== 'pending_payment') return
+
+      const expiresAt = registration.paymentHoldExpiresAt
+        || addMinutes(registration.registeredAt, PAYMENT_HOLD_MINUTES)
+
+      if (new Date(expiresAt).getTime() > currentTime) return
+
+      registration.status = 'cancelled'
+      registration.paymentStatus = 'expired'
+      registration.cancelledAt = now.toISOString()
+      changed = true
+    })
+
+    if (changed) {
+      persistState()
+    }
+
+    return changed
+  }
+
+  function assertEventRegisterable(event, now = new Date()) {
+    if (!event) throw new Error('Event not found.')
+    if (event.status !== 'published') throw new Error('Registration is only available for published events.')
+
+    if (event.registrationDeadline && new Date(event.registrationDeadline).getTime() < now.getTime()) {
+      throw new Error('Registration has closed for this event.')
+    }
+
+    if (event.startAt && new Date(event.startAt).getTime() <= now.getTime()) {
+      throw new Error('Registration is closed because this event has already started.')
+    }
+  }
+
   function adjustConfirmedCount(eventId, delta) {
     const event = getEventById(eventId)
     if (!event) return
@@ -295,7 +380,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
       ...eventPayload,
       title: eventPayload.title,
       description: eventPayload.description || 'Event details will be shared by the organiser.',
-      societyId: eventPayload.societyId || eventPayload.society || 'CUSTOM-SOCIETY',
+      societyId: resolveSocietyId(eventPayload),
       societyName: eventPayload.societyName || eventPayload.society || 'EventOra Society',
       category: eventPayload.category || 'academic',
       priceType: eventPayload.priceType || (Number(eventPayload.price || eventPayload.feeAmount || 0) > 0 ? 'paid' : 'free'),
@@ -357,9 +442,27 @@ export const useTicketingStore = defineStore('ticketing', () => {
     }
   }
 
+  function createPendingPaymentRegistration(event, attendee, registeredAt, source = 'checkout') {
+    return {
+      id: createRegistrationId(event.id, attendee.id),
+      eventId: event.id,
+      attendeeId: attendee.id,
+      attendeeName: attendee.name,
+      attendeeEmail: attendee.email,
+      status: 'pending_payment',
+      paymentStatus: 'unpaid',
+      waitlistPosition: null,
+      ticketId: null,
+      registeredAt,
+      paymentHoldExpiresAt: addMinutes(registeredAt, PAYMENT_HOLD_MINUTES),
+      source,
+      cancelledAt: null,
+    }
+  }
+
   function joinWaitlist(eventId, attendee) {
     const event = getEventById(eventId)
-    if (!event) throw new Error('Event not found.')
+    assertEventRegisterable(event)
     assertCanRegister(eventId, attendee)
 
     const capacitySummary = getEventCapacitySummary(eventId)
@@ -399,7 +502,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
 
   function registerFreeEvent(eventId, attendee) {
     const event = getEventById(eventId)
-    if (!event) throw new Error('Event not found.')
+    assertEventRegisterable(event)
     if (event.priceType !== 'free') throw new Error('This event requires payment.')
     assertCanRegister(eventId, attendee)
 
@@ -423,6 +526,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
       waitlistPosition: null,
       ticketId: null,
       registeredAt,
+      paymentHoldExpiresAt: null,
       cancelledAt: null,
     }
     const ticket = createConfirmedTicket(event, registration, registeredAt)
@@ -444,7 +548,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
 
   function beginPaidRegistration(eventId, attendee) {
     const event = getEventById(eventId)
-    if (!event) throw new Error('Event not found.')
+    assertEventRegisterable(event)
     if (event.priceType !== 'paid') throw new Error('This event does not require payment.')
     assertCanRegister(eventId, attendee)
 
@@ -457,19 +561,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     }
 
     const registeredAt = new Date().toISOString()
-    const registration = {
-      id: createRegistrationId(eventId, attendee.id),
-      eventId,
-      attendeeId: attendee.id,
-      attendeeName: attendee.name,
-      attendeeEmail: attendee.email,
-      status: 'pending_payment',
-      paymentStatus: 'unpaid',
-      waitlistPosition: null,
-      ticketId: null,
-      registeredAt,
-      cancelledAt: null,
-    }
+    const registration = createPendingPaymentRegistration(event, attendee, registeredAt)
 
     registrations.value.push(registration)
     notifyAttendee({
@@ -492,6 +584,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
   }
 
   function completeMockPayment(registrationId) {
+    expirePendingPayments()
     const registration = registrations.value.find((item) => item.id === registrationId)
     if (!registration) throw new Error('Registration not found.')
     if (registration.status !== 'pending_payment') {
@@ -507,6 +600,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     registration.status = 'confirmed'
     registration.paymentStatus = 'paid'
     registration.ticketId = ticket.id
+    registration.paymentHoldExpiresAt = null
     tickets.value.push(ticket)
     adjustConfirmedCount(registration.eventId, 1)
     notifyAttendee({
@@ -531,6 +625,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     registration.status = 'cancelled'
     registration.paymentStatus = 'failed'
     registration.cancelledAt = new Date().toISOString()
+    registration.paymentHoldExpiresAt = null
     notifyAttendee({
       recipientEmail: registration.attendeeEmail,
       title: 'Payment unsuccessful',
@@ -557,19 +652,29 @@ export const useTicketingStore = defineStore('ticketing', () => {
     if (!nextRegistration) return null
 
     const promotedAt = new Date().toISOString()
-    const ticket = createConfirmedTicket(event, nextRegistration, promotedAt)
 
-    nextRegistration.status = 'confirmed'
-    nextRegistration.paymentStatus = event.priceType === 'paid' ? 'paid' : 'not_required'
+    let ticket = null
+    nextRegistration.status = event.priceType === 'paid' ? 'pending_payment' : 'confirmed'
+    nextRegistration.paymentStatus = event.priceType === 'paid' ? 'unpaid' : 'not_required'
     nextRegistration.waitlistPosition = null
-    nextRegistration.ticketId = ticket.id
-    tickets.value.push(ticket)
-    adjustConfirmedCount(eventId, 1)
+    nextRegistration.paymentHoldExpiresAt = event.priceType === 'paid'
+      ? addMinutes(promotedAt, PAYMENT_HOLD_MINUTES)
+      : null
+
+    if (event.priceType === 'free') {
+      ticket = createConfirmedTicket(event, nextRegistration, promotedAt)
+      nextRegistration.ticketId = ticket.id
+      tickets.value.push(ticket)
+      adjustConfirmedCount(eventId, 1)
+    }
+
     renumberWaitlist(eventId)
     notifyAttendee({
       recipientEmail: nextRegistration.attendeeEmail,
       title: 'Waitlist promoted',
-      message: `A seat opened for ${event.title}. Your registration is confirmed and your QR ticket is ready.`,
+      message: event.priceType === 'paid'
+        ? `A seat opened for ${event.title}. Complete payment to receive your QR ticket.`
+        : `A seat opened for ${event.title}. Your registration is confirmed and your QR ticket is ready.`,
       badgeClass: 'badge-green',
     })
 
@@ -597,6 +702,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     } else if (registration.paymentStatus === 'unpaid') {
       registration.paymentStatus = 'cancelled'
     }
+    registration.paymentHoldExpiresAt = null
 
     if (ticket) {
       ticket.status = 'cancelled'
@@ -626,6 +732,51 @@ export const useTicketingStore = defineStore('ticketing', () => {
     return { registration, ticket, promoted }
   }
 
+  function cancelEvent(eventId, reason = 'The event has been cancelled by the organiser.') {
+    const event = getEventById(eventId)
+    if (!event) return null
+
+    event.status = 'cancelled'
+    event.cancelledAt = new Date().toISOString()
+    event.cancellationReason = reason
+
+    registrations.value
+      .filter((registration) =>
+        registration.eventId === eventId
+        && ACTIVE_REGISTRATION_STATUSES.includes(registration.status)
+      )
+      .forEach((registration) => {
+        registration.status = 'cancelled'
+        registration.cancelledAt = event.cancelledAt
+        registration.paymentHoldExpiresAt = null
+
+        if (registration.paymentStatus === 'paid') {
+          registration.paymentStatus = 'refunded'
+        } else if (registration.paymentStatus === 'unpaid') {
+          registration.paymentStatus = 'cancelled'
+        }
+
+        notifyAttendee({
+          recipientEmail: registration.attendeeEmail,
+          title: 'Event cancelled',
+          message: `${event.title} has been cancelled. Your registration is no longer active.`,
+          type: 'Event update',
+          badgeClass: 'badge-red',
+        })
+      })
+
+    tickets.value
+      .filter((ticket) => ticket.eventId === eventId && ticket.status === 'active')
+      .forEach((ticket) => {
+        ticket.status = 'cancelled'
+        ticket.cancelledAt = event.cancelledAt
+      })
+
+    event.confirmedCount = 0
+    persistState()
+    return event
+  }
+
   async function loadSeedData({ force = false } = {}) {
     if (hasLoaded.value && !force) return
 
@@ -636,12 +787,14 @@ export const useTicketingStore = defineStore('ticketing', () => {
       const storedSnapshot = force ? null : readStoredTicketingState()
       if (storedSnapshot) {
         applySnapshot(storedSnapshot)
+        expirePendingPayments()
         return
       }
 
       const seed = await fetchTicketingSeed()
 
       applySnapshot(seed)
+      expirePendingPayments()
       persistState()
     } catch (error) {
       loadError.value = error instanceof Error
@@ -674,12 +827,15 @@ export const useTicketingStore = defineStore('ticketing', () => {
     getTicketsForAttendee,
     getActiveTicketsForAttendee,
     getTicketWalletForAttendee,
+    getRegistrationsForAttendee,
+    getRegistrationWalletForAttendee,
     findTicketByCodeOrToken,
     validateTicketForCheckIn,
     checkInTicket,
     getActiveRegistrationForAttendee,
     persistState,
     ensureEventAvailable,
+    expirePendingPayments,
     joinWaitlist,
     registerFreeEvent,
     beginPaidRegistration,
@@ -687,6 +843,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     declineMockPayment,
     promoteNextWaitlistedRegistration,
     cancelRegistration,
+    cancelEvent,
     loadSeedData,
   }
 })
