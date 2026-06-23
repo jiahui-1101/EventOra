@@ -5,6 +5,9 @@ export const approvalEvents = ref([])
 export const loadingApprovalEvents = ref(false)
 export const approvalLoadError = ref('')
 
+const approvalStorageKey = 'eventora_approval_events_v2'
+let hasLoadedApprovalEvents = false
+
 const approvalEventDetails = {
   101: {
     submittedBy: 'Siti Noor',
@@ -38,20 +41,74 @@ const approvalEventDetails = {
   },
 }
 
+function readSavedApprovalEvents() {
+  try {
+    const saved = localStorage.getItem(approvalStorageKey)
+    return saved ? JSON.parse(saved) : null
+  } catch (err) {
+    return null
+  }
+}
+
+function mergeApprovalEvents(mockEvents, savedEvents) {
+  if (!Array.isArray(savedEvents)) return mockEvents
+
+  const mockById = new Map(mockEvents.map((event) => [String(event.id), event]))
+  const savedIds = new Set(savedEvents.map((event) => String(event.id)))
+
+  const savedWithMockFields = savedEvents.map((event) => ({
+    ...(mockById.get(String(event.id)) || {}),
+    ...event,
+  }))
+
+  const mockOnlyEvents = mockEvents.filter((event) => !savedIds.has(String(event.id)))
+
+  return [...savedWithMockFields, ...mockOnlyEvents]
+}
+
+export function saveApprovalEvents() {
+  localStorage.setItem(approvalStorageKey, JSON.stringify(approvalEvents.value))
+}
+
 export async function loadApprovalEvents() {
-  if (approvalEvents.value.length > 0) return
+  if (hasLoadedApprovalEvents) return
 
   loadingApprovalEvents.value = true
   approvalLoadError.value = ''
 
   try {
     const response = await axios.get('/mock/approval-events.json')
-    approvalEvents.value = response.data
+    const savedEvents = readSavedApprovalEvents()
+    approvalEvents.value = mergeApprovalEvents(response.data, savedEvents)
+    hasLoadedApprovalEvents = true
   } catch (err) {
     approvalLoadError.value = 'Failed to load approval events. Please try again later.'
   } finally {
     loadingApprovalEvents.value = false
   }
+}
+
+export function addApprovalEvent(newEvent) {
+  const existingIndex = approvalEvents.value.findIndex(
+    (event) => String(event.id) === String(newEvent.id)
+  )
+
+  if (existingIndex >= 0) {
+    approvalEvents.value.splice(existingIndex, 1, {
+      ...approvalEvents.value[existingIndex],
+      ...newEvent,
+      status: 'pending',
+      reason: '',
+    })
+  } else {
+    approvalEvents.value.unshift({
+      ...newEvent,
+      status: 'pending',
+      reason: '',
+    })
+  }
+
+  saveApprovalEvents()
 }
 
 export function updateApprovalEvent(id, status, reason = '') {
@@ -60,11 +117,12 @@ export function updateApprovalEvent(id, status, reason = '') {
   if (event) {
     event.status = status
     event.reason = reason
+    saveApprovalEvents()
   }
 }
 
 export function getApprovalEventDetails(event) {
-  return approvalEventDetails[event.id] || {
+  return {
     submittedBy: 'Organiser',
     submittedAt: 'recently',
     displayDate: event.date,
@@ -73,5 +131,7 @@ export function getApprovalEventDetails(event) {
     price: 'Free',
     description:
       'Event description preview. Admin can open full details to review the complete submission.',
+    ...(approvalEventDetails[event.id] || {}),
+    ...(event.details || {}),
   }
 }

@@ -294,6 +294,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { addApprovalEvent } from '@/stores/approvalEvents'
 
 const route = useRoute()
 const router = useRouter()
@@ -579,7 +580,33 @@ function submitEvent(action) {
     localStorage.setItem(eventsStorageKey, JSON.stringify(events))
   }
 
+  if (action === 'submitted') {
+    addEventToApprovalQueue(eventPayload)
+  }
+
   router.push({ path: '/organiser/dashboard', query: { eventSaved: action } })
+}
+
+function addEventToApprovalQueue(event) {
+  addApprovalEvent({
+    id: event.id,
+    society: event.society,
+    title: event.title,
+    date: event.eventDate,
+    category: event.category,
+    capacity: event.capacity,
+    details: {
+      submittedBy: event.contactName || 'Organiser',
+      submittedAt: 'just now',
+      displayDate: `${event.eventDate}, ${event.startTime} - ${event.endTime}`,
+      venue: event.location || 'TBC',
+      deadline: formattedDeadline.value,
+      price: event.feeType === 'Paid' ? `RM ${Number(event.feeAmount || 0).toFixed(2)}` : 'Free',
+      description:
+        event.description ||
+        'Event description preview. Admin can open full details to review the complete submission.',
+    },
+  })
 }
 
 function combineDateAndTime(dateText, timeText) {
