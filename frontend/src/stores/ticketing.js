@@ -196,6 +196,44 @@ export const useTicketingStore = defineStore('ticketing', () => {
     return { registration, ticket }
   }
 
+  function beginPaidRegistration(eventId, attendee) {
+    const event = getEventById(eventId)
+    if (!event) throw new Error('Event not found.')
+    if (event.priceType !== 'paid') throw new Error('This event does not require payment.')
+
+    const capacitySummary = getEventCapacitySummary(eventId)
+    if (capacitySummary?.isFull) {
+      throw new Error('This event is full.')
+    }
+
+    const registeredAt = new Date().toISOString()
+    const registration = {
+      id: createRegistrationId(eventId, attendee.id),
+      eventId,
+      attendeeId: attendee.id,
+      attendeeName: attendee.name,
+      attendeeEmail: attendee.email,
+      status: 'pending_payment',
+      paymentStatus: 'unpaid',
+      waitlistPosition: null,
+      ticketId: null,
+      registeredAt,
+      cancelledAt: null,
+    }
+
+    registrations.value.push(registration)
+    persistState()
+
+    return {
+      registration,
+      payment: {
+        amount: event.price,
+        currency: event.currency,
+        eventTitle: event.title,
+      },
+    }
+  }
+
   async function loadSeedData({ force = false } = {}) {
     if (hasLoaded.value && !force) return
 
@@ -243,6 +281,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     getTicketsForAttendee,
     persistState,
     registerFreeEvent,
+    beginPaidRegistration,
     loadSeedData,
   }
 })
