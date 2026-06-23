@@ -1,19 +1,13 @@
 <template>
   <main class="app-shell">
     <section class="hero-section">
-      <router-link
-        v-if="authStore.isLoggedIn"
-        to="/notifications"
-        class="hero-notification-button"
-        aria-label="Notifications"
-        title="Notifications"
-      >
-        🔔
-        <span
-          v-if="unreadCount > 0"
-          class="notification-dot"
-        ></span>
-      </router-link>
+      <router-link 
+  :to="`/event/${event.id}`" 
+  class="button button-primary" 
+  style="text-decoration: none; text-align: center;"
+>
+  View Registration
+</router-link>
 
       <div>
         <p class="eyebrow">Discover events</p>
@@ -190,8 +184,23 @@ const unreadCount = computed(() =>
   ).length
 )
 
+const events = ref([])
+const loadingEvents = ref(true)
+
 onMounted(async () => {
   notifications.value = await loadNotifications()
+  
+  try {
+    const res = await fetch('/mock/events.json')
+    if (res.ok) {
+      const rawEvents = await res.json()
+      events.value = rawEvents.map(toPublicEvent)
+    }
+  } catch (err) {
+    console.error("Failed to fetch mock events:", err)
+  } finally {
+    loadingEvents.value = false
+  }
 })
 
 const basePublicEvents = [
@@ -270,20 +279,19 @@ function loadPublicEvents() {
 
 function toPublicEvent(event) {
   const category = (event.category || 'academic').toLowerCase()
-  const registrations = event.registrations ?? event.confirmedCount ?? 0
+  const confirmed = event.confirmedCount ?? 0
   const capacity = event.capacity ?? 0
 
   return {
     id: event.id,
     title: event.title,
-    society: event.society || event.societyName || 'UTM Society',
+    society: event.societyName || event.society || 'UTM Society',
     category,
-    price: event.feeAmount ?? event.price ?? 0,
-    priceType:
-      (event.feeType || event.priceType || 'free').toLowerCase() === 'paid' ? 'paid' : 'free',
-    date: event.startAt || parsePublicDate(event.eventDate, event.startTime),
-    venue: event.location || event.venue || 'Venue not set',
-    seatsLeft: Math.max(capacity - registrations, 0),
+    price: event.price ?? 0,
+    priceType: event.priceType ?? 'free',
+    date: event.startAt,
+    venue: event.venue || 'Venue not set',
+    seatsLeft: Math.max(capacity - confirmed, 0),
     coverClass: event.coverClass || coverForCategory(category),
     badgeClass: event.badgeClass || badgeForCategory(category),
   }
