@@ -17,6 +17,7 @@ const roleProfiles = {
     matric: 'A24CS0102',
     role: 'organiser',
     society: 'UTM Computing Society',
+    societyId: 'UTM-CS',
   },
   faculty_admin: {
     firstName: 'Faculty',
