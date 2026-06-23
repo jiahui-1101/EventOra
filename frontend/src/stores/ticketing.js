@@ -336,6 +336,37 @@ export const useTicketingStore = defineStore('ticketing', () => {
     return registration
   }
 
+  function cancelRegistration(registrationId) {
+    const registration = registrations.value.find((item) => item.id === registrationId)
+    if (!registration) throw new Error('Registration not found.')
+    if (registration.status === 'cancelled') {
+      throw new Error('This registration has already been cancelled.')
+    }
+
+    const cancelledAt = new Date().toISOString()
+    const ticket = registration.ticketId
+      ? tickets.value.find((item) => item.id === registration.ticketId)
+      : null
+
+    registration.status = 'cancelled'
+    registration.cancelledAt = cancelledAt
+
+    if (registration.paymentStatus === 'paid') {
+      registration.paymentStatus = 'refunded'
+    } else if (registration.paymentStatus === 'unpaid') {
+      registration.paymentStatus = 'cancelled'
+    }
+
+    if (ticket) {
+      ticket.status = 'cancelled'
+      ticket.cancelledAt = cancelledAt
+    }
+
+    persistState()
+
+    return { registration, ticket }
+  }
+
   async function loadSeedData({ force = false } = {}) {
     if (hasLoaded.value && !force) return
 
@@ -388,6 +419,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     beginPaidRegistration,
     completeMockPayment,
     declineMockPayment,
+    cancelRegistration,
     loadSeedData,
   }
 })
