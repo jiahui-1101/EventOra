@@ -74,7 +74,7 @@
     "audience": "organiser",
     "type": "Revision",
     "title": "Event rejected",
-    "message": "Hackathon 2026 was rejected by Faculty Admin. Reason: venue booking confirmation is missing.",
+    "message": "Acoustic Night was rejected by Faculty Admin. Reason: venue booking confirmation is missing.",
     "time": "5 Jun 2026, 3:40 PM",
     "badgeClass": "badge-red",
     "unread": false

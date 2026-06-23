@@ -6,7 +6,7 @@ import { parseTicketQrPayload } from '@/utils/ticketQr'
 import { createTicketSecurityFields } from '@/utils/ticketTokens'
 
 const TICKETING_STORAGE_KEY = 'eventora_ticketing_state'
-const TICKETING_STATE_VERSION = 2
+const TICKETING_STATE_VERSION = 3
 const ACTIVE_REGISTRATION_STATUSES = ['confirmed', 'waitlisted', 'pending_payment']
 const PAYMENT_HOLD_MINUTES = 10
 const PAYMENT_HOLD_MS = PAYMENT_HOLD_MINUTES * 60 * 1000
