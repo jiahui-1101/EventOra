@@ -6,6 +6,7 @@ import { parseTicketQrPayload } from '@/utils/ticketQr'
 import { createTicketSecurityFields } from '@/utils/ticketTokens'
 
 const TICKETING_STORAGE_KEY = 'eventora_ticketing_state'
+const TICKETING_STATE_VERSION = 2
 const ACTIVE_REGISTRATION_STATUSES = ['confirmed', 'waitlisted', 'pending_payment']
 const PAYMENT_HOLD_MINUTES = 10
 const PAYMENT_HOLD_MS = PAYMENT_HOLD_MINUTES * 60 * 1000
@@ -21,6 +22,7 @@ function canUseLocalStorage() {
 function isValidTicketingSnapshot(snapshot) {
   return Boolean(
     snapshot
+      && snapshot.version === TICKETING_STATE_VERSION
       && Array.isArray(snapshot.events)
       && Array.isArray(snapshot.registrations)
       && Array.isArray(snapshot.tickets)
@@ -61,6 +63,22 @@ function compareTicketEventTime(first, second) {
 
 function addMinutes(dateValue, minutes) {
   return new Date(new Date(dateValue).getTime() + minutes * 60 * 1000).toISOString()
+}
+
+function pickDefined(...values) {
+  return values.find((value) => value !== undefined && value !== null && value !== '')
+}
+
+function mergeDefinedFields(base = {}, override = {}) {
+  const merged = { ...base }
+
+  Object.entries(override).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      merged[key] = value
+    }
+  })
+
+  return merged
 }
 
 function resolveSocietyId(eventPayload) {
@@ -192,10 +210,15 @@ export const useTicketingStore = defineStore('ticketing', () => {
     expirePendingPayments(now)
 
     return getRegistrationsForAttendee(email).map((registration) => {
-      const event = getEventById(registration.eventId) || {}
       const ticket = registration.ticketId
         ? tickets.value.find((item) => item.id === registration.ticketId)
         : null
+      const event = getEventById(registration.eventId) || {
+        id: registration.eventId,
+        title: ticket?.eventName || 'Event details unavailable',
+        venue: ticket?.venue || 'Venue not set',
+        startAt: ticket?.eventStartAt || registration.registeredAt,
+      }
 
       return {
         ...registration,
@@ -220,11 +243,13 @@ export const useTicketingStore = defineStore('ticketing', () => {
   }
 
   function findTicketByCodeOrToken(ticketCode) {
-    const parsedPayload = parseTicketQrPayload(ticketCode.trim())
-    const normalizedCode = parsedPayload?.token || parsedPayload?.ticketId || ticketCode.trim()
+    const rawCode = String(ticketCode || '').trim()
+    const parsedPayload = parseTicketQrPayload(rawCode)
+    const normalizedCode = String(parsedPayload?.token || parsedPayload?.ticketId || rawCode).trim()
+    const normalizedTicketCode = normalizedCode.toUpperCase()
 
     return tickets.value.find((ticket) =>
-      ticket.id === normalizedCode || ticket.qrToken === normalizedCode
+      ticket.id.toUpperCase() === normalizedTicketCode || ticket.qrToken === normalizedCode
     ) || null
   }
 
@@ -308,6 +333,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
 
   function createSnapshot() {
     return {
+      version: TICKETING_STATE_VERSION,
       events: cloneCollection(events.value),
       registrations: cloneCollection(registrations.value),
       tickets: cloneCollection(tickets.value),
@@ -376,26 +402,32 @@ export const useTicketingStore = defineStore('ticketing', () => {
     if (!eventPayload?.id) return null
 
     const existingEvent = getEventById(eventPayload.id)
+    const sourceEvent = existingEvent
+      ? mergeDefinedFields(existingEvent, eventPayload)
+      : eventPayload
     const normalisedEvent = {
-      ...eventPayload,
-      title: eventPayload.title,
-      description: eventPayload.description || 'Event details will be shared by the organiser.',
-      societyId: resolveSocietyId(eventPayload),
-      societyName: eventPayload.societyName || eventPayload.society || 'EventOra Society',
-      category: eventPayload.category || 'academic',
-      priceType: eventPayload.priceType || (Number(eventPayload.price || eventPayload.feeAmount || 0) > 0 ? 'paid' : 'free'),
-      price: Number(eventPayload.price ?? eventPayload.feeAmount ?? 0),
-      currency: eventPayload.currency || 'MYR',
-      startAt: eventPayload.startAt || eventPayload.date || new Date().toISOString(),
-      endAt: eventPayload.endAt || eventPayload.date || eventPayload.startAt || new Date().toISOString(),
-      registrationDeadline: eventPayload.registrationDeadline || eventPayload.deadline || eventPayload.date || new Date().toISOString(),
-      venue: eventPayload.venue || eventPayload.location || 'Venue not set',
-      capacity: Number(eventPayload.capacity || 0),
-      confirmedCount: Number(eventPayload.confirmedCount ?? eventPayload.registrations ?? 0),
-      waitlistEnabled: eventPayload.waitlistEnabled ?? eventPayload.waitlist !== 'disabled',
-      status: eventPayload.status || 'published',
-      coverClass: eventPayload.coverClass || 'academic-cover',
-      badgeClass: eventPayload.badgeClass || 'badge-blue',
+      ...sourceEvent,
+      title: sourceEvent.title,
+      description: pickDefined(sourceEvent.description, 'Event details will be shared by the organiser.'),
+      societyId: resolveSocietyId(sourceEvent),
+      societyName: pickDefined(sourceEvent.societyName, sourceEvent.society, 'EventOra Society'),
+      category: pickDefined(sourceEvent.category, 'academic'),
+      priceType: pickDefined(
+        sourceEvent.priceType,
+        Number(sourceEvent.price || sourceEvent.feeAmount || 0) > 0 ? 'paid' : 'free'
+      ),
+      price: Number(sourceEvent.price ?? sourceEvent.feeAmount ?? 0),
+      currency: pickDefined(sourceEvent.currency, 'MYR'),
+      startAt: pickDefined(sourceEvent.startAt, sourceEvent.date, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
+      endAt: pickDefined(sourceEvent.endAt, sourceEvent.date, sourceEvent.startAt, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
+      registrationDeadline: pickDefined(sourceEvent.registrationDeadline, sourceEvent.deadline, sourceEvent.date),
+      venue: pickDefined(sourceEvent.venue, sourceEvent.location, 'Venue not set'),
+      capacity: Number(sourceEvent.capacity || 0),
+      confirmedCount: Number(sourceEvent.confirmedCount ?? sourceEvent.registrations ?? 0),
+      waitlistEnabled: sourceEvent.waitlistEnabled ?? sourceEvent.waitlist !== 'disabled',
+      status: pickDefined(sourceEvent.status, 'published'),
+      coverClass: pickDefined(sourceEvent.coverClass, 'academic-cover'),
+      badgeClass: pickDefined(sourceEvent.badgeClass, 'badge-blue'),
     }
 
     if (existingEvent) {

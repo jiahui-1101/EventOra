@@ -474,9 +474,10 @@ function reserveSeat() {
   }
 
   try {
-    if (event.value.priceType === 'paid' && seatsLeft.value > 0) {
+    if (event.value.priceType === 'paid') {
       const result = ticketingStore.beginPaidRegistration(event.value.id, attendeePayload())
       if (result.payment === null) {
+        waitlistedRegistration.value = result.registration
         setNotice('warning', `You have joined the waitlist at position #${result.registration.waitlistPosition}.`)
         return
       }
