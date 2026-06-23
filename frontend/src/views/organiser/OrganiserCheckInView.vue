@@ -93,6 +93,49 @@
             </button>
           </div>
         </form>
+
+        <section class="issued-ticket-panel">
+          <div class="issued-ticket-heading">
+            <div>
+              <span>Issued tickets</span>
+              <h2>Attendee check-in list</h2>
+            </div>
+            <small>{{ selectedEventTickets.length }} active ticket{{ selectedEventTickets.length === 1 ? '' : 's' }}</small>
+          </div>
+
+          <div
+            v-if="selectedEventTickets.length"
+            class="issued-ticket-list"
+          >
+            <article
+              v-for="ticket in selectedEventTickets"
+              :key="ticket.id"
+              :class="['issued-ticket-row', { checked: ticket.checkedInAt }]"
+            >
+              <div>
+                <strong>{{ ticket.attendeeName }}</strong>
+                <small>{{ ticket.attendeeEmail }}</small>
+              </div>
+              <code>{{ ticket.id }}</code>
+              <span>{{ ticket.checkedInAt ? 'Checked in' : 'Not checked in' }}</span>
+              <button
+                class="button button-secondary"
+                type="button"
+                :disabled="Boolean(ticket.checkedInAt)"
+                @click="useTicketCode(ticket.id)"
+              >
+                Use code
+              </button>
+            </article>
+          </div>
+
+          <p
+            v-else
+            class="issued-ticket-empty"
+          >
+            No active tickets have been issued for this event yet. Register as an attendee first, then return here with the organiser account.
+          </p>
+        </section>
       </article>
 
       <aside :class="['result-card', result.status]">
@@ -172,7 +215,15 @@ const selectedEvent = computed(() =>
   ticketingStore.getEventById(selectedEventId.value) || organiserEvents.value[0] || null
 )
 const selectedEventTickets = computed(() =>
-  ticketingStore.activeTickets.filter((ticket) => ticket.eventId === selectedEvent.value?.id)
+  ticketingStore.activeTickets
+    .filter((ticket) => ticket.eventId === selectedEvent.value?.id)
+    .sort((first, second) => {
+      if (Boolean(first.checkedInAt) !== Boolean(second.checkedInAt)) {
+        return first.checkedInAt ? 1 : -1
+      }
+
+      return first.attendeeName.localeCompare(second.attendeeName)
+    })
 )
 const checkedInTickets = computed(() =>
   selectedEventTickets.value.filter((ticket) => ticket.checkedInAt)
@@ -289,6 +340,11 @@ function stopScanner() {
 
 function submitManualCode() {
   processTicketCode(manualCode.value)
+}
+
+function useTicketCode(ticketCode) {
+  manualCode.value = ticketCode
+  processTicketCode(ticketCode)
 }
 
 function processTicketCode(ticketCode) {
@@ -499,6 +555,100 @@ onUnmounted(() => {
   flex: 1 1 260px;
 }
 
+.issued-ticket-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.issued-ticket-heading,
+.issued-ticket-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.issued-ticket-heading span {
+  color: #4f46e5;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.issued-ticket-heading h2 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 1.15rem;
+}
+
+.issued-ticket-heading small,
+.issued-ticket-row small,
+.issued-ticket-empty {
+  color: #64748b;
+}
+
+.issued-ticket-list {
+  display: grid;
+  gap: 10px;
+}
+
+.issued-ticket-row {
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.issued-ticket-row > div {
+  display: grid;
+  min-width: 170px;
+}
+
+.issued-ticket-row strong {
+  color: #0f172a;
+}
+
+.issued-ticket-row code {
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: #312e81;
+  background: #eef2ff;
+  font-weight: 900;
+}
+
+.issued-ticket-row span {
+  color: #b45309;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.issued-ticket-row.checked {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+}
+
+.issued-ticket-row.checked span {
+  color: #047857;
+}
+
+.issued-ticket-row button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.issued-ticket-empty {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
 .result-card {
   align-self: start;
   display: grid;
@@ -601,6 +751,12 @@ onUnmounted(() => {
 
   .checkin-stats {
     grid-template-columns: 1fr;
+  }
+
+  .issued-ticket-heading,
+  .issued-ticket-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>

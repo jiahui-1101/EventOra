@@ -34,7 +34,7 @@
     "audience": "attendee",
     "type": "Cancellation",
     "title": "Event cancelled",
-    "message": "Campus Cultural Night was cancelled by the organiser. Your registration is no longer active.",
+    "message": "Acoustic Night was cancelled by the organiser. Your registration is no longer active.",
     "time": "6 Jun 2026, 9:00 AM",
     "badgeClass": "badge-red",
     "unread": false
@@ -54,7 +54,7 @@
     "audience": "organiser",
     "type": "Approval",
     "title": "Event submitted for approval",
-    "message": "Annual Tech Symposium 2026 has been submitted and is waiting for Faculty Admin review.",
+    "message": "Data Analytics Bootcamp has been submitted and is waiting for Faculty Admin review.",
     "time": "Today, 8:45 PM",
     "badgeClass": "badge-yellow",
     "unread": true
@@ -74,7 +74,7 @@
     "audience": "organiser",
     "type": "Revision",
     "title": "Event rejected",
-    "message": "Hackathon 2026 was rejected by Faculty Admin. Reason: venue booking confirmation is missing.",
+    "message": "Acoustic Night was rejected by Faculty Admin. Reason: venue booking confirmation is missing.",
     "time": "5 Jun 2026, 3:40 PM",
     "badgeClass": "badge-red",
     "unread": false
@@ -94,7 +94,7 @@
     "audience": "faculty_admin",
     "type": "Approval",
     "title": "New event pending approval",
-    "message": "Annual Tech Symposium 2026 submitted by Computer Society UTM is waiting for review.",
+    "message": "Data Analytics Bootcamp submitted by Computer Society UTM is waiting for review.",
     "time": "Today, 8:45 PM",
     "badgeClass": "badge-yellow",
     "unread": true
