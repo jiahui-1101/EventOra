@@ -29,7 +29,12 @@
 
       <section class="approval-layout">
         <article class="approval-card">
-          <div class="poster-preview">
+          <div
+            class="poster-preview"
+            :style="eventDetail.image ? {
+              backgroundImage: `linear-gradient(rgba(49, 46, 129, 0.35), rgba(49, 46, 129, 0.55)), url(${eventDetail.image})`
+            } : {}"
+          >
             <div>
               <span class="badge badge-blue">{{ event.category }}</span>
               <h2>{{ event.title }}</h2>

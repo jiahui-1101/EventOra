@@ -1,6 +1,20 @@
 <template>
   <main class="app-shell">
     <section class="hero-section">
+      <router-link
+        v-if="authStore.isLoggedIn"
+        to="/notifications"
+        class="hero-notification-button"
+        aria-label="Notifications"
+        title="Notifications"
+      >
+        🔔
+        <span
+          v-if="unreadCount > 0"
+          class="notification-dot"
+        ></span>
+      </router-link>
+
       <div>
         <p class="eyebrow">Discover events</p>
         <h1>What's happening at UTM?</h1>
@@ -154,14 +168,46 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { loadNotifications } from '@/stores/notifications'
+
+const authStore = useAuthStore()
 
 const keyword = ref('')
 const category = ref('all')
 const price = ref('all')
 const dateFilter = ref('all')
 
-const events = ref([
+const societyEventsStorageKey = 'eventora_society_events_v2'
+const notifications = ref([])
+
+const unreadCount = computed(() =>
+  notifications.value.filter(
+    (notification) =>
+      notification.audience === authStore.role &&
+      notification.unread
+  ).length
+)
+
+onMounted(async () => {
+  notifications.value = await loadNotifications()
+})
+
+const basePublicEvents = [
+  {
+    id: 'event-annual-tech-2026',
+    title: 'Annual Tech Symposium 2026',
+    society: 'Computer Society UTM',
+    category: 'academic',
+    price: 5,
+    priceType: 'paid',
+    date: '2026-07-15T09:00:00',
+    venue: 'Dewan Sultan Iskandar, UTM JB',
+    seatsLeft: 42,
+    coverClass: 'academic-cover',
+    badgeClass: 'badge-blue',
+  },
   {
     id: 1,
     title: 'Build Your First AI App',
@@ -201,10 +247,68 @@ const events = ref([
     coverClass: 'sports-cover',
     badgeClass: 'badge-green',
   },
-])
+]
+
+const events = ref(loadPublicEvents())
+
+function loadPublicEvents() {
+  const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || 'null')
+
+  if (!Array.isArray(savedEvents)) {
+    return basePublicEvents
+  }
+
+  const savedIds = new Set(savedEvents.map((event) => String(event.id)))
+  const savedPublishedEvents = savedEvents
+    .filter((event) => event.status === 'published')
+    .map(toPublicEvent)
+
+  const untouchedBaseEvents = basePublicEvents.filter((event) => !savedIds.has(String(event.id)))
+
+  return [...savedPublishedEvents, ...untouchedBaseEvents]
+}
+
+function toPublicEvent(event) {
+  const category = (event.category || 'academic').toLowerCase()
+  const registrations = event.registrations ?? event.confirmedCount ?? 0
+  const capacity = event.capacity ?? 0
+
+  return {
+    id: event.id,
+    title: event.title,
+    society: event.society || event.societyName || 'UTM Society',
+    category,
+    price: event.feeAmount ?? event.price ?? 0,
+    priceType:
+      (event.feeType || event.priceType || 'free').toLowerCase() === 'paid' ? 'paid' : 'free',
+    date: event.startAt || parsePublicDate(event.eventDate, event.startTime),
+    venue: event.location || event.venue || 'Venue not set',
+    seatsLeft: Math.max(capacity - registrations, 0),
+    coverClass: event.coverClass || coverForCategory(category),
+    badgeClass: event.badgeClass || badgeForCategory(category),
+  }
+}
+
+function parsePublicDate(dateText, timeText) {
+  if (!dateText) return new Date().toISOString()
+  const date = new Date(`${dateText} ${timeText || ''}`)
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString()
+}
+
+function coverForCategory(categoryName) {
+  if (categoryName === 'sports') return 'sports-cover'
+  if (categoryName === 'cultural') return 'culture-cover'
+  return 'academic-cover'
+}
+
+function badgeForCategory(categoryName) {
+  if (categoryName === 'sports') return 'badge-green'
+  if (categoryName === 'cultural') return 'badge-purple'
+  return 'badge-blue'
+}
+
 function isInDateRange(eventDate, filter) {
   const today = new Date()
-
   const eventDay = new Date(eventDate)
 
   if (filter === 'week') {
@@ -284,3 +388,45 @@ function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 </script>
+
+<style scoped>
+.hero-section {
+  position: relative;
+}
+
+.hero-notification-button {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  font-size: 1.1rem;
+  z-index: 3;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-notification-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.notification-dot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--danger);
+  border: 2px solid #fff;
+}
+</style>
