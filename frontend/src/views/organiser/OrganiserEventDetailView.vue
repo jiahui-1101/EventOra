@@ -111,6 +111,14 @@
             Edit Event
           </router-link>
 
+          <router-link
+            v-if="status === 'published'"
+            to="/organiser/check-in"
+            class="button button-primary full-width"
+          >
+            Open QR Check-in
+          </router-link>
+
           <button
             v-if="status === 'draft' || status === 'rejected'"
             class="button button-primary full-width"

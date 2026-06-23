@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { fetchTicketingSeed } from '@/api/ticketing'
+import { parseTicketQrPayload } from '@/utils/ticketQr'
 import { createTicketSecurityFields } from '@/utils/ticketTokens'
 
 const TICKETING_STORAGE_KEY = 'eventora_ticketing_state'
@@ -157,6 +158,74 @@ export const useTicketingStore = defineStore('ticketing', () => {
       past: attendeeTickets
         .filter((ticket) => new Date(ticket.eventStartAt).getTime() < currentTime)
         .sort((first, second) => compareTicketEventTime(second, first)),
+    }
+  }
+
+  function findTicketByCodeOrToken(ticketCode) {
+    const parsedPayload = parseTicketQrPayload(ticketCode.trim())
+    const normalizedCode = parsedPayload?.token || parsedPayload?.ticketId || ticketCode.trim()
+
+    return tickets.value.find((ticket) =>
+      ticket.id === normalizedCode || ticket.qrToken === normalizedCode
+    ) || null
+  }
+
+  function validateTicketForCheckIn(ticketCode, { eventId, societyId }) {
+    const ticket = findTicketByCodeOrToken(ticketCode)
+
+    if (!ticket || ticket.status !== 'active') {
+      return {
+        status: 'invalid',
+        message: 'Invalid ticket.',
+        ticket: null,
+      }
+    }
+
+    if (ticket.societyId !== societyId) {
+      return {
+        status: 'wrong_society',
+        message: 'This organizer cannot check in tickets for another society.',
+        ticket,
+      }
+    }
+
+    if (ticket.eventId !== eventId) {
+      return {
+        status: 'wrong_event',
+        message: 'This ticket belongs to a different event.',
+        ticket,
+      }
+    }
+
+    if (ticket.checkedInAt) {
+      return {
+        status: 'already_checked_in',
+        message: 'This attendee has already checked in.',
+        ticket,
+      }
+    }
+
+    return {
+      status: 'ready',
+      message: 'Ticket is valid for check-in.',
+      ticket,
+    }
+  }
+
+  function checkInTicket(ticketCode, organizerContext) {
+    const validation = validateTicketForCheckIn(ticketCode, organizerContext)
+    if (validation.status !== 'ready') return validation
+
+    const checkedInAt = new Date().toISOString()
+    validation.ticket.checkedInAt = checkedInAt
+    validation.ticket.checkedInBy = organizerContext.organizerId
+    persistState()
+
+    return {
+      status: 'success',
+      message: 'Check-in successful.',
+      ticket: validation.ticket,
+      checkedInAt,
     }
   }
 
@@ -485,6 +554,9 @@ export const useTicketingStore = defineStore('ticketing', () => {
     getTicketsForAttendee,
     getActiveTicketsForAttendee,
     getTicketWalletForAttendee,
+    findTicketByCodeOrToken,
+    validateTicketForCheckIn,
+    checkInTicket,
     getActiveRegistrationForAttendee,
     persistState,
     joinWaitlist,

@@ -7,6 +7,8 @@
       </router-link>
       <nav class="desktop-nav" aria-label="Main navigation">
         <router-link to="/">Events</router-link>
+        <router-link v-if="authStore.role === 'attendee'" to="/tickets">My Tickets</router-link>
+        <router-link v-if="authStore.role === 'organiser'" to="/organiser/check-in">Check-in</router-link>
         <router-link v-if="dashboardLink" :to="dashboardLink">Dashboard</router-link>
         <router-link v-if="!authStore.isLoggedIn" to="/login">Login</router-link>
         <router-link v-if="authStore.isLoggedIn" to="/profile">Profile</router-link>
@@ -25,6 +27,8 @@
 
     <nav class="mobile-nav" aria-label="Mobile navigation">
   <router-link to="/">Events</router-link>
+  <router-link v-if="authStore.role === 'attendee'" to="/tickets">Tickets</router-link>
+  <router-link v-if="authStore.role === 'organiser'" to="/organiser/check-in">Check-in</router-link>
   <router-link v-if="dashboardLink" :to="dashboardLink">Dashboard</router-link>
   <router-link v-if="!authStore.isLoggedIn" to="/login">Login</router-link>
   <router-link v-if="authStore.isLoggedIn" to="/profile">Profile</router-link>
