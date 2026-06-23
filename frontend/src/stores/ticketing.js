@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { fetchTicketingSeed } from '@/api/ticketing'
+import { createTicketSecurityFields } from '@/utils/ticketTokens'
 
 const TICKETING_STORAGE_KEY = 'eventora_ticketing_state'
+const ACTIVE_REGISTRATION_STATUSES = ['confirmed', 'waitlisted', 'pending_payment']
 
 function cloneCollection(collection) {
   return collection.map((item) => ({ ...item }))
@@ -41,6 +43,10 @@ function writeStoredTicketingState(snapshot) {
   localStorage.setItem(TICKETING_STORAGE_KEY, JSON.stringify(snapshot))
 }
 
+function createRegistrationId(eventId, attendeeId) {
+  return `registration-${eventId}-${attendeeId}-${Date.now()}`
+}
+
 export const useTicketingStore = defineStore('ticketing', () => {
   const events = ref([])
   const registrations = ref([])
@@ -62,12 +68,52 @@ export const useTicketingStore = defineStore('ticketing', () => {
     registrations.value.filter((registration) => registration.status === 'confirmed')
   )
 
+  const activeRegistrations = computed(() =>
+    registrations.value.filter((registration) =>
+      ACTIVE_REGISTRATION_STATUSES.includes(registration.status)
+    )
+  )
+
   function getEventById(eventId) {
     return events.value.find((event) => event.id === eventId) || null
   }
 
   function getRegistrationsForEvent(eventId) {
     return registrations.value.filter((registration) => registration.eventId === eventId)
+  }
+
+  function getActiveRegistrationsForEvent(eventId) {
+    return activeRegistrations.value.filter((registration) => registration.eventId === eventId)
+  }
+
+  function getConfirmedRegistrationsForEvent(eventId) {
+    return confirmedRegistrations.value.filter((registration) => registration.eventId === eventId)
+  }
+
+  function getWaitlistedRegistrationsForEvent(eventId) {
+    return registrations.value.filter((registration) =>
+      registration.eventId === eventId && registration.status === 'waitlisted'
+    )
+  }
+
+  function getEventCapacitySummary(eventId) {
+    const event = getEventById(eventId)
+    if (!event) return null
+
+    const confirmedCount = getConfirmedRegistrationsForEvent(eventId).length
+    const waitlistCount = getWaitlistedRegistrationsForEvent(eventId).length
+    const remainingSeats = Math.max(event.capacity - confirmedCount, 0)
+    const isFull = remainingSeats === 0
+
+    return {
+      eventId,
+      capacity: event.capacity,
+      confirmedCount,
+      waitlistCount,
+      remainingSeats,
+      isFull,
+      canJoinWaitlist: isFull && event.waitlistEnabled,
+    }
   }
 
   function getTicketsForAttendee(email) {
@@ -92,6 +138,100 @@ export const useTicketingStore = defineStore('ticketing', () => {
 
   function persistState() {
     writeStoredTicketingState(createSnapshot())
+  }
+
+  function createConfirmedTicket(event, registration, issuedAt) {
+    const securityFields = createTicketSecurityFields()
+
+    return {
+      id: securityFields.code,
+      qrToken: securityFields.token,
+      registrationId: registration.id,
+      eventId: event.id,
+      eventName: event.title,
+      eventStartAt: event.startAt,
+      venue: event.venue,
+      societyId: event.societyId,
+      attendeeId: registration.attendeeId,
+      attendeeName: registration.attendeeName,
+      attendeeEmail: registration.attendeeEmail,
+      status: 'active',
+      issuedAt,
+      checkedInAt: null,
+      checkedInBy: null,
+    }
+  }
+
+  function registerFreeEvent(eventId, attendee) {
+    const event = getEventById(eventId)
+    if (!event) throw new Error('Event not found.')
+    if (event.priceType !== 'free') throw new Error('This event requires payment.')
+
+    const capacitySummary = getEventCapacitySummary(eventId)
+    if (capacitySummary?.isFull) {
+      throw new Error('This event is full.')
+    }
+
+    const registeredAt = new Date().toISOString()
+    const registration = {
+      id: createRegistrationId(eventId, attendee.id),
+      eventId,
+      attendeeId: attendee.id,
+      attendeeName: attendee.name,
+      attendeeEmail: attendee.email,
+      status: 'confirmed',
+      paymentStatus: 'not_required',
+      waitlistPosition: null,
+      ticketId: null,
+      registeredAt,
+      cancelledAt: null,
+    }
+    const ticket = createConfirmedTicket(event, registration, registeredAt)
+
+    registration.ticketId = ticket.id
+    registrations.value.push(registration)
+    tickets.value.push(ticket)
+    persistState()
+
+    return { registration, ticket }
+  }
+
+  function beginPaidRegistration(eventId, attendee) {
+    const event = getEventById(eventId)
+    if (!event) throw new Error('Event not found.')
+    if (event.priceType !== 'paid') throw new Error('This event does not require payment.')
+
+    const capacitySummary = getEventCapacitySummary(eventId)
+    if (capacitySummary?.isFull) {
+      throw new Error('This event is full.')
+    }
+
+    const registeredAt = new Date().toISOString()
+    const registration = {
+      id: createRegistrationId(eventId, attendee.id),
+      eventId,
+      attendeeId: attendee.id,
+      attendeeName: attendee.name,
+      attendeeEmail: attendee.email,
+      status: 'pending_payment',
+      paymentStatus: 'unpaid',
+      waitlistPosition: null,
+      ticketId: null,
+      registeredAt,
+      cancelledAt: null,
+    }
+
+    registrations.value.push(registration)
+    persistState()
+
+    return {
+      registration,
+      payment: {
+        amount: event.price,
+        currency: event.currency,
+        eventTitle: event.title,
+      },
+    }
   }
 
   async function loadSeedData({ force = false } = {}) {
@@ -131,10 +271,17 @@ export const useTicketingStore = defineStore('ticketing', () => {
     publishedEvents,
     activeTickets,
     confirmedRegistrations,
+    activeRegistrations,
     getEventById,
     getRegistrationsForEvent,
+    getActiveRegistrationsForEvent,
+    getConfirmedRegistrationsForEvent,
+    getWaitlistedRegistrationsForEvent,
+    getEventCapacitySummary,
     getTicketsForAttendee,
     persistState,
+    registerFreeEvent,
+    beginPaidRegistration,
     loadSeedData,
   }
 })
