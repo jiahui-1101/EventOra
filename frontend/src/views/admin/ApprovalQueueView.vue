@@ -110,10 +110,6 @@
                 </p>
                 <p v-else>Reason: {{ ev.reason || 'No reason provided.' }}</p>
               </div>
-
-              <router-link class="details-btn" :to="`/admin/approval-detail/${ev.id}`">
-                View Full Details
-              </router-link>
             </div>
           </div>
         </article>

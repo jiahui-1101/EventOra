@@ -164,11 +164,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import {
+  approvalEvents,
+  loadApprovalEvents,
+} from '@/stores/approvalEvents'
 import axios from 'axios'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const pendingCount = ref(3)
 const notificationStorageKey = 'eventora_notifications'
 
 const societies = ref([])
@@ -177,6 +180,8 @@ const loadError = ref('')
 const notifications = ref([])
 
 onMounted(async () => {
+  loadApprovalEvents()
+
   try {
     const response = await axios.get('/mock/societies.json')
     societies.value = response.data
@@ -199,6 +204,10 @@ const unreadCount = computed(() =>
   notifications.value.filter(
     (notification) => notification.audience === authStore.role && notification.unread
   ).length
+)
+
+const pendingCount = computed(() =>
+  approvalEvents.value.filter((event) => event.status === 'pending').length
 )
 
 function goToApprovalQueue() {

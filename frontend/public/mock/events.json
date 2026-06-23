@@ -37,7 +37,7 @@
     "capacity": 200,
     "confirmedCount": 146,
     "waitlistEnabled": true,
-    "status": "published",
+    "status": "pending_approval",
     "coverClass": "culture-cover",
     "badgeClass": "badge-purple"
   },
@@ -58,7 +58,7 @@
     "capacity": 40,
     "confirmedCount": 40,
     "waitlistEnabled": true,
-    "status": "published",
+    "status": "cancelled",
     "coverClass": "sports-cover",
     "badgeClass": "badge-green"
   },
