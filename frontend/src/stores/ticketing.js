@@ -51,6 +51,10 @@ function normalizeEmail(email) {
   return email.trim().toLowerCase()
 }
 
+function compareTicketEventTime(first, second) {
+  return new Date(first.eventStartAt).getTime() - new Date(second.eventStartAt).getTime()
+}
+
 export const useTicketingStore = defineStore('ticketing', () => {
   const events = ref([])
   const registrations = ref([])
@@ -132,6 +136,28 @@ export const useTicketingStore = defineStore('ticketing', () => {
 
   function getTicketsForAttendee(email) {
     return tickets.value.filter((ticket) => ticket.attendeeEmail === email)
+  }
+
+  function getActiveTicketsForAttendee(email) {
+    const attendeeEmail = normalizeEmail(email)
+
+    return activeTickets.value
+      .filter((ticket) => normalizeEmail(ticket.attendeeEmail) === attendeeEmail)
+      .sort(compareTicketEventTime)
+  }
+
+  function getTicketWalletForAttendee(email, now = new Date()) {
+    const currentTime = now.getTime()
+    const attendeeTickets = getActiveTicketsForAttendee(email)
+
+    return {
+      upcoming: attendeeTickets.filter((ticket) =>
+        new Date(ticket.eventStartAt).getTime() >= currentTime
+      ),
+      past: attendeeTickets
+        .filter((ticket) => new Date(ticket.eventStartAt).getTime() < currentTime)
+        .sort((first, second) => compareTicketEventTime(second, first)),
+    }
   }
 
   function getActiveRegistrationForAttendee(eventId, attendee) {
@@ -457,6 +483,8 @@ export const useTicketingStore = defineStore('ticketing', () => {
     getOrderedWaitlistForEvent,
     getEventCapacitySummary,
     getTicketsForAttendee,
+    getActiveTicketsForAttendee,
+    getTicketWalletForAttendee,
     getActiveRegistrationForAttendee,
     persistState,
     joinWaitlist,
