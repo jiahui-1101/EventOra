@@ -185,6 +185,40 @@ export const useTicketingStore = defineStore('ticketing', () => {
     }
   }
 
+  function joinWaitlist(eventId, attendee) {
+    const event = getEventById(eventId)
+    if (!event) throw new Error('Event not found.')
+    assertCanRegister(eventId, attendee)
+
+    const capacitySummary = getEventCapacitySummary(eventId)
+    if (!capacitySummary?.isFull) {
+      throw new Error('Seats are still available for this event.')
+    }
+    if (!capacitySummary.canJoinWaitlist) {
+      throw new Error('This event is full and waitlist is not available.')
+    }
+
+    const registeredAt = new Date().toISOString()
+    const registration = {
+      id: createRegistrationId(eventId, attendee.id),
+      eventId,
+      attendeeId: attendee.id,
+      attendeeName: attendee.name,
+      attendeeEmail: attendee.email,
+      status: 'waitlisted',
+      paymentStatus: event.priceType === 'paid' ? 'unpaid' : 'not_required',
+      waitlistPosition: capacitySummary.waitlistCount + 1,
+      ticketId: null,
+      registeredAt,
+      cancelledAt: null,
+    }
+
+    registrations.value.push(registration)
+    persistState()
+
+    return registration
+  }
+
   function registerFreeEvent(eventId, attendee) {
     const event = getEventById(eventId)
     if (!event) throw new Error('Event not found.')
@@ -193,7 +227,10 @@ export const useTicketingStore = defineStore('ticketing', () => {
 
     const capacitySummary = getEventCapacitySummary(eventId)
     if (capacitySummary?.isFull) {
-      throw new Error('This event is full.')
+      return {
+        registration: joinWaitlist(eventId, attendee),
+        ticket: null,
+      }
     }
 
     const registeredAt = new Date().toISOString()
@@ -228,7 +265,10 @@ export const useTicketingStore = defineStore('ticketing', () => {
 
     const capacitySummary = getEventCapacitySummary(eventId)
     if (capacitySummary?.isFull) {
-      throw new Error('This event is full.')
+      return {
+        registration: joinWaitlist(eventId, attendee),
+        payment: null,
+      }
     }
 
     const registeredAt = new Date().toISOString()
@@ -343,6 +383,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     getTicketsForAttendee,
     getActiveRegistrationForAttendee,
     persistState,
+    joinWaitlist,
     registerFreeEvent,
     beginPaidRegistration,
     completeMockPayment,
