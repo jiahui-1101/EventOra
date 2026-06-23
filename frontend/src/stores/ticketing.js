@@ -234,6 +234,43 @@ export const useTicketingStore = defineStore('ticketing', () => {
     }
   }
 
+  function completeMockPayment(registrationId) {
+    const registration = registrations.value.find((item) => item.id === registrationId)
+    if (!registration) throw new Error('Registration not found.')
+    if (registration.status !== 'pending_payment') {
+      throw new Error('Only pending payments can be completed.')
+    }
+
+    const event = getEventById(registration.eventId)
+    if (!event) throw new Error('Event not found.')
+
+    const paidAt = new Date().toISOString()
+    const ticket = createConfirmedTicket(event, registration, paidAt)
+
+    registration.status = 'confirmed'
+    registration.paymentStatus = 'paid'
+    registration.ticketId = ticket.id
+    tickets.value.push(ticket)
+    persistState()
+
+    return { registration, ticket }
+  }
+
+  function declineMockPayment(registrationId) {
+    const registration = registrations.value.find((item) => item.id === registrationId)
+    if (!registration) throw new Error('Registration not found.')
+    if (registration.status !== 'pending_payment') {
+      throw new Error('Only pending payments can be declined.')
+    }
+
+    registration.status = 'cancelled'
+    registration.paymentStatus = 'failed'
+    registration.cancelledAt = new Date().toISOString()
+    persistState()
+
+    return registration
+  }
+
   async function loadSeedData({ force = false } = {}) {
     if (hasLoaded.value && !force) return
 
@@ -282,6 +319,8 @@ export const useTicketingStore = defineStore('ticketing', () => {
     persistState,
     registerFreeEvent,
     beginPaidRegistration,
+    completeMockPayment,
+    declineMockPayment,
     loadSeedData,
   }
 })
