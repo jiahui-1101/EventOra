@@ -70,6 +70,11 @@ const routes = [
     component: () => import('@/views/MyTicketsView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/my-completed',
+    name: 'my-completed',
+    component: () => import('@/views/MyCompletedEventsView.vue'),
+  },
 ]
 
 const router = createRouter({

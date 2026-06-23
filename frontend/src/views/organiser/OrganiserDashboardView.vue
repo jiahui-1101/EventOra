@@ -213,10 +213,10 @@
               <p class="eyebrow">Feedback</p>
               <h2>Feedback & Ratings</h2>
               <p class="panel-subtitle">
-                Average Rating: <strong>{{ avgRating }} / 5</strong> from {{ feedbackData.length }} reviews
+                Average Rating: <strong>{{ liveAvgRating }} / 5</strong> from {{ feedbackData.length }} reviews
               </p>
             </div>
-            <button class="button button-primary" @click="exportCSV(feedbackData, 'feedback.csv')">
+            <button class="button button-primary" @click="exportCSV(feedbackData, 'Feedback_Report_UTM.csv')">
               Export Feedback CSV
             </button>
           </div>
@@ -228,8 +228,8 @@
           <div class="event-grid">
             <article v-for="(f, idx) in feedbackData" :key="idx" class="event-card feedback-card">
               <div class="event-card-body">
-                <strong>{{ '★'.repeat(f.rating) }}{{ '☆'.repeat(5 - f.rating) }}</strong>
-                <p>{{ f.comment }}</p>
+                <strong style="color: #f59e0b; font-size: 1.1rem;">{{ '★'.repeat(f.rating) }}{{ '☆'.repeat(5 - f.rating) }}</strong>
+                <p style="margin-top: 6px; color: #334155;">"{{ f.comment }}"</p>
               </div>
             </article>
           </div>
@@ -274,15 +274,33 @@ const attendanceList = [
   { attendee: 'Nurul Iman', checkedInAt: '7:22 PM, 12 Jun', verifiedBy: 'Mei Shuet' },
 ]
 
-const feedbackData = [
-  { rating: 5, comment: 'Excellent workshop!' },
-  { rating: 4, comment: 'Good but short' },
-  { rating: 5, comment: 'Very inspiring' },
+const fbKey = 'eventora_feedbacks_v2'
+const baseFeedbackList = [
+  { rating: 5, comment: 'Excellent practical session! Highly recommended.' },
+  { rating: 4, comment: 'Great content, but the lab AC was way too cold.' },
+  { rating: 5, comment: 'The speaker explained complex algorithms very clearly.' }
 ]
+
+const feedbackData = computed(() => {
+  const local = JSON.parse(localStorage.getItem(fbKey) || '[]')
+  const formattedLocal = local.map(item => ({
+    rating: Number(item.rating) || 5,
+    comment: item.comment || 'No comment text provided.'
+  }))
+  return [...formattedLocal, ...baseFeedbackList]
+})
+
+const liveAvgRating = computed(() => {
+  const list = feedbackData.value
+  if (!list.length) return '0.0'
+  const sum = list.reduce((acc, curr) => acc + curr.rating, 0)
+  return (sum / list.length).toFixed(1)
+})
 
 const ratingDistribution = computed(() => {
   const counts = [0, 0, 0, 0, 0]
-  feedbackData.forEach((f) => {
+  
+  feedbackData.value.forEach((f) => {
     if (f.rating >= 1 && f.rating <= 5) counts[f.rating - 1] += 1
   })
   return counts
@@ -374,11 +392,6 @@ const totalCheckedIn = computed(() => societyEvents.value.reduce((sum, ev) => su
 const attendanceRate = computed(() =>
   totalRegistrations.value ? Math.round((totalCheckedIn.value / totalRegistrations.value) * 100) : 0
 )
-const avgRating = computed(() => {
-  const ratings = societyEvents.value.filter((ev) => ev.avgRating).map((ev) => ev.avgRating)
-  if (!ratings.length) return '0.0'
-  return (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(1)
-})
 
 const confirmedRegistrations = computed(
   () => registrationsList.filter((r) => r.status === 'confirmed').length
