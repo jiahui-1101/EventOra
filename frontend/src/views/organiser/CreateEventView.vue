@@ -295,6 +295,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { addApprovalEvent } from '@/stores/approvalEvents'
+import { addNotification } from '@/stores/notifications'
 
 const route = useRoute()
 const router = useRouter()
@@ -582,9 +583,28 @@ function submitEvent(action) {
 
   if (action === 'submitted') {
     addEventToApprovalQueue(eventPayload)
+    addSubmissionNotifications(eventPayload)
   }
 
   router.push({ path: '/organiser/dashboard', query: { eventSaved: action } })
+}
+
+function addSubmissionNotifications(event) {
+  addNotification({
+    audience: 'organiser',
+    type: 'Approval',
+    title: 'Event submitted for approval',
+    message: `${event.title} has been submitted and is waiting for Faculty Admin review.`,
+    badgeClass: 'badge-yellow',
+  })
+
+  addNotification({
+    audience: 'faculty_admin',
+    type: 'Approval',
+    title: 'New event pending approval',
+    message: `${event.title} submitted by ${event.society} is waiting for review.`,
+    badgeClass: 'badge-yellow',
+  })
 }
 
 function addEventToApprovalQueue(event) {

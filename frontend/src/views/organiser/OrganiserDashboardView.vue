@@ -252,6 +252,7 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { loadNotifications as loadStoredNotifications } from '@/stores/notifications'
 import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
@@ -261,7 +262,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const eventsStorageKey = 'eventora_society_events_v2'
-const notificationStorageKey = 'eventora_notifications'
 
 const registrationsList = [
   { name: 'Aina Rahman', email: 'aina@utm.my', status: 'confirmed', ticketCode: 'EVT-9F4K-2Q8M-X7P1' },
@@ -525,27 +525,7 @@ async function loadSocietyEvents() {
 
 async function loadNotifications() {
   try {
-    const savedNotifications = JSON.parse(localStorage.getItem(notificationStorageKey) || 'null')
-    const response = await fetch('/mock/notifications.json')
-
-    if (!response.ok) return
-
-    const mockNotifications = await response.json()
-
-    if (Array.isArray(savedNotifications) && savedNotifications.every((item) => item.audience)) {
-      notifications.value = mockNotifications.map((mockNotification) => {
-        const savedNotification = savedNotifications.find(
-          (notification) => notification.id === mockNotification.id
-        )
-
-        return savedNotification
-          ? { ...mockNotification, unread: savedNotification.unread }
-          : mockNotification
-      })
-      return
-    }
-
-    notifications.value = mockNotifications
+    notifications.value = await loadStoredNotifications()
   } catch (error) {
     notifications.value = []
   }

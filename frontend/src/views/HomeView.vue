@@ -168,8 +168,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { loadNotifications } from '@/stores/notifications'
 
 const authStore = useAuthStore()
 
@@ -178,59 +179,8 @@ const category = ref('all')
 const price = ref('all')
 const dateFilter = ref('all')
 
-const notificationStorageKey = 'eventora_notifications'
 const societyEventsStorageKey = 'eventora_society_events_v2'
-
-const defaultNotifications = [
-  {
-    id: 1,
-    audience: 'attendee',
-    type: 'Registration',
-    title: 'Registration successful',
-    message: 'You have successfully registered for Build Your First AI App.',
-    time: 'Today, 10:20 AM',
-    badgeClass: 'badge-green',
-    unread: true,
-  },
-  {
-    id: 2,
-    audience: 'attendee',
-    type: 'Payment',
-    title: 'Mock payment successful',
-    message: 'Your RM 8 mock payment for Build Your First AI App has been completed.',
-    time: 'Today, 10:22 AM',
-    badgeClass: 'badge-green',
-    unread: true,
-  },
-  {
-    id: 6,
-    audience: 'organiser',
-    type: 'Approval',
-    title: 'Event approved',
-    message: 'Hackathon 2026 has been approved by Faculty Admin.',
-    time: 'Yesterday, 2:30 PM',
-    badgeClass: 'badge-green',
-    unread: true,
-  },
-  {
-    id: 9,
-    audience: 'faculty_admin',
-    type: 'Approval',
-    title: 'New event pending approval',
-    message: 'Line Follower Workshop submitted by Robotics Club is waiting for Faculty Admin review.',
-    time: 'Today, 9:45 AM',
-    badgeClass: 'badge-yellow',
-    unread: true,
-  },
-]
-
-const savedNotifications = JSON.parse(localStorage.getItem(notificationStorageKey) || 'null')
-
-const notifications = ref(
-  Array.isArray(savedNotifications) && savedNotifications.every((item) => item.audience)
-    ? savedNotifications
-    : defaultNotifications
-)
+const notifications = ref([])
 
 const unreadCount = computed(() =>
   notifications.value.filter(
@@ -239,6 +189,10 @@ const unreadCount = computed(() =>
       notification.unread
   ).length
 )
+
+onMounted(async () => {
+  notifications.value = await loadNotifications()
+})
 
 const basePublicEvents = [
   {

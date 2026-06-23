@@ -168,11 +168,11 @@ import {
   approvalEvents,
   loadApprovalEvents,
 } from '@/stores/approvalEvents'
+import { loadNotifications as loadStoredNotifications } from '@/stores/notifications'
 import axios from 'axios'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const notificationStorageKey = 'eventora_notifications'
 
 const societies = ref([])
 const loadingSocieties = ref(true)
@@ -220,27 +220,7 @@ function rate(s) {
 
 async function loadNotifications() {
   try {
-    const savedNotifications = JSON.parse(localStorage.getItem(notificationStorageKey) || 'null')
-    const response = await fetch('/mock/notifications.json')
-
-    if (!response.ok) return
-
-    const mockNotifications = await response.json()
-
-    if (Array.isArray(savedNotifications) && savedNotifications.every((item) => item.audience)) {
-      notifications.value = mockNotifications.map((mockNotification) => {
-        const savedNotification = savedNotifications.find(
-          (notification) => notification.id === mockNotification.id
-        )
-
-        return savedNotification
-          ? { ...mockNotification, unread: savedNotification.unread }
-          : mockNotification
-      })
-      return
-    }
-
-    notifications.value = mockNotifications
+    notifications.value = await loadStoredNotifications()
   } catch (error) {
     notifications.value = []
   }

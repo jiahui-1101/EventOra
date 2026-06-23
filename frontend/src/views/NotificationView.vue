@@ -87,9 +87,12 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import {
+  loadNotifications,
+  saveNotifications,
+} from '@/stores/notifications'
 
 const authStore = useAuthStore()
-const storageKey = 'eventora_notifications'
 
 const notifications = ref([])
 const loading = ref(true)
@@ -113,29 +116,7 @@ const unreadCount = computed(() =>
 
 onMounted(async () => {
   try {
-    const savedNotifications = JSON.parse(localStorage.getItem(storageKey) || 'null')
-    const response = await fetch('/mock/notifications.json')
-
-    if (!response.ok) {
-      throw new Error('Failed to load mock notifications')
-    }
-
-    const mockNotifications = await response.json()
-
-    if (Array.isArray(savedNotifications) && savedNotifications.every((item) => item.audience)) {
-      notifications.value = mockNotifications.map((mockNotification) => {
-        const savedNotification = savedNotifications.find(
-          (notification) => notification.id === mockNotification.id
-        )
-
-        return savedNotification
-          ? { ...mockNotification, unread: savedNotification.unread }
-          : mockNotification
-      })
-      return
-    }
-
-    notifications.value = mockNotifications
+    notifications.value = await loadNotifications()
   } catch (error) {
     loadError.value = 'Failed to load notifications. Please try again later.'
   } finally {
@@ -147,7 +128,7 @@ watch(
   notifications,
   () => {
     if (!loading.value && !loadError.value) {
-      localStorage.setItem(storageKey, JSON.stringify(notifications.value))
+      saveNotifications(notifications.value)
     }
   },
   { deep: true }

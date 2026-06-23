@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
+import { addNotification } from '@/stores/notifications'
 
 export const approvalEvents = ref([])
 export const loadingApprovalEvents = ref(false)
@@ -120,6 +121,47 @@ export function updateApprovalEvent(id, status, reason = '') {
     event.reason = reason
     saveApprovalEvents()
     updateSocietyEventStatus(id, status, reason)
+    addApprovalDecisionNotifications(event, status, reason)
+  }
+}
+
+function addApprovalDecisionNotifications(event, status, reason = '') {
+  if (status === 'approved') {
+    addNotification({
+      audience: 'organiser',
+      type: 'Approval',
+      title: 'Event approved',
+      message: `${event.title} has been approved and is now visible to students.`,
+      badgeClass: 'badge-green',
+    })
+
+    addNotification({
+      audience: 'faculty_admin',
+      type: 'Decision',
+      title: 'Event approved successfully',
+      message: `${event.title} has been approved. The organiser has been notified.`,
+      badgeClass: 'badge-green',
+      unread: false,
+    })
+  }
+
+  if (status === 'rejected') {
+    addNotification({
+      audience: 'organiser',
+      type: 'Revision',
+      title: 'Event rejected',
+      message: `${event.title} was rejected by Faculty Admin. Reason: ${reason || 'No reason provided.'}`,
+      badgeClass: 'badge-red',
+    })
+
+    addNotification({
+      audience: 'faculty_admin',
+      type: 'Decision',
+      title: 'Event rejected',
+      message: `${event.title} was rejected. The organiser has been notified.`,
+      badgeClass: 'badge-red',
+      unread: false,
+    })
   }
 }
 
