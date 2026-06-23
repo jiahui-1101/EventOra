@@ -107,7 +107,11 @@ const fbKey = 'eventora_feedbacks_v2'
 const authStore = useAuthStore()
 const ticketingStore = useTicketingStore()
 const attendeeEmail = computed(() => authStore.user?.email || '')
-const attendeeName = computed(() => authStore.user?.name || authStore.user?.email || 'EventOra attendee')
+const attendeeName = computed(() => {
+  const user = authStore.user
+  if (!user) return 'EventOra attendee'
+  return user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+})
 
 onMounted(async () => {
   feedbacks.value = JSON.parse(localStorage.getItem(fbKey) || '[]')
@@ -131,7 +135,10 @@ const myEvents = computed(() => {
     )
     .map((ticket) => {
     const event = ticketingStore.getEventById(ticket.eventId) || {}
-    const fb = feedbacks.value.find(f => f.eventId === ticket.eventId)
+    const fb = feedbacks.value.find((feedback) =>
+      feedback.eventId === ticket.eventId
+      && feedback.attendeeEmail === attendeeEmail.value
+    )
 
     return {
       id: ticket.eventId,
@@ -166,10 +173,14 @@ function submitFeedback() {
   if (!activeEvent.value) return
   const targetId = activeEvent.value.id
   let list = [...feedbacks.value]
-  const idx = list.findIndex(f => f.eventId === targetId)
+  const idx = list.findIndex((feedback) =>
+    feedback.eventId === targetId
+    && feedback.attendeeEmail === attendeeEmail.value
+  )
   
   const payload = {
     eventId: targetId,
+    attendeeEmail: attendeeEmail.value,
     rating: currentRating.value,
     comment: currentComment.value.trim() || 'No text comment provided.',
     submittedAt: new Date().toISOString()
@@ -215,7 +226,7 @@ function downloadCert(ev) {
         <p style="color: #475569; font-size: 1.1rem;">for verified attendance and active completion of</p>
         <div class="event-title">${ev.title}</div>
         <p style="color: #64748b; font-style: italic;">organized by ${ev.societyName} on ${dateStr}</p>
-        <div class="footer">ID: CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()} · Verifiable via EventOra Blockchain Ledger</div>
+        <div class="footer">ID: CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()} · Verified by EventOra attendance records</div>
         <button class="print-btn" onclick="window.print()">🖨️ Save as PDF / Print</button>
       </div>
     </body>
