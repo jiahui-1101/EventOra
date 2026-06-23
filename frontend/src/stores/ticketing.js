@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { fetchTicketingSeed } from '@/api/ticketing'
+import { createTicketSecurityFields } from '@/utils/ticketTokens'
 
 const TICKETING_STORAGE_KEY = 'eventora_ticketing_state'
 const ACTIVE_REGISTRATION_STATUSES = ['confirmed', 'waitlisted', 'pending_payment']
@@ -40,6 +41,10 @@ function writeStoredTicketingState(snapshot) {
   if (!canUseLocalStorage()) return
 
   localStorage.setItem(TICKETING_STORAGE_KEY, JSON.stringify(snapshot))
+}
+
+function createRegistrationId(eventId, attendeeId) {
+  return `registration-${eventId}-${attendeeId}-${Date.now()}`
 }
 
 export const useTicketingStore = defineStore('ticketing', () => {
@@ -135,6 +140,62 @@ export const useTicketingStore = defineStore('ticketing', () => {
     writeStoredTicketingState(createSnapshot())
   }
 
+  function createConfirmedTicket(event, registration, issuedAt) {
+    const securityFields = createTicketSecurityFields()
+
+    return {
+      id: securityFields.code,
+      qrToken: securityFields.token,
+      registrationId: registration.id,
+      eventId: event.id,
+      eventName: event.title,
+      eventStartAt: event.startAt,
+      venue: event.venue,
+      societyId: event.societyId,
+      attendeeId: registration.attendeeId,
+      attendeeName: registration.attendeeName,
+      attendeeEmail: registration.attendeeEmail,
+      status: 'active',
+      issuedAt,
+      checkedInAt: null,
+      checkedInBy: null,
+    }
+  }
+
+  function registerFreeEvent(eventId, attendee) {
+    const event = getEventById(eventId)
+    if (!event) throw new Error('Event not found.')
+    if (event.priceType !== 'free') throw new Error('This event requires payment.')
+
+    const capacitySummary = getEventCapacitySummary(eventId)
+    if (capacitySummary?.isFull) {
+      throw new Error('This event is full.')
+    }
+
+    const registeredAt = new Date().toISOString()
+    const registration = {
+      id: createRegistrationId(eventId, attendee.id),
+      eventId,
+      attendeeId: attendee.id,
+      attendeeName: attendee.name,
+      attendeeEmail: attendee.email,
+      status: 'confirmed',
+      paymentStatus: 'not_required',
+      waitlistPosition: null,
+      ticketId: null,
+      registeredAt,
+      cancelledAt: null,
+    }
+    const ticket = createConfirmedTicket(event, registration, registeredAt)
+
+    registration.ticketId = ticket.id
+    registrations.value.push(registration)
+    tickets.value.push(ticket)
+    persistState()
+
+    return { registration, ticket }
+  }
+
   async function loadSeedData({ force = false } = {}) {
     if (hasLoaded.value && !force) return
 
@@ -181,6 +242,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
     getEventCapacitySummary,
     getTicketsForAttendee,
     persistState,
+    registerFreeEvent,
     loadSeedData,
   }
 })
