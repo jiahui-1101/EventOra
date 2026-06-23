@@ -54,6 +54,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'organiser' },
   },
   {
+    path: '/organiser/check-in/:eventId?',
+    name: 'organiser-check-in',
+    component: () => import('@/views/organiser/OrganiserCheckInView.vue'),
+    meta: { requiresAuth: true, role: 'organiser' },
+  },
+  {
     path: '/event/:id',
     name: 'event-detail',
     component: () => import('@/views/EventDetailView.vue'),
