@@ -97,14 +97,43 @@ const shareToast = ref(false)
 
 const favKey = 'eventora_favs_v2'
 
+const backupAnnualTech = {
+  id: 'event-annual-tech-2026',
+  title: 'Annual Tech Symposium 2026',
+  societyName: 'Computer Society UTM',
+  category: 'academic',
+  price: 5,
+  priceType: 'paid',
+  startAt: '2026-07-15T09:00:00',
+  endAt: '2026-07-15T17:00:00',
+  registrationDeadline: '2026-07-10T23:59:00',
+  venue: 'Dewan Sultan Iskandar, UTM JB',
+  capacity: 120,
+  confirmedCount: 78,
+  description: 'Annual Tech Symposium 2026 brings together students, organisers, and faculty members for a full-day technology event. The event includes tech talks, demo booths, student project showcases, and networking sessions.',
+  coverClass: 'academic-cover',
+  badgeClass: 'badge-blue',
+  waitlistEnabled: true
+}
+
 onMounted(async () => {
   favorites.value = JSON.parse(localStorage.getItem(favKey) || '[]')
   try {
     const res = await fetch('/mock/events.json')
     const all = await res.json()
-    event.value = all.find(e => e.id === route.params.id) || null
+    
+    let target = all.find(e => String(e.id) === String(route.params.id))
+    
+    if (!target && route.params.id === 'event-annual-tech-2026') {
+      target = backupAnnualTech
+    }
+    
+    event.value = target || null
   } catch(e) {
     console.error(e)
+    if (route.params.id === 'event-annual-tech-2026') {
+      event.value = backupAnnualTech
+    }
   } finally {
     loading.value = false
   }
