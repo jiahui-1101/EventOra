@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { fetchTicketingSeed } from '@/api/ticketing'
 
 const TICKETING_STORAGE_KEY = 'eventora_ticketing_state'
+const ACTIVE_REGISTRATION_STATUSES = ['confirmed', 'waitlisted', 'pending_payment']
 
 function cloneCollection(collection) {
   return collection.map((item) => ({ ...item }))
@@ -62,12 +63,52 @@ export const useTicketingStore = defineStore('ticketing', () => {
     registrations.value.filter((registration) => registration.status === 'confirmed')
   )
 
+  const activeRegistrations = computed(() =>
+    registrations.value.filter((registration) =>
+      ACTIVE_REGISTRATION_STATUSES.includes(registration.status)
+    )
+  )
+
   function getEventById(eventId) {
     return events.value.find((event) => event.id === eventId) || null
   }
 
   function getRegistrationsForEvent(eventId) {
     return registrations.value.filter((registration) => registration.eventId === eventId)
+  }
+
+  function getActiveRegistrationsForEvent(eventId) {
+    return activeRegistrations.value.filter((registration) => registration.eventId === eventId)
+  }
+
+  function getConfirmedRegistrationsForEvent(eventId) {
+    return confirmedRegistrations.value.filter((registration) => registration.eventId === eventId)
+  }
+
+  function getWaitlistedRegistrationsForEvent(eventId) {
+    return registrations.value.filter((registration) =>
+      registration.eventId === eventId && registration.status === 'waitlisted'
+    )
+  }
+
+  function getEventCapacitySummary(eventId) {
+    const event = getEventById(eventId)
+    if (!event) return null
+
+    const confirmedCount = getConfirmedRegistrationsForEvent(eventId).length
+    const waitlistCount = getWaitlistedRegistrationsForEvent(eventId).length
+    const remainingSeats = Math.max(event.capacity - confirmedCount, 0)
+    const isFull = remainingSeats === 0
+
+    return {
+      eventId,
+      capacity: event.capacity,
+      confirmedCount,
+      waitlistCount,
+      remainingSeats,
+      isFull,
+      canJoinWaitlist: isFull && event.waitlistEnabled,
+    }
   }
 
   function getTicketsForAttendee(email) {
@@ -131,8 +172,13 @@ export const useTicketingStore = defineStore('ticketing', () => {
     publishedEvents,
     activeTickets,
     confirmedRegistrations,
+    activeRegistrations,
     getEventById,
     getRegistrationsForEvent,
+    getActiveRegistrationsForEvent,
+    getConfirmedRegistrationsForEvent,
+    getWaitlistedRegistrationsForEvent,
+    getEventCapacitySummary,
     getTicketsForAttendee,
     persistState,
     loadSeedData,
