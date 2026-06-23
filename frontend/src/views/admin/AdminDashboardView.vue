@@ -1,12 +1,12 @@
 <template>
   <main class="app-shell">
-
     <section class="page-section">
       <div class="section-heading">
         <div>
           <p class="eyebrow">Faculty of Computing</p>
           <h2>Faculty Admin Dashboard</h2>
         </div>
+
         <div style="display:flex;gap:10px;align-items:center;">
           <span class="badge badge-purple">Faculty Admin</span>
           <router-link class="button button-primary" to="/admin/approval-queue">
@@ -17,21 +17,30 @@
       </div>
 
       <div class="admin-stats-grid">
-        <article class="admin-stat-card admin-stat-alert">
+        <article
+          class="admin-stat-card admin-stat-alert clickable-card"
+          role="button"
+          tabindex="0"
+          @click="goToApprovalQueue"
+          @keydown.enter="goToApprovalQueue"
+        >
           <span>Pending Approvals</span>
           <strong>{{ pendingCount }}</strong>
           <p>Awaiting your review</p>
         </article>
+
         <article class="admin-stat-card">
           <span>Active Societies</span>
           <strong>12</strong>
           <p>Under Faculty of Computing</p>
         </article>
+
         <article class="admin-stat-card">
           <span>Total Registrations</span>
           <strong>1,204</strong>
           <p>This semester</p>
         </article>
+
         <article class="admin-stat-card">
           <span>Overall Attendance Rate</span>
           <strong>82%</strong>
@@ -60,6 +69,7 @@
               <th>Attendance Rate</th>
             </tr>
           </thead>
+
           <tbody>
             <tr v-for="s in societies" :key="s.name">
               <td>{{ s.name }}</td>
@@ -69,7 +79,14 @@
               <td>
                 <div style="display:flex;align-items:center;gap:8px;">
                   <div style="flex:1;height:6px;border-radius:999px;background:var(--border);overflow:hidden;">
-                    <div :style="{ width: rate(s) + '%', height: '100%', background: 'var(--primary)', borderRadius: '999px' }"></div>
+                    <div
+                      :style="{
+                        width: rate(s) + '%',
+                        height: '100%',
+                        background: 'var(--primary)',
+                        borderRadius: '999px',
+                      }"
+                    ></div>
                   </div>
                   <strong>{{ rate(s) }}%</strong>
                 </div>
@@ -85,13 +102,16 @@
         <h2>Most Popular Events This Semester</h2>
         <span class="badge badge-green">Top 3</span>
       </div>
+
       <div>
         <article v-for="ev in popularEvents" :key="ev.rank" class="popular-event-card">
           <div class="popular-rank">{{ ev.rank }}</div>
+
           <div class="popular-info">
             <strong>{{ ev.title }}</strong>
             <span>{{ ev.society }} · {{ ev.date }}</span>
           </div>
+
           <div class="popular-meta">
             <span :class="['badge', ev.badgeClass]">{{ ev.category }}</span>
             <strong>{{ ev.registered }} registered</strong>
@@ -99,17 +119,17 @@
         </article>
       </div>
     </section>
-
   </main>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 
+const router = useRouter()
 const pendingCount = ref(3)
 
-// societies fetch from mock JSON file
 const societies = ref([])
 const loadingSocieties = ref(true)
 const loadError = ref('')
@@ -131,7 +151,28 @@ const popularEvents = ref([
   { rank: 3, title: 'Build Your First AI App', society: 'UTM Computing Society', date: '12 Jun 2026', category: 'Academic', badgeClass: 'badge-blue', registered: 198 },
 ])
 
+function goToApprovalQueue() {
+  router.push('/admin/approval-queue')
+}
+
 function rate(s) {
   return Math.round((s.attended / s.registered) * 100)
 }
 </script>
+
+<style scoped>
+.clickable-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.clickable-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.clickable-card:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+</style>
