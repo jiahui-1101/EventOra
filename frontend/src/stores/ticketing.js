@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { fetchTicketingSeed } from '@/api/ticketing'
+import { parseTicketQrPayload } from '@/utils/ticketQr'
 import { createTicketSecurityFields } from '@/utils/ticketTokens'
 
 const TICKETING_STORAGE_KEY = 'eventora_ticketing_state'
@@ -161,7 +162,8 @@ export const useTicketingStore = defineStore('ticketing', () => {
   }
 
   function findTicketByCodeOrToken(ticketCode) {
-    const normalizedCode = ticketCode.trim()
+    const parsedPayload = parseTicketQrPayload(ticketCode.trim())
+    const normalizedCode = parsedPayload?.token || parsedPayload?.ticketId || ticketCode.trim()
 
     return tickets.value.find((ticket) =>
       ticket.id === normalizedCode || ticket.qrToken === normalizedCode
