@@ -1,6 +1,10 @@
 <template>
   <main class="app-shell">
     <section class="page-section">
+      <router-link class="back-link" to="/admin">
+        ← Back to Dashboard
+      </router-link>
+
       <div class="section-heading">
         <div>
           <p class="eyebrow">Faculty Admin</p>
@@ -264,6 +268,20 @@ function showToast(message, type) {
 </script>
 
 <style scoped>
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 14px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.back-link:hover {
+  color: var(--primary);
+}
+
 .section-subtitle,
 .muted-text {
   margin: 4px 0 0;
