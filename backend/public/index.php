@@ -134,6 +134,7 @@ $app->group('/api/events', function ($group) {
     $group->post('/draft', [$controller, 'createDraft']);
     $group->get('/mine', [$controller, 'listMine']);
     $group->get('/{id}/preview', [$controller, 'preview']);
+    $group->post('/{id}/poster', [$controller, 'uploadPoster']);
     $group->get('/{id}', [$controller, 'show']);
     $group->put('/{id}', [$controller, 'update']);
     $group->put('/{id}/draft', [$controller, 'saveDraft']);

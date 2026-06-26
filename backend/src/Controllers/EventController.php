@@ -173,7 +173,7 @@ class EventController
         $stmt = $db->prepare(
             'SELECT e.id, e.title, e.description, e.venue, e.category, e.start_datetime, e.end_datetime,
                 e.reg_deadline, e.capacity, e.fee_type, e.fee_amount, e.waitlist_enabled, e.status,
-                e.cancellation_reason,
+                e.poster_url, e.cancellation_reason,
                 e.created_at, e.updated_at, s.name AS society_name,
                 (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status <> "cancelled") AS registrations
              FROM events e
@@ -209,6 +209,78 @@ class EventController
         $preview['canEdit'] = in_array($event['status'], $this->editableStatuses, true);
 
         return $this->successResponse($response, $preview, null, 200);
+    }
+
+    public function uploadPoster(Request $request, Response $response, array $args): Response
+    {
+        $eventId = (int) $args['id'];
+        $event = $this->findOwnedEvent($request, $eventId);
+        if ($event === null) {
+            return $this->errorResponse($response, 'EVENT_NOT_FOUND', 'Event not found', [], 404);
+        }
+
+        if (!in_array($event['status'], $this->editableStatuses, true)) {
+            return $this->errorResponse($response, 'INVALID_STATE_TRANSITION', 'Poster can only be uploaded while the event is draft, rejected, or pending approval', [], 400);
+        }
+
+        $uploadedFiles = $request->getUploadedFiles();
+        $poster = $uploadedFiles['poster'] ?? null;
+        if ($poster === null) {
+            return $this->errorResponse($response, 'VALIDATION_ERROR', 'Validation failed', [
+                'poster' => 'poster file is required',
+            ], 422);
+        }
+
+        if ($poster->getError() !== UPLOAD_ERR_OK) {
+            return $this->errorResponse($response, 'UPLOAD_ERROR', 'Could not upload poster', [
+                'poster' => 'Upload failed with error code ' . $poster->getError(),
+            ], 400);
+        }
+
+        if ($poster->getSize() > 5 * 1024 * 1024) {
+            return $this->errorResponse($response, 'VALIDATION_ERROR', 'Validation failed', [
+                'poster' => 'Poster image must not exceed 5MB',
+            ], 422);
+        }
+
+        $clientFilename = $poster->getClientFilename() ?? '';
+        $extension = strtolower(pathinfo($clientFilename, PATHINFO_EXTENSION));
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+        if (!in_array($extension, $allowedExtensions, true)) {
+            return $this->errorResponse($response, 'VALIDATION_ERROR', 'Validation failed', [
+                'poster' => 'Poster must be a JPG, PNG, or WEBP image',
+            ], 422);
+        }
+
+        $mediaType = strtolower($poster->getClientMediaType() ?? '');
+        $allowedMediaTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if ($mediaType !== '' && !in_array($mediaType, $allowedMediaTypes, true)) {
+            return $this->errorResponse($response, 'VALIDATION_ERROR', 'Validation failed', [
+                'poster' => 'Poster must be a JPG, PNG, or WEBP image',
+            ], 422);
+        }
+
+        $uploadDir = dirname(__DIR__, 2) . '/public/uploads/event-posters';
+        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+            return $this->errorResponse($response, 'UPLOAD_ERROR', 'Could not prepare poster upload directory', [], 500);
+        }
+
+        $filename = 'event-' . $eventId . '-' . bin2hex(random_bytes(8)) . '.' . $extension;
+        $poster->moveTo($uploadDir . '/' . $filename);
+
+        $posterUrl = '/uploads/event-posters/' . $filename;
+        $db = Database::getConnection();
+        $stmt = $db->prepare('UPDATE events SET poster_url = :poster_url WHERE id = :id');
+        $stmt->execute([
+            'poster_url' => $posterUrl,
+            'id' => $eventId,
+        ]);
+
+        return $this->successResponse($response, [
+            'id' => $eventId,
+            'posterUrl' => $posterUrl,
+            'poster_url' => $posterUrl,
+        ], 'Event poster uploaded', 200);
     }
 
     public function update(Request $request, Response $response, array $args): Response
@@ -580,6 +652,8 @@ class EventController
             'feeAmount' => (float) $event['fee_amount'],
             'waitlistEnabled' => (bool) $event['waitlist_enabled'],
             'status' => $event['status'],
+            'posterUrl' => $event['poster_url'] ?? null,
+            'poster_url' => $event['poster_url'] ?? null,
             'cancellationReason' => $event['cancellation_reason'] ?? null,
             'cancellation_reason' => $event['cancellation_reason'] ?? null,
             'registrations' => (int) ($event['registrations'] ?? 0),
