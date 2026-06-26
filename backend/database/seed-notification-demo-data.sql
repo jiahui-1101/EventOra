@@ -112,6 +112,7 @@ SET
     fee_amount = 0.00,
     waitlist_enabled = 1,
     status = 'pending_approval',
+    poster_url = NULL,
     cancellation_reason = NULL
 WHERE id = @demo_pending_event_id;
 
@@ -162,6 +163,7 @@ SET
     fee_amount = 0.00,
     waitlist_enabled = 1,
     status = 'published',
+    poster_url = NULL,
     cancellation_reason = NULL
 WHERE id = @demo_published_event_id;
 

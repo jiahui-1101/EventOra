@@ -132,3 +132,21 @@ Content-Type: application/json
 ###############################################
 PATCH {{baseUrl}}/api/events/{{publishedEventId}}/complete
 Authorization: Bearer {{organiserToken}}
+###############################################
+# TEST 7 - Upload event poster
+# Expected:
+# - 200 OK
+# - response returns posterUrl and poster_url
+# - event detail/list includes posterUrl
+# Use a real image path on your computer for poster.
+###############################################
+POST {{baseUrl}}/api/events/{{draftEventId}}/poster
+Authorization: Bearer {{organiserToken}}
+Content-Type: multipart/form-data; boundary=----EventOraBoundary
+
+------EventOraBoundary
+Content-Disposition: form-data; name="poster"; filename="poster.png"
+Content-Type: image/png
+
+< ./poster.png
+------EventOraBoundary--
