@@ -254,6 +254,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTicketingStore } from '@/stores/ticketing'
 import { loadNotifications as loadStoredNotifications } from '@/stores/notifications'
+import { getOrganiserDashboardApi, getOrganiserEventsApi } from '@/api/dashboard'
 import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
@@ -412,21 +413,46 @@ function registrationPercent(event) {
   return event.capacity ? Math.round((registered / event.capacity) * 100) : 0
 }
 
-const totalEvents = computed(() => societyEvents.value.length)
-const publishedCount = computed(() => societyEvents.value.filter((ev) => ev.status === 'published').length)
-const pendingCount = computed(() => societyEvents.value.filter((ev) => ev.status === 'pending_approval').length)
-const totalRegistrations = computed(() =>
-  ticketingStore.events
+const dashboardStats = ref(null)
+
+const dashboardEventTotals = computed(() => dashboardStats.value?.event_totals || {})
+const totalEvents = computed(() =>
+  dashboardStats.value ? dashboardStats.value.total_events ?? 0 : societyEvents.value.length
+)
+const publishedCount = computed(() =>
+  dashboardStats.value
+    ? dashboardEventTotals.value.published ?? 0
+    : societyEvents.value.filter((ev) => ev.status === 'published').length
+)
+const pendingCount = computed(() =>
+  dashboardStats.value
+    ? dashboardEventTotals.value.pending_approval ?? 0
+    : societyEvents.value.filter((ev) => ev.status === 'pending_approval').length
+)
+const totalRegistrations = computed(() => {
+  if (dashboardStats.value) return dashboardStats.value.total_registrations ?? 0
+
+  return ticketingStore.events
     .filter((event) => event.societyId === organiserSocietyId.value)
     .reduce((sum, event) => {
       const summary = ticketingStore.getEventCapacitySummary(event.id)
       return sum + (summary?.occupiedCount || 0) + (summary?.waitlistCount || 0)
     }, 0)
+})
+const totalCheckedIn = computed(() =>
+  dashboardStats.value ? dashboardStats.value.attendance?.checked_in ?? 0 : attendanceList.value.length
 )
-const totalCheckedIn = computed(() => attendanceList.value.length)
-const attendanceRate = computed(() =>
-  totalRegistrations.value ? Math.round((totalCheckedIn.value / totalRegistrations.value) * 100) : 0
-)
+const attendanceRate = computed(() => {
+  if (dashboardStats.value) return Math.round(dashboardStats.value.attendance?.rate_percent ?? 0)
+  return totalRegistrations.value ? Math.round((totalCheckedIn.value / totalRegistrations.value) * 100) : 0
+})
+const avgRating = computed(() => {
+  const backendRating = dashboardStats.value?.average_rating
+  if (backendRating === null || backendRating === undefined) return liveAvgRating.value
+
+  const numericRating = Number(backendRating)
+  return Number.isNaN(numericRating) ? '0.0' : numericRating.toFixed(1)
+})
 
 const confirmedRegistrations = computed(
   () => registrationsList.value.filter((r) => r.status === 'confirmed').length
@@ -566,6 +592,18 @@ function formatDateTime(dateValue) {
 }
 
 async function loadSocietyEvents() {
+  const hasBackendToken = Boolean(localStorage.getItem('eventora_token'))
+
+  if (hasBackendToken) {
+    try {
+      const response = await getOrganiserEventsApi()
+      societyEvents.value = response.data.data.map(normaliseEvent)
+      return
+    } catch (error) {
+      console.warn('Falling back to mock organiser events:', error)
+    }
+  }
+
   try {
     const response = await fetch('/mock/events.json')
 
@@ -595,6 +633,18 @@ async function loadSocietyEvents() {
   }
 }
 
+async function loadDashboardStats() {
+  if (!localStorage.getItem('eventora_token')) return
+
+  try {
+    const response = await getOrganiserDashboardApi()
+    dashboardStats.value = response.data.data
+  } catch (error) {
+    dashboardStats.value = null
+    console.warn('Using local organiser dashboard stats fallback:', error)
+  }
+}
+
 async function loadNotifications() {
   try {
     notifications.value = await loadStoredNotifications()
@@ -606,6 +656,7 @@ async function loadNotifications() {
 onMounted(async () => {
   await ticketingStore.loadSeedData()
   await loadSocietyEvents()
+  await loadDashboardStats()
   loadNotifications()
   showCreateEventToast()
 })
