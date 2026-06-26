@@ -20,3 +20,11 @@ export function getOrganiserDashboardApi() {
 export function getOrganiserEventsApi() {
   return dashboardClient.get('/events/mine')
 }
+
+export function getOrganiserParticipantsApi() {
+  return dashboardClient.get('/dashboard/organiser/participants')
+}
+
+export function getOrganiserAttendanceApi() {
+  return dashboardClient.get('/dashboard/organiser/attendance')
+}

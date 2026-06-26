@@ -254,7 +254,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTicketingStore } from '@/stores/ticketing'
 import { loadNotifications as loadStoredNotifications } from '@/stores/notifications'
-import { getOrganiserDashboardApi, getOrganiserEventsApi } from '@/api/dashboard'
+import {
+  getOrganiserAttendanceApi,
+  getOrganiserDashboardApi,
+  getOrganiserEventsApi,
+  getOrganiserParticipantsApi,
+} from '@/api/dashboard'
 import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
@@ -266,6 +271,8 @@ const ticketingStore = useTicketingStore()
 
 const eventsStorageKey = 'eventora_society_events_v2'
 const organiserSocietyId = computed(() => authStore.user?.societyId || 'UTM-CS')
+const dashboardParticipants = ref(null)
+const dashboardAttendance = ref(null)
 
 const scopedEventIds = computed(() =>
   new Set(ticketingStore.events
@@ -273,8 +280,10 @@ const scopedEventIds = computed(() =>
     .map((event) => event.id))
 )
 
-const registrationsList = computed(() =>
-  ticketingStore.registrations
+const registrationsList = computed(() => {
+  if (dashboardParticipants.value) return dashboardParticipants.value
+
+  return ticketingStore.registrations
     .filter((registration) =>
       scopedEventIds.value.has(registration.eventId)
       && registration.status !== 'cancelled'
@@ -286,10 +295,12 @@ const registrationsList = computed(() =>
       event: ticketingStore.getEventById(registration.eventId)?.title || registration.eventId,
       ticketCode: registration.ticketId || '',
     }))
-)
+})
 
-const attendanceList = computed(() =>
-  ticketingStore.tickets
+const attendanceList = computed(() => {
+  if (dashboardAttendance.value) return dashboardAttendance.value
+
+  return ticketingStore.tickets
     .filter((ticket) =>
       scopedEventIds.value.has(ticket.eventId)
       && ticket.status === 'active'
@@ -301,7 +312,7 @@ const attendanceList = computed(() =>
       checkedInAt: formatDateTime(ticket.checkedInAt),
       verifiedBy: ticket.checkedInBy,
     }))
-)
+})
 
 const fbKey = 'eventora_feedbacks_v2'
 const feedbackData = computed(() => {
@@ -645,6 +656,27 @@ async function loadDashboardStats() {
   }
 }
 
+async function loadDashboardLists() {
+  if (!localStorage.getItem('eventora_token')) return
+
+  try {
+    const [participantsResponse, attendanceResponse] = await Promise.all([
+      getOrganiserParticipantsApi(),
+      getOrganiserAttendanceApi(),
+    ])
+
+    dashboardParticipants.value = participantsResponse.data.data
+    dashboardAttendance.value = attendanceResponse.data.data.map((row) => ({
+      ...row,
+      checkedInAt: row.checkedInAt ? formatDateTime(row.checkedInAt) : '-',
+    }))
+  } catch (error) {
+    dashboardParticipants.value = null
+    dashboardAttendance.value = null
+    console.warn('Using local organiser dashboard list fallback:', error)
+  }
+}
+
 async function loadNotifications() {
   try {
     notifications.value = await loadStoredNotifications()
@@ -657,6 +689,7 @@ onMounted(async () => {
   await ticketingStore.loadSeedData()
   await loadSocietyEvents()
   await loadDashboardStats()
+  await loadDashboardLists()
   loadNotifications()
   showCreateEventToast()
 })

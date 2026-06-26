@@ -122,6 +122,14 @@ $app->get('/api/dashboard/organiser', [new DashboardController(), 'organiserDash
     ->add(new RoleMiddleware(['organiser']))
     ->add(new JwtMiddleware());
 
+$app->get('/api/dashboard/organiser/participants', [new DashboardController(), 'organiserParticipants'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
+$app->get('/api/dashboard/organiser/attendance', [new DashboardController(), 'organiserAttendance'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
 $app->get('/api/societies/mine', [new SocietyController(), 'listMine'])
     ->add(new RoleMiddleware(['organiser']))
     ->add(new JwtMiddleware());

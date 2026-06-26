@@ -107,6 +107,109 @@ class DashboardController
         return $this->successResponse($response, $data, null, 200);
     }
 
+    // GET /api/dashboard/organiser/participants
+    // Returns the participant/registration rows shown in the Organiser
+    // Dashboard "Registrations" tab. Data comes from the real database:
+    // users = who the attendee is, registrations = what they joined,
+    // events = which event, tickets = the QR ticket token if issued.
+    public function organiserParticipants(Request $request, Response $response): Response
+    {
+        $authUser = $request->getAttribute('user');
+        $organiserId = (int) $authUser['sub'];
+
+        $db = Database::getConnection();
+        $societyIds = $this->getOrganiserSocietyIds($db, $organiserId);
+
+        if (empty($societyIds)) {
+            return $this->successResponse($response, [], null, 200);
+        }
+
+        $placeholders = $this->buildPlaceholders($societyIds);
+        $stmt = $db->prepare(
+            "SELECT
+                r.id,
+                u.name,
+                u.email,
+                r.status,
+                e.title AS event_title,
+                t.qr_token AS ticket_code,
+                r.registered_at
+             FROM registrations r
+             JOIN users u ON u.id = r.user_id
+             JOIN events e ON e.id = r.event_id
+             LEFT JOIN tickets t ON t.registration_id = r.id
+             WHERE e.society_id IN ({$placeholders})
+               AND r.status <> 'cancelled'
+             ORDER BY e.start_datetime DESC, r.registered_at DESC"
+        );
+        $stmt->execute($societyIds);
+
+        $rows = array_map(
+            fn (array $row): array => [
+                'id' => (int) $row['id'],
+                'name' => $row['name'],
+                'email' => $row['email'],
+                'status' => $row['status'] === 'waitlisted' ? 'waitlist' : $row['status'],
+                'event' => $row['event_title'],
+                'ticketCode' => $row['ticket_code'] ?? '',
+                'registeredAt' => $row['registered_at'],
+            ],
+            $stmt->fetchAll()
+        );
+
+        return $this->successResponse($response, $rows, null, 200);
+    }
+
+    // GET /api/dashboard/organiser/attendance
+    // Returns the rows shown in the Organiser Dashboard "Attendance" tab.
+    // The source of truth for attendance is check_ins, joined through
+    // tickets -> registrations -> events so the list stays scoped to this
+    // organiser's societies.
+    public function organiserAttendance(Request $request, Response $response): Response
+    {
+        $authUser = $request->getAttribute('user');
+        $organiserId = (int) $authUser['sub'];
+
+        $db = Database::getConnection();
+        $societyIds = $this->getOrganiserSocietyIds($db, $organiserId);
+
+        if (empty($societyIds)) {
+            return $this->successResponse($response, [], null, 200);
+        }
+
+        $placeholders = $this->buildPlaceholders($societyIds);
+        $stmt = $db->prepare(
+            "SELECT
+                ci.id,
+                attendee.name AS attendee_name,
+                e.title AS event_title,
+                ci.checked_at,
+                checker.name AS checked_by_name
+             FROM check_ins ci
+             JOIN tickets t ON t.id = ci.ticket_id
+             JOIN registrations r ON r.id = t.registration_id
+             JOIN users attendee ON attendee.id = r.user_id
+             JOIN events e ON e.id = r.event_id
+             JOIN users checker ON checker.id = ci.checked_by
+             WHERE e.society_id IN ({$placeholders})
+             ORDER BY ci.checked_at DESC"
+        );
+        $stmt->execute($societyIds);
+
+        $rows = array_map(
+            fn (array $row): array => [
+                'id' => (int) $row['id'],
+                'attendee' => $row['attendee_name'],
+                'event' => $row['event_title'],
+                'checkedInAt' => $row['checked_at'],
+                'verifiedBy' => $row['checked_by_name'],
+            ],
+            $stmt->fetchAll()
+        );
+
+        return $this->successResponse($response, $rows, null, 200);
+    }
+
     // Finds every society this organiser belongs to. Per the data
     // dictionary, society_members.role can be 'organiser' or
     // 'co_organiser' - both count as membership for dashboard purposes,
