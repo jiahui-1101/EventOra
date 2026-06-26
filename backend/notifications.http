@@ -1,0 +1,189 @@
+### EventOra - Notifications API Test Requests
+@baseUrl = http://localhost:8000
+
+###############################################
+# STEP 0 - Login first, then paste tokens below
+###############################################
+
+### Login as organiser
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "password123"
+}
+
+### Login as faculty admin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "password123"
+}
+
+### Login as notification demo organiser
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "notify.organiser@example.com",
+  "password": "password123"
+}
+
+### Login as notification demo faculty admin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "notify.admin@example.com",
+  "password": "password123"
+}
+
+### Login as notification demo attendee
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "notify.attendee@example.com",
+  "password": "password123"
+}
+
+### Paste tokens from login responses here
+@organiserToken = PASTE_ORGANISER_TOKEN_HERE
+@adminToken = PASTE_ADMIN_TOKEN_HERE
+@attendeeToken = PASTE_ATTENDEE_TOKEN_HERE
+
+###############################################
+# TEST 1 - Organiser creates event
+# Expected:
+# - 201 Created
+# - event status = pending_approval
+# - faculty_admin receives event_pending_approval notification
+###############################################
+POST {{baseUrl}}/api/events
+Authorization: Bearer {{organiserToken}}
+Content-Type: application/json
+
+{
+  "society_id": 1,
+  "title": "Notification Flow Test Event",
+  "description": "Testing notification flow from organiser submission to faculty admin review.",
+  "venue": "N28",
+  "category": "academic",
+  "start_datetime": "2026-08-01 10:00:00",
+  "end_datetime": "2026-08-01 12:00:00",
+  "reg_deadline": "2026-07-30 23:59:59",
+  "capacity": 40,
+  "fee_type": "free",
+  "fee_amount": 0
+}
+
+### Paste created event id here
+@eventId = PASTE_EVENT_ID_HERE
+
+###############################################
+# TEST 2 - Admin lists notifications
+# Expected: includes New event pending approval
+###############################################
+GET {{baseUrl}}/api/notifications
+Authorization: Bearer {{adminToken}}
+
+###############################################
+# TEST 3 - Admin rejects event
+# Expected:
+# - event status = rejected
+# - organiser receives event_rejected notification
+###############################################
+POST {{baseUrl}}/api/admin/events/{{eventId}}/reject
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "reason": "Testing notification flow."
+}
+
+###############################################
+# TEST 4 - Organiser lists notifications
+# Expected: includes Event rejected with reason
+###############################################
+GET {{baseUrl}}/api/notifications
+Authorization: Bearer {{organiserToken}}
+
+###############################################
+# TEST 5 - Get organiser unread count
+###############################################
+GET {{baseUrl}}/api/notifications/unread-count
+Authorization: Bearer {{organiserToken}}
+
+###############################################
+# TEST 6 - Mark one notification as read
+###############################################
+POST {{baseUrl}}/api/notifications/1/read
+Authorization: Bearer {{organiserToken}}
+
+###############################################
+# TEST 7 - Mark all organiser notifications as read
+###############################################
+POST {{baseUrl}}/api/notifications/read-all
+Authorization: Bearer {{organiserToken}}
+
+###############################################
+# TEST 8 - Organiser cancels published event
+# Expected:
+# - organiser receives event_cancelled notification
+# - attendees with confirmed/waitlisted/pending_payment
+#   registrations receive event_cancelled notification
+###############################################
+PATCH {{baseUrl}}/api/events/{{eventId}}/cancel
+Authorization: Bearer {{organiserToken}}
+
+###############################################
+# TEST 9 - Attendee lists notifications
+# Expected: includes Event cancelled
+###############################################
+GET {{baseUrl}}/api/notifications
+Authorization: Bearer {{attendeeToken}}
+
+###############################################
+# TEST 10 - Send upcoming event reminders
+# Body hours_before means: remind confirmed attendees
+# for published events starting within this many hours.
+# Expected:
+# - organiser/faculty_admin can trigger it
+# - attendee receives event_reminder notification
+# - running this twice does not duplicate reminders
+###############################################
+POST {{baseUrl}}/api/notifications/send-event-reminders
+Authorization: Bearer {{organiserToken}}
+Content-Type: application/json
+
+{
+  "hours_before": 24
+}
+###############################################
+# TEST 11 - Event validation should reject bad dates/paid fee
+# Expected:
+# - 422 Validation failed
+# - end_datetime must be after start_datetime
+# - reg_deadline must be before start_datetime
+# - paid fee_amount must be greater than 0
+###############################################
+POST {{baseUrl}}/api/events
+Authorization: Bearer {{organiserToken}}
+Content-Type: application/json
+
+{
+  "society_id": 2,
+  "title": "Invalid Validation Test",
+  "description": "This should fail validation.",
+  "venue": "N28",
+  "category": "academic",
+  "start_datetime": "2026-08-01 12:00:00",
+  "end_datetime": "2026-08-01 10:00:00",
+  "reg_deadline": "2026-08-01 13:00:00",
+  "capacity": 20,
+  "fee_type": "paid",
+  "fee_amount": 0
+}
