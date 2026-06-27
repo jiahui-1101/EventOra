@@ -78,7 +78,7 @@
       </label>
 
       <label class="form-label">
-        Banner image
+        Banner preview image
         <input
           ref="bannerInput"
           type="file"
@@ -178,7 +178,7 @@
       <h2>Step 3 - Event Details</h2>
 
       <label class="form-label">
-        Event poster *
+        Event poster
         <input
           ref="posterInput"
           type="file"
@@ -286,7 +286,7 @@
         <div class="detail-list">
           <div><dt>Basic information</dt><dd>Complete</dd></div>
           <div><dt>Ticketing</dt><dd>{{ form.feeType }} event configured</dd></div>
-          <div><dt>Poster</dt><dd>Ready for review</dd></div>
+          <div><dt>Poster</dt><dd>{{ form.posterImage ? 'Ready for review' : 'Not uploaded' }}</dd></div>
           <div><dt>Approval status</dt><dd>Draft → Pending approval</dd></div>
         </div>
 
@@ -749,9 +749,9 @@ async function loadBackendEventForEdit(id) {
     form.feeType = event.feeType === 'paid' ? 'Paid' : 'Free'
     form.feeAmount = event.feeAmount || 0
     form.waitlist = event.waitlistEnabled ? 'enabled' : 'disabled'
-    form.contactName = event.contactName || ''
-    form.contactEmail = event.contactEmail || ''
-    form.instructions = event.instructions || ''
+    form.contactName = event.contactName || event.contact_name || ''
+    form.contactEmail = event.contactEmail || event.contact_email || ''
+    form.instructions = event.instructions || event.specialInstructions || event.special_instructions || ''
     form.startDateTime = toDateTimeLocal(event.startAt)
     form.endDateTime = toDateTimeLocal(event.endAt)
 
@@ -826,7 +826,7 @@ function hasBackendToken() {
 
 function toBackendCategory(category) {
   const normalized = String(category || '').toLowerCase()
-  if (['academic', 'sports', 'cultural', 'religious'].includes(normalized)) return normalized
+  if (['academic', 'sports', 'cultural', 'religious', 'workshop'].includes(normalized)) return normalized
   return 'academic'
 }
 

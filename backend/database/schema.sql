@@ -73,7 +73,7 @@ CREATE TABLE events (
     title VARCHAR(150) NOT NULL,
     description TEXT NULL,
     venue VARCHAR(200) NOT NULL,
-    category ENUM('academic', 'sports', 'cultural', 'religious') NOT NULL,
+    category ENUM('academic', 'sports', 'cultural', 'religious', 'workshop') NOT NULL,
     start_datetime DATETIME NOT NULL,
     end_datetime DATETIME NOT NULL,
     reg_deadline DATETIME NOT NULL,
