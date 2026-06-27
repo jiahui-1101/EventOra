@@ -89,7 +89,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import {
   loadNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
   saveNotifications,
+  usingBackendNotifications,
 } from '@/stores/notifications'
 
 const authStore = useAuthStore()
@@ -133,25 +136,35 @@ onMounted(async () => {
 watch(
   notifications,
   () => {
-    if (!loading.value && !loadError.value) {
+    if (!loading.value && !loadError.value && !usingBackendNotifications()) {
       saveNotifications(notifications.value)
     }
   },
   { deep: true }
 )
 
-function markAsRead(id) {
-  notifications.value = notifications.value.map((notification) =>
-    notification.id === id ? { ...notification, unread: false } : notification
-  )
+async function markAsRead(id) {
+  try {
+    await markNotificationAsRead(id)
+    notifications.value = notifications.value.map((notification) =>
+      notification.id === id ? { ...notification, unread: false } : notification
+    )
+  } catch (error) {
+    loadError.value = 'Failed to mark notification as read.'
+  }
 }
 
-function markAllAsRead() {
-  notifications.value = notifications.value.map((notification) =>
-    notification.audience === currentRole.value
-      ? { ...notification, unread: false }
-      : notification
-  )
+async function markAllAsRead() {
+  try {
+    await markAllNotificationsAsRead()
+    notifications.value = notifications.value.map((notification) =>
+      notification.audience === currentRole.value
+        ? { ...notification, unread: false }
+        : notification
+    )
+  } catch (error) {
+    loadError.value = 'Failed to mark notifications as read.'
+  }
 }
 </script>
 

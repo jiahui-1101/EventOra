@@ -183,18 +183,18 @@ const eventDetail = computed(() =>
   event.value ? getApprovalEventDetails(event.value) : {}
 )
 
-function approveEvent() {
-  updateApprovalEvent(event.value.id, 'approved', '')
+async function approveEvent() {
+  await updateApprovalEvent(event.value.id, 'approved', '')
   router.push('/admin/approval-queue')
 }
 
-function rejectEvent() {
+async function rejectEvent() {
   if (!rejectReason.value.trim()) {
     modalError.value = 'Please provide a rejection reason.'
     return
   }
 
-  updateApprovalEvent(event.value.id, 'rejected', rejectReason.value.trim())
+  await updateApprovalEvent(event.value.id, 'rejected', rejectReason.value.trim())
   router.push('/admin/approval-queue')
 }
 
