@@ -10,33 +10,35 @@
         <span class="badge badge-blue">{{ roleConfig.label }}</span>
       </div>
 
-      <div class="profile-layout">
+      <p v-if="loadingProfile" style="color:var(--muted);padding:20px 0;">Loading profile...</p>
+      <p v-else-if="loadError" class="auth-error">{{ loadError }}</p>
+
+      <div v-else class="profile-layout">
 
         <div class="profile-avatar-card">
           <div class="avatar-circle">{{ roleConfig.avatar }}</div>
-          <strong>{{ firstName }} {{ lastName }}</strong>
+          <strong>{{ name }}</strong>
           <span class="badge badge-blue">{{ roleConfig.label }}</span>
-          <p class="profile-society">{{ society || 'EventOra member' }}</p>
+          <p class="profile-society">{{ societyLabel }}</p>
           <button class="button button-ghost full-width" style="margin-top:8px;">Change photo</button>
         </div>
 
         <div class="profile-form-card">
           <h3>Personal Information</h3>
 
-          <div class="input-row-2">
-            <div class="input-label">First name <input type="text" v-model="firstName" /></div>
-            <div class="input-label">Last name <input type="text" v-model="lastName" /></div>
+          <div class="input-label">Full name <input type="text" v-model="name" /></div>
+
+          <div class="input-label">
+            Email
+            <input type="email" :value="email" disabled style="opacity:0.6;cursor:not-allowed;" />
           </div>
+          <p style="color:var(--muted);font-size:0.78rem;margin-top:-4px;">
+            Email can't be changed here. Contact a faculty admin if this needs to be corrected.
+          </p>
 
-          <div class="input-label">Email <input type="email" v-model="email" /></div>
-          <div class="input-label">Matric number <input type="text" v-model="matric" /></div>
-
-          <div class="profile-divider">Security</div>
-
-          <div class="input-label">Current password <input type="password" v-model="currentPw" /></div>
           <div class="input-row-2">
-            <div class="input-label">New password <input type="password" v-model="newPw" /></div>
-            <div class="input-label">Confirm <input type="password" v-model="confirmPw" /></div>
+            <div class="input-label">Matric number <input type="text" v-model="matricNo" /></div>
+            <div class="input-label">Phone <input type="text" v-model="phone" /></div>
           </div>
 
           <div v-if="errorMessage" class="auth-error">{{ errorMessage }}</div>
@@ -49,7 +51,9 @@
 
           <div class="profile-actions">
             <router-link class="button button-ghost" :to="roleConfig.dashboard">Cancel</router-link>
-            <button class="button button-primary" @click="handleSave">Save changes</button>
+            <button class="button button-primary" :disabled="isSaving" @click="handleSave">
+              {{ isSaving ? 'Saving...' : 'Save changes' }}
+            </button>
           </div>
         </div>
       </div>
@@ -87,17 +91,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { getMeApi } from '@/api/profile'
 
 const authStore = useAuthStore()
 
-const firstName = ref('')
-const lastName = ref('')
+const name = ref('')
 const email = ref('')
-const matric = ref('')
-const society = ref('')
-const currentPw = ref('')
-const newPw = ref('')
-const confirmPw = ref('')
+const matricNo = ref('')
+const phone = ref('')
+const societyMemberships = ref([])
+
+const loadingProfile = ref(true)
+const loadError = ref('')
+const isSaving = ref(false)
 const errorMessage = ref('')
 const showSuccess = ref(false)
 
@@ -109,51 +115,59 @@ const roleMap = {
 
 const roleConfig = computed(() => roleMap[authStore.user?.role] || roleMap.attendee)
 
-onMounted(() => {
-  const user = authStore.user
-  firstName.value = user?.firstName || ''
-  lastName.value = user?.lastName || ''
-  email.value = user?.email || ''
-  matric.value = user?.matric || ''
-  society.value = user?.society || ''
+// society_memberships is an array (PR1: an organiser could theoretically
+// belong to more than one society), so this just shows the first one -
+// good enough for a profile summary line, not meant to be exhaustive.
+const societyLabel = computed(() => {
+  if (societyMemberships.value.length === 0) return 'EventOra member'
+  return societyMemberships.value[0].society_name
 })
 
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+async function loadProfile() {
+  loadingProfile.value = true
+  loadError.value = ''
+
+  try {
+    const response = await getMeApi()
+    const profile = response.data.data
+
+    name.value = profile.name || ''
+    email.value = profile.email || ''
+    matricNo.value = profile.matric_no || ''
+    phone.value = profile.phone || ''
+    societyMemberships.value = profile.society_memberships || []
+  } catch (err) {
+    loadError.value = err.response?.data?.error?.message || 'Failed to load profile.'
+  } finally {
+    loadingProfile.value = false
+  }
 }
 
-function handleSave() {
+onMounted(loadProfile)
+
+async function handleSave() {
   errorMessage.value = ''
   showSuccess.value = false
 
-  if (!firstName.value || !lastName.value || !email.value) {
-    errorMessage.value = 'First name, last name, and email are required.'
-    return
-  }
-  if (!isValidEmail(email.value)) {
-    errorMessage.value = 'Please enter a valid email address.'
-    return
-  }
-  if (newPw.value && !currentPw.value) {
-    errorMessage.value = 'Enter your current password before changing password.'
-    return
-  }
-  if (newPw.value && newPw.value.length < 8) {
-    errorMessage.value = 'Password must be at least 8 characters.'
-    return
-  }
-  if (newPw.value && newPw.value !== confirmPw.value) {
-    errorMessage.value = 'Passwords do not match.'
+  if (!name.value.trim()) {
+    errorMessage.value = 'Name is required.'
     return
   }
 
-  authStore.updateProfile({
-    ...authStore.user,
-    firstName: firstName.value,
-    lastName: lastName.value,
-    email: email.value,
-    matric: matric.value,
+  isSaving.value = true
+
+  const result = await authStore.updateProfile({
+    name: name.value.trim(),
+    matric_no: matricNo.value.trim() || null,
+    phone: phone.value.trim() || null,
   })
+
+  isSaving.value = false
+
+  if (!result.success) {
+    errorMessage.value = result.message
+    return
+  }
 
   showSuccess.value = true
 }
