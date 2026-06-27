@@ -116,8 +116,10 @@ function formatBackendNotification(notification) {
 
 function getCurrentRole() {
   try {
-    const session = JSON.parse(localStorage.getItem('eventora_session') || 'null')
-    return session?.user?.role || localStorage.getItem('userRole') || 'attendee'
+    const user = JSON.parse(localStorage.getItem('eventora_user') || 'null')
+    const legacySession = JSON.parse(localStorage.getItem('eventora_session') || 'null')
+
+    return user?.role || legacySession?.user?.role || localStorage.getItem('userRole') || 'attendee'
   } catch (error) {
     return localStorage.getItem('userRole') || 'attendee'
   }
