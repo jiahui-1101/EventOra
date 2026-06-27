@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { loginApi, registerApi } from '@/api/auth'
+import { updateMeApi } from '@/api/profile'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('eventora_token') || null)
@@ -31,6 +32,9 @@ export const useAuthStore = defineStore('auth', () => {
       setSession(response.data.data)
       return { success: true }
     } catch (error) {
+      // error.response exists for any HTTP error status (401, 422, etc.) -
+      // .error.message is the human-readable string our AuthController
+      // always includes per the project's error response convention.
       const message = error.response?.data?.error?.message || 'Login failed. Please try again.'
       return { success: false, message }
     }
@@ -49,6 +53,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Calls PUT /api/me with whatever fields changed, then merges the
+  // response back into local state. The backend only accepts name,
+  // matric_no, phone, and avatar_url - email and password changes are
+  // deliberately out of scope (see AuthController::updateMe()).
+  async function updateProfile(payload) {
+    try {
+      await updateMeApi(payload)
+
+      user.value = { ...user.value, ...payload }
+      localStorage.setItem('eventora_user', JSON.stringify(user.value))
+
+      return { success: true }
+    } catch (error) {
+      const message = error.response?.data?.error?.message || 'Failed to update profile.'
+      return { success: false, message }
+    }
+  }
+
   function logout() {
     token.value = null
     user.value = null
@@ -58,6 +80,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     token, user, isLoggedIn, role, isAdmin, isOrganiser,
-    login, register, logout,
+    login, register, logout, updateProfile,
   }
 })
