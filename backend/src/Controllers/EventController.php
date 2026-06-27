@@ -14,7 +14,7 @@ use PDOException;
 // flow connected to the same events table used by Faculty Admin approval.
 class EventController
 {
-    private array $allowedCategories = ['academic', 'sports', 'cultural', 'religious'];
+    private array $allowedCategories = ['academic', 'sports', 'cultural', 'religious', 'workshop'];
     private array $allowedFeeTypes = ['free', 'paid'];
     private array $editableStatuses = ['draft', 'rejected', 'pending_approval'];
 

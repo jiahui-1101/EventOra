@@ -826,7 +826,7 @@ function hasBackendToken() {
 
 function toBackendCategory(category) {
   const normalized = String(category || '').toLowerCase()
-  if (['academic', 'sports', 'cultural', 'religious'].includes(normalized)) return normalized
+  if (['academic', 'sports', 'cultural', 'religious', 'workshop'].includes(normalized)) return normalized
   return 'academic'
 }
 
