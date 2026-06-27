@@ -224,9 +224,13 @@ function statusText(status) {
   return 'Pending Review'
 }
 
-function approveEvent(event) {
-  updateApprovalEvent(event.id, 'approved', '')
-  showToast('Event approved successfully.', 'success')
+async function approveEvent(event) {
+  try {
+    await updateApprovalEvent(event.id, 'approved', '')
+    showToast('Event approved successfully.', 'success')
+  } catch (error) {
+    showToast('Could not approve event. Please try again.', 'danger')
+  }
 }
 
 function openRejectModal(event) {
@@ -243,15 +247,19 @@ function closeModal() {
   modalError.value = ''
 }
 
-function confirmReject() {
+async function confirmReject() {
   if (!rejectReason.value.trim()) {
     modalError.value = 'Please provide a rejection reason.'
     return
   }
 
-  updateApprovalEvent(selectedEvent.value.id, 'rejected', rejectReason.value.trim())
-  showToast('Event rejected successfully.', 'danger')
-  closeModal()
+  try {
+    await updateApprovalEvent(selectedEvent.value.id, 'rejected', rejectReason.value.trim())
+    showToast('Event rejected successfully.', 'danger')
+    closeModal()
+  } catch (error) {
+    modalError.value = 'Could not reject event. Please try again.'
+  }
 }
 
 function showToast(message, type) {
