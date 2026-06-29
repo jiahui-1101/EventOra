@@ -1,46 +1,51 @@
-import axios from 'axios'
-
-const mockClient = axios.create({
-  baseURL: '/mock',
-  timeout: 5000,
-})
-
-export const TICKETING_MOCK_PATHS = Object.freeze({
-  events: '/events.json',
-  registrations: '/registrations.json',
-  tickets: '/tickets.json',
-})
-
-async function fetchCollection(path, collectionName) {
-  const response = await mockClient.get(path)
-
-  if (!Array.isArray(response.data)) {
-    throw new TypeError(`Expected ${collectionName} mock data to be an array.`)
-  }
-
-  return response.data
-}
-
-export function fetchEvents() {
-  return fetchCollection(TICKETING_MOCK_PATHS.events, 'events')
-}
-
-export function fetchRegistrations() {
-  return fetchCollection(TICKETING_MOCK_PATHS.registrations, 'registrations')
-}
-
-export function fetchTickets() {
-  return fetchCollection(TICKETING_MOCK_PATHS.tickets, 'tickets')
-}
+import apiClient from './client'
 
 export async function fetchTicketingSeed() {
-  const [events, registrations, tickets] = await Promise.all([
-    fetchEvents(),
-    fetchRegistrations(),
-    fetchTickets(),
+  const [eventsResponse, registrationsResponse, ticketsResponse] = await Promise.allSettled([
+    apiClient.get('/events'),
+    apiClient.get('/me/registrations'),
+    apiClient.get('/me/tickets'),
   ])
 
-  return { events, registrations, tickets }
+  return {
+    events: eventsResponse.status === 'fulfilled' ? eventsResponse.value.data.data : [],
+    registrations: registrationsResponse.status === 'fulfilled' ? registrationsResponse.value.data.data : [],
+    tickets: ticketsResponse.status === 'fulfilled' ? ticketsResponse.value.data.data.all || [] : [],
+  }
 }
 
-export default mockClient
+export function registerForEventApi(eventId) {
+  return apiClient.post(`/events/${eventId}/registrations`)
+}
+
+export function confirmRegistrationPaymentApi(registrationId) {
+  return apiClient.post(`/registrations/${registrationId}/payment`)
+}
+
+export function getMyRegistrationsApi() {
+  return apiClient.get('/me/registrations')
+}
+
+export function cancelRegistrationApi(registrationId) {
+  return apiClient.delete(`/registrations/${registrationId}`)
+}
+
+export function getMyTicketsApi() {
+  return apiClient.get('/me/tickets')
+}
+
+export function cancelTicketApi(ticketId) {
+  return apiClient.patch(`/tickets/${ticketId}/cancel`)
+}
+
+export function getCheckInTicketsApi(eventId) {
+  return apiClient.get(`/events/${eventId}/check-in/tickets`)
+}
+
+export function checkInTicketApi({ eventId, code, method = 'manual_entry' }) {
+  return apiClient.post('/check-ins', {
+    event_id: eventId,
+    code,
+    method,
+  })
+}
