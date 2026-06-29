@@ -15,3 +15,15 @@ export function approveApprovalEventApi(id) {
 export function rejectApprovalEventApi(id, reason) {
   return apiClient.post(`/admin/events/${id}/reject`, { reason })
 }
+
+export function getPendingOrganiserRequestsApi() {
+  return apiClient.get('/admin/organiser-requests/pending')
+}
+
+export function approveOrganiserRequestApi(id) {
+  return apiClient.post(`/admin/organiser-requests/${id}/approve`)
+}
+
+export function rejectOrganiserRequestApi(id, reason) {
+  return apiClient.post(`/admin/organiser-requests/${id}/reject`, { reason })
+}
