@@ -300,14 +300,91 @@ function badgeForStatus(s) {
 }
 
 function statusLabel(s) {
+  if (s === 'loading') return 'loading'
   if (s === 'pending_approval') return 'pending approval'
   return s || 'draft'
+}
+
+function formatDateOnly(date) {
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function formatTimeOnly(date) {
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function toFrontendCategory(categoryValue) {
+  if (!categoryValue) return 'Academic'
+
+  return String(categoryValue)
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+}
+
+function normaliseBackendEvent(rawEvent) {
+  const start = rawEvent.startAt ? new Date(rawEvent.startAt) : null
+  const end = rawEvent.endAt ? new Date(rawEvent.endAt) : null
+
+  return {
+    id: rawEvent.id,
+    title: rawEvent.title,
+    category: toFrontendCategory(rawEvent.category),
+    society: rawEvent.society || rawEvent.society_name || 'Society not set',
+    location: rawEvent.location || rawEvent.venue || 'Venue not set',
+    description: rawEvent.description || '',
+    bannerImage: rawEvent.posterUrl || rawEvent.poster_url || '',
+    posterImage: rawEvent.posterUrl || rawEvent.poster_url || '',
+    eventDate: rawEvent.eventDate || (start && !Number.isNaN(start.getTime()) ? formatDateOnly(start) : 'Not set'),
+    startTime: rawEvent.startTime || (start && !Number.isNaN(start.getTime()) ? formatTimeOnly(start) : '--'),
+    endTime: rawEvent.endTime || (end && !Number.isNaN(end.getTime()) ? formatTimeOnly(end) : '--'),
+    registrationDeadline: rawEvent.registrationDeadline || '',
+    feeType: rawEvent.feeType === 'paid' ? 'Paid' : 'Free',
+    feeAmount: rawEvent.feeAmount || 0,
+    status: rawEvent.status === 'pending' ? 'pending_approval' : rawEvent.status || 'draft',
+    registrations: rawEvent.registrations ?? rawEvent.confirmedCount ?? 0,
+    checkedIn: rawEvent.checkedIn ?? 0,
+    capacity: rawEvent.capacity ?? 0,
+  }
+}
+
+async function loadBackendEvent() {
+  const id = route.params.id || route.query.id
+
+  if (!id || !hasBackendToken.value) return
+
+  try {
+    const response = await getMyEventApi(id)
+    const event = normaliseBackendEvent(response.data.data)
+    backendEvent.value = event
+    const existingIndex = societyEvents.value.findIndex((ev) => String(ev.id) === String(event.id))
+
+    if (existingIndex >= 0) {
+      societyEvents.value.splice(existingIndex, 1, event)
+    } else {
+      societyEvents.value = [event, ...societyEvents.value]
+    }
+  } catch (error) {
+    backendEvent.value = null
+    console.warn('Falling back to local organiser event detail:', error)
+  } finally {
+    backendEventLoaded.value = true
+  }
 }
 
 const approvalNoteClass = computed(() => {
   const map = {
     published: 'approval-note approval-published',
     pending_approval: 'approval-note approval-pending',
+    completed: 'approval-note approval-published',
     rejected: 'approval-note approval-rejected',
     cancelled: 'approval-note approval-cancelled',
   }
