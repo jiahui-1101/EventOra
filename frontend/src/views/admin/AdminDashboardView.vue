@@ -580,6 +580,18 @@ function formatRequestDate(value) {
   outline-offset: 3px;
 }
 
+.admin-table td small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (max-width: 980px) {
   .admin-dashboard-layout {
     grid-template-columns: 1fr;
