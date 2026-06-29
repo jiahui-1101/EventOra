@@ -295,6 +295,7 @@ function badgeForStatus(s) {
   if (s === 'pending_approval') return 'badge-yellow'
   if (s === 'completed') return 'badge-purple'
   if (s === 'rejected' || s === 'cancelled') return 'badge-red'
+  if (s === 'loading') return 'badge-gray'
   return 'badge-blue'
 }
 
