@@ -159,6 +159,21 @@ async function handleRegister() {
   }
 
   showSuccess.value = true
+  successMessage.value = role.value === 'organiser'
+    ? 'Account created. Your society organiser access is pending Faculty Admin approval.'
+    : 'Account created successfully. Redirecting to sign in...'
   setTimeout(() => router.push('/login'), 900)
 }
 </script>
+
+<style scoped>
+.organiser-request-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.organiser-request-fields textarea {
+  width: 100%;
+  resize: vertical;
+}
+</style>
