@@ -118,18 +118,35 @@
 
     <section class="page-section">
       <h2>Activity Monitoring</h2>
+      <p v-if="loadingActivity" class="muted-text">Loading activity metrics...</p>
+      <p v-else-if="activityError" class="auth-error">{{ activityError }}</p>
       <div class="stats-grid" style="margin-top:1rem;">
-        <div class="stat-card"><span>Total Events (This Month)</span><strong>18</strong></div>
-        <div class="stat-card"><span>Active Societies</span><strong>12</strong></div>
-        <div class="stat-card"><span>Total Registrations</span><strong>342</strong></div>
-        <div class="stat-card"><span>Attendance Rate</span><strong>74%</strong></div>
+        <div class="stat-card">
+          <span>Total Events (This Month)</span>
+          <strong>{{ activityMetrics.totalEventsThisMonth }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Active Societies</span>
+          <strong>{{ activityMetrics.totalSocieties }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Total Registrations</span>
+          <strong>{{ activityMetrics.totalRegistrations }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Attendance Rate</span>
+          <strong>{{ activityMetrics.attendanceRateLabel }}</strong>
+        </div>
       </div>
 
       <div class="capacity-bar" style="margin: 1rem 0;">
-        <span style="width:74%"></span>
+        <span :style="{ width: activityMetrics.attendanceRateBar + '%' }"></span>
       </div>
 
-      <p>Most popular category: <strong>Academic</strong> (42% of registrations)</p>
+      <p>
+        Most popular category:
+        <strong>{{ activityMetrics.popularCategoryLabel }}</strong>
+      </p>
     </section>
 
     <div
