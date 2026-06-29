@@ -116,12 +116,13 @@
 
 <div class="event-image-container" style="height: 160px; position: relative; overflow: hidden; border-radius: 12px 12px 0 0; background: #f1f5f9;">
   
-  <img 
-    :src="event.posterImage" 
-    :alt="event.title"
-    loading="lazy" 
-    style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; display: block;"
-  />
+  <img
+  :src="event.posterImage"
+  :alt="event.title"
+  loading="lazy"
+  style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; display: block;"
+  @error="useFallbackPoster($event, event)"
+/>
 
   <span :class="['badge', event.badgeClass]" style="position: absolute; top: 12px; left: 12px; z-index: 2;">
     {{ capitalize(event.category) }}
@@ -222,6 +223,11 @@ const eventFallbackPosters = {
   'event-startup-pitch-2026': 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=900&q=80',
 }
 
+const eventTitleFallbackPosters = {
+  'Campus Cultural Night': 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=900&q=80',
+  'Campus Photography Workshop': 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=80',
+}
+
 const fallbackPosterPool = [
   'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=80',
   'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=900&q=80',
@@ -229,9 +235,6 @@ const fallbackPosterPool = [
   'https://images.unsplash.com/photo-1515169067865-5387ec356754?auto=format&fit=crop&w=900&q=80',
   'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=900&q=80',
 ]
-
-const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
-  .replace(/\/api\/?$/, '')
 
 function resolveEventPoster(event, category) {
   const uploaded = event.posterUrl || event.poster_url || event.posterImage
@@ -243,12 +246,26 @@ function resolveEventPoster(event, category) {
   const eventId = String(event.id || '')
   if (eventFallbackPosters[eventId]) return eventFallbackPosters[eventId]
 
-  const hash = [...eventId || event.title || category].reduce(
+  if (eventTitleFallbackPosters[event.title]) {
+    return eventTitleFallbackPosters[event.title]
+  }
+
+  const hash = [...(eventId || event.title || category)].reduce(
     (sum, char) => sum + char.charCodeAt(0),
     0
   )
 
   return fallbackPosterPool[hash % fallbackPosterPool.length]
+}
+
+function useFallbackPoster(imageEvent, event) {
+  const fallback =
+    eventTitleFallbackPosters[event.title] ||
+    eventFallbackPosters[String(event.id || '')] ||
+    categoryDefaultBanners[event.category] ||
+    categoryDefaultBanners.academic
+
+  imageEvent.target.src = fallback
 }
 
 const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
