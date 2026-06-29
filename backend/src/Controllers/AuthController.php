@@ -239,6 +239,15 @@ class AuthController
 
         $profile['society_memberships'] = $memberships;
 
+        $requestStmt = $db->prepare(
+            'SELECT id, society_name, society_description, status, rejection_reason, created_at, reviewed_at
+             FROM organiser_society_requests
+             WHERE user_id = :user_id
+             ORDER BY created_at DESC'
+        );
+        $requestStmt->execute(['user_id' => $userId]);
+        $profile['organiser_requests'] = $requestStmt->fetchAll();
+
         return $this->successResponse($response, $profile, null, 200);
     }
 
