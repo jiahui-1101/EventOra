@@ -65,9 +65,6 @@ class DashboardController
                     'confirmed_count' => 0,
                     'use_percent' => null,
                 ],
-                // TODO: replace with a real query once the `feedback`
-                // table exists (Should-Have feature, not yet built -
-                // see PR1 5.2). Until then there is nothing to average.
                 'average_rating' => null,
             ], null, 200);
         }
@@ -94,14 +91,7 @@ class DashboardController
                 'confirmed_count' => $registrationStats['confirmed'],
                 'use_percent' => $capacityStats['use_percent'],
             ],
-            // TODO: replace with a real query once the `feedback` table
-            // exists. Per PR1 5.2, feedback is a Should-Have feature and
-            // its schema has not been created yet (it's one of the 4
-            // tables - feedback/certificates/notifications/favorites -
-            // deliberately deferred until after the 9 Must-Have tables).
-            // Once it exists, this becomes something like:
-            //   SELECT AVG(rating) FROM feedback WHERE event_id IN (...)
-            'average_rating' => null,
+            'average_rating' => $this->getAverageRating($db, $eventIds),
         ];
 
         return $this->successResponse($response, $data, null, 200);
@@ -357,6 +347,20 @@ class DashboardController
             'total_capacity' => $totalCapacity,
             'use_percent' => $this->safePercentage($confirmedCount, $totalCapacity),
         ];
+    }
+
+    private function getAverageRating(PDO $db, array $eventIds): ?float
+    {
+        $placeholders = $this->buildPlaceholders($eventIds);
+        $stmt = $db->prepare(
+            "SELECT AVG(rating) AS average_rating
+             FROM feedback
+             WHERE event_id IN ({$placeholders})"
+        );
+        $stmt->execute($eventIds);
+        $average = $stmt->fetch()['average_rating'];
+
+        return $average === null ? null : round((float) $average, 1);
     }
 
     // Shared percentage helper. Returns null (not 0) when the
