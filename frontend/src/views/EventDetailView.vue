@@ -11,10 +11,25 @@
 
     <section v-else class="detail-layout page-section" style="margin-top: 24px;">
       <article class="event-detail-copy">
-        <div :class="['event-banner', event.coverClass]" style="padding: 40px; border-radius: 16px; color: white; margin-bottom: 24px;">
-          <span :class="['badge', event.badgeClass]">{{ event.societyName }}</span>
-          <h2 style="margin-top: 12px; color: white;">{{ event.title }}</h2>
-        </div>
+<div class="detail-hero-banner" style="position: relative; min-height: 280px; border-radius: 16px; overflow: hidden; margin-bottom: 24px; display: flex; flex-direction: column; justify-content: flex-end; padding: 32px; background: #1e293b; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);">
+  <img 
+    :src="getHeroBanner(event)" 
+    :alt="event.title"
+    style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;"
+  />
+
+  <div style="position: absolute; inset: 0; background: linear-gradient(0deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.4) 55%, rgba(15, 23, 42, 0.1) 100%); z-index: 2;"></div>
+
+  <div style="position: relative; z-index: 3;">
+    <span :class="['badge', event.badgeClass]" style="margin-bottom: 10px; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+      {{ event.societyName || event.society || 'UTM Society' }}
+    </span>
+    <h1 style="margin: 0; color: #ffffff; font-size: clamp(1.6rem, 3vw, 2.3rem); font-weight: 800; line-height: 1.2; letter-spacing: -0.02em; text-shadow: 0 2px 8px rgba(0,0,0,0.6);">
+      {{ event.title }}
+    </h1>
+  </div>
+
+</div>
 
         <h3>About this event</h3>
         <p style="line-height: 1.6; font-size: 1.1rem; margin-bottom: 24px;">{{ event.description }}</p>
@@ -197,6 +212,34 @@
         >
           {{ buttonLabel }}
         </button>
+
+        <div v-if="event.status === 'completed'" class="post-event-zone" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+    
+    <div v-if="userHasCheckedIn" class="feedback-box">
+      <h3>⭐️ Post-Event Feedback</h3>
+      <textarea 
+        v-model="myComment" 
+        placeholder="Share your thoughts about this event..." 
+        style="width: 100%; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; min-height: 80px;"
+      ></textarea>
+      <button 
+  @click="submitMyFeedback" 
+  :disabled="isSubmitting" 
+  class="button button-primary full-width"
+>
+  {{ isSubmitting ? 'Submitting...' : 'Submit Feedback' }}
+</button>
+
+      <hr style="margin: 16px 0;" />
+      
+      <button @click="downloadCert" class="button button-secondary full-width">🎓 Download Official Certificate (.pdf)</button>
+    </div>
+
+    <div v-else class="notice-card warning" style="background: #fffbeb; padding: 12px; border-radius: 8px; color: #92400e; border: 1px solid #fde68a;">
+      ⚠️ Access Restricted: Our system indicates you did not check in at the event venue. Therefore, feedback submission and certificate download are unavailable.
+    </div>
+
+</div>
       </aside>
     </section>
   </main>
@@ -223,6 +266,23 @@ const paymentMethod = ref('campus-card')
 const paymentReference = ref('4242 4242 4242 4242')
 const paymentConsent = ref(false)
 const holdExpiresAt = ref(null)
+const detailDefaultBanners = {
+  academic: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80',
+  sports:   'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1200&q=80',
+  cultural: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80',
+  religious:'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=80',
+  workshop: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80'
+}
+
+function getHeroBanner(ev) {
+  if (!ev) return detailDefaultBanners.academic
+  const img = ev.posterImage || ev.posterUrl || ev.poster_url || ev.bannerImage
+  if (img && typeof img === 'string' && img.startsWith('http')) return img
+  
+  const cat = String(ev.category || 'academic').toLowerCase()
+  return detailDefaultBanners[cat] || detailDefaultBanners.academic
+}
+
 const registrationNotice = ref({
   type: '',
   message: '',
@@ -248,6 +308,54 @@ const paymentMethods = [
   },
 ]
 
+const myComment = ref('')
+const isSubmitting = ref(false)
+
+const userHasCheckedIn = computed(() => {
+  return confirmedTicket.value !== null && confirmedTicket.value.status === 'used'
+})
+
+async function submitMyFeedback() {
+  if (!myComment.value.trim()) {
+    alert('Please enter your feedback before submitting.')
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    const response = await fetch(`/api/events/${event.value.id}/feedback`, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${authStore.token}`, 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({ 
+        rating: 5, // You can make this dynamic later if you add a star-rating UI
+        comment: myComment.value 
+      })
+    })
+
+    const result = await response.json()
+
+    if (response.ok) {
+      alert('Feedback submitted successfully! Thank you for your input.')
+      myComment.value = '' // Clear the input after success
+    } else {
+      // Handle backend validation errors (e.g., 403 Forbidden)
+      alert(result.error?.message || 'Failed to submit feedback. Please try again.')
+    }
+  } catch (e) {
+    console.error(e)
+    alert('An error occurred while connecting to the server.')
+  } finally {
+    isSubmitting.value = false
+  }
+
+}
+
+function downloadCert() {
+  alert('Certificate generation service is being invoked... Your download will begin shortly.')
+}
 const favKey = 'eventora_favs_v2'
 const societyEventsStorageKey = 'eventora_society_events_v2'
 

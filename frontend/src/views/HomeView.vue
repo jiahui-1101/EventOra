@@ -113,25 +113,28 @@
         :key="event.id"
         class="event-card"
       >
-        <div :class="['event-cover', event.coverClass]">
-          <span :class="['badge', event.badgeClass]">
-            {{ capitalize(event.category) }}
-          </span>
 
-          <span
-            v-if="event.seatsLeft > 0"
-            class="badge badge-gray"
-          >
-            {{ event.seatsLeft }} seats left
-          </span>
+<div class="event-image-container" style="height: 160px; position: relative; overflow: hidden; border-radius: 12px 12px 0 0; background: #f1f5f9;">
+  
+  <img 
+    :src="event.posterImage" 
+    :alt="event.title"
+    loading="lazy" 
+    style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; display: block;"
+  />
 
-          <span
-            v-else
-            class="badge badge-yellow"
-          >
-            Full
-          </span>
-        </div>
+  <span :class="['badge', event.badgeClass]" style="position: absolute; top: 12px; left: 12px; z-index: 2;">
+    {{ capitalize(event.category) }}
+  </span>
+
+  <span v-if="event.seatsLeft > 0" class="badge badge-gray" style="position: absolute; top: 12px; right: 12px; z-index: 2; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px);">
+    {{ event.seatsLeft }} seats left
+  </span>
+  <span v-else class="badge badge-yellow" style="position: absolute; top: 12px; right: 12px; z-index: 2;">
+    Full
+  </span>
+
+</div>
 
         <div class="event-card-body">
           <span class="event-date">
@@ -197,6 +200,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { loadNotifications } from '@/stores/notifications'
 import apiClient from '@/api/client'
+
+const categoryDefaultBanners = {
+  academic: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=700&q=80', // 敲代码的极客茶话会
+  sports:   'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80', // 热血体育馆
+  cultural: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=700&q=80', // 舞台灯光晚会
+  religious:'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=700&q=80', // 庄严肃穆建筑群
+  workshop: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=700&q=80'  // 围坐讨论工作坊
+}
 
 const authStore = useAuthStore()
 
@@ -384,6 +395,7 @@ function toPublicEvent(event) {
     seatsLeft: Math.max(capacity - confirmed, 0),
     coverClass: event.coverClass || coverForCategory(category),
     badgeClass: event.badgeClass || badgeForCategory(category),
+    posterImage: event.posterUrl || event.poster_url || categoryDefaultBanners[category] || categoryDefaultBanners.academic,
   }
 }
 

@@ -12,6 +12,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/event/:id',
+    name: 'event-detail',
+    component: () => import('@/views/EventDetailView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
   path: '/notifications',
   name: 'notifications',
   component: () => import('@/views/NotificationView.vue'),
