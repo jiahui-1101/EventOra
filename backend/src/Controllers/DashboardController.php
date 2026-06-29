@@ -452,6 +452,29 @@ class DashboardController
         return $average === null ? null : round((float) $average, 1);
     }
 
+    private function getMostPopularCategory(PDO $db): ?array
+    {
+        $stmt = $db->query(
+            "SELECT e.category, COUNT(*) AS registrations
+             FROM registrations r
+             JOIN events e ON e.id = r.event_id
+             WHERE r.status <> 'cancelled'
+             GROUP BY e.category
+             ORDER BY registrations DESC, e.category ASC
+             LIMIT 1"
+        );
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            return null;
+        }
+
+        return [
+            'category' => $row['category'],
+            'registrations' => (int) $row['registrations'],
+        ];
+    }
+
     // Shared percentage helper. Returns null (not 0) when the
     // denominator is zero, because "0% capacity used" and "we don't
     // have a capacity to measure against" are different facts - a null
