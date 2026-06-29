@@ -7,7 +7,7 @@ if (params.get("logout") === "1") {
 const roleChips = document.querySelectorAll(".auth-role-chip");
 let selectedRole = "attendee";
 
-const demoProfiles = {
+const roleProfiles = {
   attendee: {
     firstName: "Student",
     lastName: "User",
@@ -77,7 +77,7 @@ document.getElementById("loginBtn").addEventListener("click", () => {
   const registeredUser = JSON.parse(localStorage.getItem("eventora_registered_user") || "null");
   const baseProfile = registeredUser && registeredUser.email === email
     ? registeredUser
-    : demoProfiles[selectedRole];
+    : roleProfiles[selectedRole];
 
   const sessionUser = {
     ...baseProfile,

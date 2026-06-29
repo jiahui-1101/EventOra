@@ -213,7 +213,7 @@
 
 .detail-layout,
 .scanner-layout,
-.mock-modal {
+.payment-panel {
   display: grid;
   gap: 20px;
 }
@@ -450,7 +450,7 @@
   color: var(--muted);
 }
 
-.mock-modal {
+.payment-panel {
   align-items: start;
 }
 

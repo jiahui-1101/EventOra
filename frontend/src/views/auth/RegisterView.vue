@@ -47,16 +47,35 @@
             </div>
           </div>
 
+          <div v-if="role === 'organiser'" class="organiser-request-fields">
+            <div class="input-label">
+              Society name
+              <input type="text" v-model="societyName" placeholder="e.g. Computing Society" />
+            </div>
+            <div class="input-label">
+              Society description
+              <textarea
+                v-model="societyDescription"
+                rows="3"
+                placeholder="Briefly describe the society you represent"
+              ></textarea>
+            </div>
+          </div>
+
           <div v-if="errorMessage" class="auth-error">{{ errorMessage }}</div>
           <div
             v-if="showSuccess"
             style="display:block;margin:10px 0;padding:10px 14px;border-radius:var(--radius-sm);background:var(--success-soft);color:#065f46;font-size:0.84rem;"
           >
-            Account created successfully. Redirecting to sign in...
+            {{ successMessage }}
           </div>
 
-          <button class="button button-primary full-width auth-submit" @click="handleRegister">
-            Create account
+          <button
+            class="button button-primary full-width auth-submit"
+            @click="handleRegister"
+            :disabled="isSubmitting"
+          >
+            {{ isSubmitting ? 'Creating account...' : 'Create account' }}
           </button>
           <p class="auth-footer-text">
             Already have an account? <router-link class="auth-link" to="/login">Sign in</router-link>
@@ -82,14 +101,18 @@ const email = ref('')
 const password = ref('')
 const confirm = ref('')
 const role = ref('attendee')
+const societyName = ref('')
+const societyDescription = ref('')
 const errorMessage = ref('')
+const successMessage = ref('')
 const showSuccess = ref(false)
+const isSubmitting = ref(false)
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
-function handleRegister() {
+async function handleRegister() {
   errorMessage.value = ''
   showSuccess.value = false
 
@@ -109,17 +132,48 @@ function handleRegister() {
     errorMessage.value = 'Passwords do not match.'
     return
   }
+  if (role.value === 'organiser' && !societyName.value.trim()) {
+    errorMessage.value = 'Please enter the society you are applying to manage.'
+    return
+  }
 
-  authStore.register({
-    firstName: firstName.value,
-    lastName: lastName.value,
+  isSubmitting.value = true
+
+  // Backend's users table only has a single `name` column (see PR1 data
+  // dictionary) - first/last name are kept as separate fields in this
+  // form purely for UX, then combined here before sending.
+  const result = await authStore.register({
+    name: `${firstName.value} ${lastName.value}`,
     email: email.value,
-    matric: '',
+    password: password.value,
     role: role.value,
-    society: role.value === 'organiser' ? 'Pending society assignment' : 'General Attendee',
+    society_name: role.value === 'organiser' ? societyName.value.trim() : undefined,
+    society_description: role.value === 'organiser' ? societyDescription.value.trim() : undefined,
   })
 
+  isSubmitting.value = false
+
+  if (!result.success) {
+    errorMessage.value = result.message
+    return
+  }
+
   showSuccess.value = true
+  successMessage.value = role.value === 'organiser'
+    ? 'Account created. Your society organiser access is pending Faculty Admin approval.'
+    : 'Account created successfully. Redirecting to sign in...'
   setTimeout(() => router.push('/login'), 900)
 }
 </script>
+
+<style scoped>
+.organiser-request-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.organiser-request-fields textarea {
+  width: 100%;
+  resize: vertical;
+}
+</style>

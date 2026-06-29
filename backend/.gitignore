@@ -1,0 +1,4 @@
+/vendor/
+.env
+/public/uploads/event-posters/*
+!/public/uploads/event-posters/.gitkeep

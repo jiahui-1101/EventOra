@@ -41,10 +41,13 @@
         <label class="form-label">
           Society *
           <select v-model="form.society">
-            <option>Computer Society UTM</option>
-            <option>IEEE UTM</option>
-            <option>Sports Club UTM</option>
-            <option>Cultural Club</option>
+            <option
+              v-for="society in societyOptions"
+              :key="society.id || society.name"
+              :value="society.name"
+            >
+              {{ society.name }}
+            </option>
           </select>
         </label>
       </div>
@@ -75,7 +78,7 @@
       </label>
 
       <label class="form-label">
-        Banner image
+        Banner preview image
         <input
           ref="bannerInput"
           type="file"
@@ -128,7 +131,7 @@
               <input type="radio" value="Free" v-model="form.feeType" />
               Free event
             </strong>
-            <p>Students can register without mock payment.</p>
+            <p>Students can register without payment confirmation.</p>
           </div>
 
           <div class="ticket-option">
@@ -136,7 +139,7 @@
               <input type="radio" value="Paid" v-model="form.feeType" />
               Paid event
             </strong>
-            <p>Students complete mock payment before ticket confirmation.</p>
+            <p>Students complete payment confirmation before ticket confirmation.</p>
           </div>
         </div>
       </label>
@@ -175,7 +178,7 @@
       <h2>Step 3 - Event Details</h2>
 
       <label class="form-label">
-        Event poster *
+        Event poster
         <input
           ref="posterInput"
           type="file"
@@ -283,18 +286,20 @@
         <div class="detail-list">
           <div><dt>Basic information</dt><dd>Complete</dd></div>
           <div><dt>Ticketing</dt><dd>{{ form.feeType }} event configured</dd></div>
-          <div><dt>Poster</dt><dd>Ready for review</dd></div>
+          <div><dt>Poster</dt><dd>{{ form.posterImage ? 'Ready for review' : 'Not uploaded' }}</dd></div>
           <div><dt>Approval status</dt><dd>Draft → Pending approval</dd></div>
         </div>
+
+        <p v-if="stepError" class="auth-error">{{ stepError }}</p>
 
         <div class="create-actions">
           <button class="button button-ghost" @click="prevStep">Back</button>
 
           <div style="display:flex;gap:10px;">
-            <button class="button button-secondary" @click="submitEvent('draft')">
+            <button class="button button-secondary" :disabled="isSubmitting" @click="submitEvent('draft')">
               Save Draft
             </button>
-            <button class="button button-primary" @click="submitEvent('submitted')">
+            <button class="button button-primary" :disabled="isSubmitting" @click="submitEvent('submitted')">
               Submit for Approval
             </button>
           </div>
@@ -309,6 +314,15 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { addApprovalEvent } from '@/stores/approvalEvents'
 import { addNotification } from '@/stores/notifications'
+import {
+  createDraftEventApi,
+  createEventApi,
+  getMyEventApi,
+  getMySocietiesApi,
+  updateDraftEventApi,
+  updateEventApi,
+  uploadEventPosterApi,
+} from '@/api/events'
 
 const route = useRoute()
 const router = useRouter()
@@ -329,7 +343,7 @@ const defaultEvents = [
     society: 'Computer Society UTM',
     location: 'N28A Innovation Lab',
     description:
-      'A practical evening workshop where students learn how to plan, prototype, and demo a simple AI-powered application.',
+      'A practical evening workshop where students learn how to plan, working version, and present a simple AI-powered application.',
     bannerImage: '',
     posterImage: '',
     eventDate: '12 Jun 2026',
@@ -355,7 +369,7 @@ const defaultEvents = [
     society: 'Computer Society UTM',
     location: 'FAB Lab',
     description:
-      'A full-day hackathon for student teams to build software prototypes, receive mentor feedback, and present solutions.',
+      'A full-day hackathon for student teams to build working software builds, receive mentor feedback, and present solutions.',
     bannerImage: '',
     posterImage: '',
     eventDate: '5 Jul 2026',
@@ -405,6 +419,14 @@ const defaultEvents = [
 const currentStep = ref(0)
 const stepError = ref('')
 const editingEventId = ref(null)
+const isSubmitting = ref(false)
+const posterFile = ref(null)
+const societyOptions = ref([
+  { id: null, name: 'Computer Society UTM' },
+  { id: null, name: 'IEEE UTM' },
+  { id: null, name: 'Sports Club UTM' },
+  { id: null, name: 'Cultural Club' },
+])
 
 const form = reactive({
   title: '',
@@ -464,9 +486,16 @@ const formattedDeadline = computed(() => {
 
 const previewImage = computed(() => form.posterImage || form.bannerImage)
 
-onMounted(() => {
+onMounted(async () => {
+  await loadBackendSocieties()
+
   const editId = route.query.edit
   if (!editId) return
+
+  if (hasBackendToken()) {
+    const loaded = await loadBackendEventForEdit(editId)
+    if (loaded) return
+  }
 
   const storedEvents = JSON.parse(localStorage.getItem(eventsStorageKey) || 'null')
   const events = storedEvents || defaultEvents
@@ -513,6 +542,10 @@ function handleImageUpload(event, targetField, errorMessage) {
     return
   }
 
+  if (targetField === 'posterImage') {
+    posterFile.value = file
+  }
+
   const reader = new FileReader()
   reader.onload = () => {
     form[targetField] = reader.result
@@ -552,7 +585,12 @@ function prevStep() {
   currentStep.value--
 }
 
-function submitEvent(action) {
+async function submitEvent(action) {
+  if (hasBackendToken()) {
+    await submitEventToBackend(action)
+    return
+  }
+
   const storedEvents = JSON.parse(localStorage.getItem(eventsStorageKey) || 'null')
   const events = storedEvents || [...defaultEvents]
   const existingEvent = events.find((ev) => String(ev.id) === String(editingEventId.value))
@@ -618,6 +656,113 @@ function submitEvent(action) {
   router.push({ path: '/organiser/dashboard', query: { eventSaved: action } })
 }
 
+async function submitEventToBackend(action) {
+  stepError.value = ''
+  isSubmitting.value = true
+
+  try {
+    const payload = buildBackendEventPayload()
+    const response = editingEventId.value
+      ? await submitExistingBackendEvent(action, payload)
+      : await submitNewBackendEvent(action, payload)
+
+    const eventId = response.data.data?.id || editingEventId.value
+
+    if (posterFile.value && eventId) {
+      await uploadEventPosterApi(eventId, posterFile.value)
+    }
+
+    router.push({ path: '/organiser/dashboard', query: { eventSaved: action } })
+  } catch (error) {
+    stepError.value = getApiErrorMessage(error, 'Could not save event to backend.')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+function submitNewBackendEvent(action, payload) {
+  return action === 'draft'
+    ? createDraftEventApi(payload)
+    : createEventApi(payload)
+}
+
+function submitExistingBackendEvent(action, payload) {
+  return action === 'draft'
+    ? updateDraftEventApi(editingEventId.value, payload)
+    : updateEventApi(editingEventId.value, payload)
+}
+
+function buildBackendEventPayload() {
+  const society = societyOptions.value.find((item) => item.name === form.society)
+  const societyId = society?.id
+
+  if (!societyId) {
+    throw new Error('Please login with a backend organiser account that belongs to a society.')
+  }
+
+  return {
+    society_id: societyId,
+    title: form.title,
+    description: form.description,
+    venue: form.location,
+    category: toBackendCategory(form.category),
+    start_datetime: toBackendDateTime(form.startDateTime),
+    end_datetime: toBackendDateTime(form.endDateTime),
+    reg_deadline: toBackendDateTime(form.deadline),
+    capacity: Number(form.capacity),
+    fee_type: form.feeType === 'Paid' ? 'paid' : 'free',
+    fee_amount: form.feeType === 'Paid' ? Number(form.feeAmount || 0) : 0,
+    waitlist_enabled: form.waitlist === 'enabled',
+    contact_person: form.contactName,
+    contact_email: form.contactEmail,
+    special_instructions: form.instructions,
+  }
+}
+
+async function loadBackendSocieties() {
+  if (!hasBackendToken()) return
+
+  try {
+    const response = await getMySocietiesApi()
+    if (Array.isArray(response.data.data) && response.data.data.length > 0) {
+      societyOptions.value = response.data.data
+      form.society = response.data.data[0].name
+    }
+  } catch (error) {
+    // Keep the static society dropdown as fallback.
+  }
+}
+
+async function loadBackendEventForEdit(id) {
+  try {
+    const response = await getMyEventApi(id)
+    const event = response.data.data
+
+    editingEventId.value = event.id
+    form.title = event.title || ''
+    form.category = toFrontendCategory(event.category)
+    form.society = event.society || event.society_name || form.society
+    form.location = event.venue || event.location || ''
+    form.description = event.description || ''
+    form.bannerImage = event.posterUrl || event.poster_url || ''
+    form.posterImage = event.posterUrl || event.poster_url || ''
+    form.capacity = event.capacity || null
+    form.deadline = toDateTimeLocal(event.registrationDeadline)
+    form.feeType = event.feeType === 'paid' ? 'Paid' : 'Free'
+    form.feeAmount = event.feeAmount || 0
+    form.waitlist = event.waitlistEnabled ? 'enabled' : 'disabled'
+    form.contactName = event.contactName || event.contact_name || ''
+    form.contactEmail = event.contactEmail || event.contact_email || ''
+    form.instructions = event.instructions || event.specialInstructions || event.special_instructions || ''
+    form.startDateTime = toDateTimeLocal(event.startAt)
+    form.endDateTime = toDateTimeLocal(event.endAt)
+
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
 function addSubmissionNotifications(event) {
   addNotification({
     audience: 'organiser',
@@ -675,6 +820,30 @@ function toDateTimeLocal(value) {
   const pad = (number) => String(number).padStart(2, '0')
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function hasBackendToken() {
+  return Boolean(localStorage.getItem('eventora_token'))
+}
+
+function toBackendCategory(category) {
+  const normalized = String(category || '').toLowerCase()
+  if (['academic', 'sports', 'cultural', 'religious', 'workshop'].includes(normalized)) return normalized
+  return 'academic'
+}
+
+function toFrontendCategory(category) {
+  const normalized = String(category || 'academic').toLowerCase()
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+function toBackendDateTime(value) {
+  return String(value || '').replace('T', ' ')
+}
+
+function getApiErrorMessage(error, fallback) {
+  if (error?.message && !error.response) return error.message
+  return error?.response?.data?.error?.message || fallback
 }
 </script>
 

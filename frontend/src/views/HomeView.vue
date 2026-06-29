@@ -34,11 +34,11 @@
         <div style="margin-top: 14px; display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">🔥 Highlight:</span>
           <router-link 
-            to="/event/event-annual-tech-2026" 
+            to="/event/event-ai-app-2026" 
             class="badge badge-blue" 
             style="text-decoration: none; font-size: 0.85rem; padding: 5px 10px; font-weight: 600; cursor: pointer;"
           >
-            Annual Tech Symposium 2026 &rarr;
+            Build Your First AI App &rarr;
           </router-link>
         </div>
       </div>
@@ -239,7 +239,7 @@ const basePublicEvents = [
     category: 'academic',
     price: 8,
     priceType: 'paid',
-    date: '2026-06-12T19:30:00',
+    date: '2026-07-10T19:30:00+08:00',
     venue: 'N28A Innovation Lab',
     seatsLeft: 12,
     coverClass: 'academic-cover',
@@ -252,11 +252,24 @@ const basePublicEvents = [
     category: 'cultural',
     price: 0,
     priceType: 'free',
-    date: '2026-06-20T18:30:00',
+    date: '2026-07-18T18:30:00+08:00',
     venue: 'Dewan Sultan Iskandar',
     seatsLeft: 54,
     coverClass: 'culture-cover',
     badgeClass: 'badge-purple',
+  },
+  {
+    id: 'event-hackathon-2026',
+    title: 'Hackathon 2026',
+    society: 'Computer Society UTM',
+    category: 'academic',
+    price: 15,
+    priceType: 'paid',
+    date: '2026-07-20T09:00:00+08:00',
+    venue: 'FAB Lab',
+    seatsLeft: 18,
+    coverClass: 'academic-cover',
+    badgeClass: 'badge-blue',
   },
   {
     id: 'event-futsal-cup-2026',
@@ -265,11 +278,76 @@ const basePublicEvents = [
     category: 'sports',
     price: 0,
     priceType: 'free',
-    date: '2026-06-28T09:00:00',
+    date: '2026-07-25T09:00:00+08:00',
     venue: 'UTM Sports Hall',
     seatsLeft: 0,
     coverClass: 'sports-cover',
     badgeClass: 'badge-green',
+  },
+  {
+    id: 'event-traditional-dance-2026',
+    title: 'Traditional Dance Workshop',
+    society: 'Campus Culture Club',
+    category: 'cultural',
+    price: 5,
+    priceType: 'paid',
+    date: '2026-07-27T15:00:00+08:00',
+    venue: 'DK 1',
+    seatsLeft: 8,
+    coverClass: 'culture-cover',
+    badgeClass: 'badge-purple',
+  },
+  {
+    id: 'event-robotics-showcase-2026',
+    title: 'Robotics Showcase',
+    society: 'UTM Robotics Club',
+    category: 'academic',
+    price: 0,
+    priceType: 'free',
+    date: '2026-08-01T14:00:00+08:00',
+    venue: 'FAB Lab',
+    seatsLeft: 26,
+    coverClass: 'academic-cover',
+    badgeClass: 'badge-blue',
+  },
+  {
+    id: 'event-career-prep-2026',
+    title: 'Career Prep Clinic',
+    society: 'Computer Society UTM',
+    category: 'academic',
+    price: 0,
+    priceType: 'free',
+    date: '2026-08-08T10:00:00+08:00',
+    venue: 'N28 Seminar Room',
+    seatsLeft: 29,
+    coverClass: 'academic-cover',
+    badgeClass: 'badge-blue',
+  },
+  {
+    id: 'event-sustainability-day-2026',
+    title: 'Sustainability Volunteer Day',
+    society: 'Campus Culture Club',
+    category: 'cultural',
+    price: 0,
+    priceType: 'free',
+    date: '2026-08-15T08:30:00+08:00',
+    venue: 'UTM Lake Area',
+    seatsLeft: 36,
+    coverClass: 'culture-cover',
+    badgeClass: 'badge-purple',
+  },
+  {
+    id: 'event-startup-pitch-2026',
+    title: 'Startup Pitch Night',
+    society: 'Computer Society UTM',
+    category: 'academic',
+    price: 10,
+    priceType: 'paid',
+    date: '2026-08-21T20:00:00+08:00',
+    venue: 'Innovation Hub',
+    seatsLeft: 1,
+    coverClass: 'academic-cover',
+    badgeClass: 'badge-blue',
   },
 ]
 
@@ -280,17 +358,16 @@ onMounted(async () => {
     const res = await fetch('/mock/events.json')
     if (res.ok) {
       const rawEvents = await res.json()
-      const fetchedEvents = rawEvents.map(toPublicEvent)
+      const fetchedEvents = rawEvents
+        .filter((event) => event.status === 'published')
+        .map(toPublicEvent)
 
-      const fetchedIds = new Set(fetchedEvents.map(e => String(e.id)))
-      const untouchedBase = basePublicEvents.filter(e => !fetchedIds.has(String(e.id)))
-
-      events.value = [...fetchedEvents, ...untouchedBase]
+      events.value = mergePublicEvents(fetchedEvents, loadPublishedSocietyEvents())
     } else {
       events.value = [...basePublicEvents]
     }
   } catch (err) {
-    console.error("Fetch mock error, using base events fallback", err)
+    console.error("Unable to load event data, using local fallback", err)
     events.value = [...basePublicEvents]
   } finally {
     loadingEvents.value = false
@@ -309,12 +386,35 @@ function toPublicEvent(event) {
     category,
     price: event.price ?? 0,
     priceType: event.priceType ?? 'free',
-    date: event.startAt || new Date().toISOString(),
+    date: event.startAt || event.date || new Date().toISOString(),
     venue: event.venue || 'Venue not set',
     seatsLeft: Math.max(capacity - confirmed, 0),
     coverClass: event.coverClass || coverForCategory(category),
     badgeClass: event.badgeClass || badgeForCategory(category),
   }
+}
+
+function loadPublishedSocietyEvents() {
+  try {
+    const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || '[]')
+    if (!Array.isArray(savedEvents)) return []
+
+    return savedEvents
+      .filter((event) => event.status === 'published')
+      .map(toPublicEvent)
+  } catch (error) {
+    return []
+  }
+}
+
+function mergePublicEvents(...eventGroups) {
+  const merged = new Map()
+
+  eventGroups.flat().forEach((event) => {
+    merged.set(String(event.id), event)
+  })
+
+  return [...merged.values()]
 }
 
 function coverForCategory(categoryName) {

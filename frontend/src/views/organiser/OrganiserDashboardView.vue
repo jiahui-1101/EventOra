@@ -252,7 +252,14 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useTicketingStore } from '@/stores/ticketing'
 import { loadNotifications as loadStoredNotifications } from '@/stores/notifications'
+import {
+  getOrganiserAttendanceApi,
+  getOrganiserDashboardApi,
+  getOrganiserEventsApi,
+  getOrganiserParticipantsApi,
+} from '@/api/dashboard'
 import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
@@ -260,34 +267,64 @@ Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const ticketingStore = useTicketingStore()
 
 const eventsStorageKey = 'eventora_society_events_v2'
+const organiserSocietyId = computed(() => authStore.user?.societyId || 'UTM-CS')
+const dashboardParticipants = ref(null)
+const dashboardAttendance = ref(null)
 
-const registrationsList = [
-  { name: 'Aina Rahman', email: 'aina@utm.my', status: 'confirmed', ticketCode: 'EVT-9F4K-2Q8M-X7P1' },
-  { name: 'Nurul Iman', email: 'nurul@utm.my', status: 'confirmed', ticketCode: 'EVT-3H7J-1L9N-P5R2' },
-  { name: 'Kevin Tan', email: 'kevin@utm.my', status: 'waitlist', ticketCode: '' },
-]
+const scopedEventIds = computed(() =>
+  new Set(ticketingStore.events
+    .filter((event) => event.societyId === organiserSocietyId.value)
+    .map((event) => event.id))
+)
 
-const attendanceList = [
-  { attendee: 'Aina Rahman', checkedInAt: '7:18 PM, 12 Jun', verifiedBy: 'Mei Shuet' },
-  { attendee: 'Nurul Iman', checkedInAt: '7:22 PM, 12 Jun', verifiedBy: 'Mei Shuet' },
-]
+const registrationsList = computed(() => {
+  if (dashboardParticipants.value) return dashboardParticipants.value
+
+  return ticketingStore.registrations
+    .filter((registration) =>
+      scopedEventIds.value.has(registration.eventId)
+      && registration.status !== 'cancelled'
+    )
+    .map((registration) => ({
+      name: registration.attendeeName,
+      email: registration.attendeeEmail,
+      status: registration.status === 'waitlisted' ? 'waitlist' : registration.status,
+      event: ticketingStore.getEventById(registration.eventId)?.title || registration.eventId,
+      ticketCode: registration.ticketId || '',
+    }))
+})
+
+const attendanceList = computed(() => {
+  if (dashboardAttendance.value) return dashboardAttendance.value
+
+  return ticketingStore.tickets
+    .filter((ticket) =>
+      scopedEventIds.value.has(ticket.eventId)
+      && ticket.status === 'active'
+      && ticket.checkedInAt
+    )
+    .map((ticket) => ({
+      attendee: ticket.attendeeName,
+      event: ticket.eventName,
+      checkedInAt: formatDateTime(ticket.checkedInAt),
+      verifiedBy: ticket.checkedInBy,
+    }))
+})
 
 const fbKey = 'eventora_feedbacks_v2'
-const baseFeedbackList = [
-  { rating: 5, comment: 'Excellent practical session! Highly recommended.' },
-  { rating: 4, comment: 'Great content, but the lab AC was way too cold.' },
-  { rating: 5, comment: 'The speaker explained complex algorithms very clearly.' }
-]
-
 const feedbackData = computed(() => {
   const local = JSON.parse(localStorage.getItem(fbKey) || '[]')
-  const formattedLocal = local.map(item => ({
-    rating: Number(item.rating) || 5,
-    comment: item.comment || 'No comment text provided.'
-  }))
-  return [...formattedLocal, ...baseFeedbackList]
+  return local
+    .filter((item) => scopedEventIds.value.has(item.eventId))
+    .map(item => ({
+      event: ticketingStore.getEventById(item.eventId)?.title || item.eventId,
+      rating: Number(item.rating) || 5,
+      comment: item.comment || 'No comment text provided.',
+      submittedAt: item.submittedAt || '',
+    }))
 })
 
 const liveAvgRating = computed(() => {
@@ -299,7 +336,8 @@ const liveAvgRating = computed(() => {
 
 const ratingDistribution = computed(() => {
   const counts = [0, 0, 0, 0, 0]
-  feedbackData.forEach((f) => {
+  
+  feedbackData.value.forEach((f) => {
     if (f.rating >= 1 && f.rating <= 5) counts[f.rating - 1] += 1
   })
   return counts
@@ -380,23 +418,58 @@ function statusLabel(status) {
 }
 
 function registrationPercent(event) {
-  return event.capacity ? Math.round((event.registrations / event.capacity) * 100) : 0
+  const summary = ticketingStore.getEventCapacitySummary(event.id)
+  const registered = summary?.occupiedCount ?? event.registrations
+
+  return event.capacity ? Math.round((registered / event.capacity) * 100) : 0
 }
 
-const totalEvents = computed(() => societyEvents.value.length)
-const publishedCount = computed(() => societyEvents.value.filter((ev) => ev.status === 'published').length)
-const pendingCount = computed(() => societyEvents.value.filter((ev) => ev.status === 'pending_approval').length)
-const totalRegistrations = computed(() => societyEvents.value.reduce((sum, ev) => sum + ev.registrations, 0))
-const totalCheckedIn = computed(() => societyEvents.value.reduce((sum, ev) => sum + ev.checkedIn, 0))
-const attendanceRate = computed(() =>
-  totalRegistrations.value ? Math.round((totalCheckedIn.value / totalRegistrations.value) * 100) : 0
+const dashboardStats = ref(null)
+
+const dashboardEventTotals = computed(() => dashboardStats.value?.event_totals || {})
+const totalEvents = computed(() =>
+  dashboardStats.value ? dashboardStats.value.total_events ?? 0 : societyEvents.value.length
 )
+const publishedCount = computed(() =>
+  dashboardStats.value
+    ? dashboardEventTotals.value.published ?? 0
+    : societyEvents.value.filter((ev) => ev.status === 'published').length
+)
+const pendingCount = computed(() =>
+  dashboardStats.value
+    ? dashboardEventTotals.value.pending_approval ?? 0
+    : societyEvents.value.filter((ev) => ev.status === 'pending_approval').length
+)
+const totalRegistrations = computed(() => {
+  if (dashboardStats.value) return dashboardStats.value.total_registrations ?? 0
+
+  return ticketingStore.events
+    .filter((event) => event.societyId === organiserSocietyId.value)
+    .reduce((sum, event) => {
+      const summary = ticketingStore.getEventCapacitySummary(event.id)
+      return sum + (summary?.occupiedCount || 0) + (summary?.waitlistCount || 0)
+    }, 0)
+})
+const totalCheckedIn = computed(() =>
+  dashboardStats.value ? dashboardStats.value.attendance?.checked_in ?? 0 : attendanceList.value.length
+)
+const attendanceRate = computed(() => {
+  if (dashboardStats.value) return Math.round(dashboardStats.value.attendance?.rate_percent ?? 0)
+  return totalRegistrations.value ? Math.round((totalCheckedIn.value / totalRegistrations.value) * 100) : 0
+})
+const avgRating = computed(() => {
+  const backendRating = dashboardStats.value?.average_rating
+  if (backendRating === null || backendRating === undefined) return liveAvgRating.value
+
+  const numericRating = Number(backendRating)
+  return Number.isNaN(numericRating) ? '0.0' : numericRating.toFixed(1)
+})
 
 const confirmedRegistrations = computed(
-  () => registrationsList.filter((r) => r.status === 'confirmed').length
+  () => registrationsList.value.filter((r) => r.status === 'confirmed').length
 )
 const attendanceTabRate = computed(() =>
-  confirmedRegistrations.value ? Math.round((attendanceList.length / confirmedRegistrations.value) * 100) : 0
+  confirmedRegistrations.value ? Math.round((attendanceList.value.length / confirmedRegistrations.value) * 100) : 0
 )
 
 const unreadCount = computed(() =>
@@ -478,6 +551,13 @@ function normaliseEvent(rawEvent) {
     ? rawEvent.category.charAt(0).toUpperCase() + rawEvent.category.slice(1)
     : 'Academic'
 
+  const summary = ticketingStore.getEventCapacitySummary(rawEvent.id)
+  const checkedIn = ticketingStore.tickets.filter((ticket) =>
+    ticket.eventId === rawEvent.id
+    && ticket.status === 'active'
+    && ticket.checkedInAt
+  ).length
+
   return {
     id: rawEvent.id,
     title: rawEvent.title,
@@ -491,8 +571,8 @@ function normaliseEvent(rawEvent) {
     feeType: rawEvent.feeType || (rawEvent.priceType === 'paid' ? 'Paid' : 'Free'),
     feeAmount: rawEvent.feeAmount ?? rawEvent.price ?? 0,
     status: rawEvent.status === 'pending' ? 'pending_approval' : rawEvent.status || 'draft',
-    registrations: rawEvent.registrations ?? rawEvent.confirmedCount ?? 0,
-    checkedIn: rawEvent.checkedIn ?? Math.round((rawEvent.confirmedCount ?? 0) * 0.74),
+    registrations: summary?.occupiedCount ?? rawEvent.registrations ?? rawEvent.confirmedCount ?? 0,
+    checkedIn,
     avgRating: rawEvent.avgRating ?? null,
     capacity: rawEvent.capacity ?? 0,
     coverClass: rawEvent.coverClass,
@@ -515,33 +595,85 @@ function formatTimeOnly(date) {
   })
 }
 
+function formatDateTime(dateValue) {
+  return new Intl.DateTimeFormat('en-MY', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(dateValue))
+}
+
 async function loadSocietyEvents() {
+  const hasBackendToken = Boolean(localStorage.getItem('eventora_token'))
+
+  if (hasBackendToken) {
+    try {
+      const response = await getOrganiserEventsApi()
+      societyEvents.value = response.data.data.map(normaliseEvent)
+      return
+    } catch (error) {
+      console.warn('Falling back to mock organiser events:', error)
+    }
+  }
+
   try {
     const response = await fetch('/mock/events.json')
 
     if (!response.ok) return
 
-    const mockEvents = (await response.json()).map(normaliseEvent)
+    const seedEvents = (await response.json()).map(normaliseEvent)
     const savedEvents = JSON.parse(localStorage.getItem(eventsStorageKey) || 'null')
 
     if (Array.isArray(savedEvents)) {
       const savedEventsById = new Map(savedEvents.map((event) => [String(event.id), event]))
-      const mergedMockEvents = mockEvents.map((event) => ({
+      const mergedSeedEvents = seedEvents.map((event) => ({
         ...event,
         ...savedEventsById.get(String(event.id)),
       }))
       const customEvents = savedEvents.filter(
-        (event) => !mockEvents.some((mockEvent) => String(mockEvent.id) === String(event.id))
+        (event) => !seedEvents.some((seedEvent) => String(seedEvent.id) === String(event.id))
       )
 
-      societyEvents.value = [...customEvents, ...mergedMockEvents]
+      societyEvents.value = [...customEvents, ...mergedSeedEvents]
       return
     }
 
-    societyEvents.value = mockEvents
+    societyEvents.value = seedEvents
     saveEvents()
   } catch (error) {
     societyEvents.value = []
+  }
+}
+
+async function loadDashboardStats() {
+  if (!localStorage.getItem('eventora_token')) return
+
+  try {
+    const response = await getOrganiserDashboardApi()
+    dashboardStats.value = response.data.data
+  } catch (error) {
+    dashboardStats.value = null
+    console.warn('Using local organiser dashboard stats fallback:', error)
+  }
+}
+
+async function loadDashboardLists() {
+  if (!localStorage.getItem('eventora_token')) return
+
+  try {
+    const [participantsResponse, attendanceResponse] = await Promise.all([
+      getOrganiserParticipantsApi(),
+      getOrganiserAttendanceApi(),
+    ])
+
+    dashboardParticipants.value = participantsResponse.data.data
+    dashboardAttendance.value = attendanceResponse.data.data.map((row) => ({
+      ...row,
+      checkedInAt: row.checkedInAt ? formatDateTime(row.checkedInAt) : '-',
+    }))
+  } catch (error) {
+    dashboardParticipants.value = null
+    dashboardAttendance.value = null
+    console.warn('Using local organiser dashboard list fallback:', error)
   }
 }
 
@@ -554,7 +686,10 @@ async function loadNotifications() {
 }
 
 onMounted(async () => {
+  await ticketingStore.loadSeedData()
   await loadSocietyEvents()
+  await loadDashboardStats()
+  await loadDashboardLists()
   loadNotifications()
   showCreateEventToast()
 })

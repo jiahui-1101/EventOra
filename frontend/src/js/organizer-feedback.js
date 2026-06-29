@@ -105,8 +105,8 @@ function exportAttendanceCSV(eventId) {
   const attendees = attendanceData[eventId] || [];
   let csvRows = [["Attendee Name", "Check-in Time"]];
   attendees.forEach(name => {
-    const mockTime = new Date().toLocaleString();
-    csvRows.push([name, mockTime]);
+    const exportedAt = new Date().toLocaleString();
+    csvRows.push([name, exportedAt]);
   });
   const csvContent = csvRows.map(row => row.join(",")).join("\n");
   const blob = new Blob([csvContent], { type: "text/csv" });

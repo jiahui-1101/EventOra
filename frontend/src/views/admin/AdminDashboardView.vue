@@ -48,6 +48,15 @@
           </div>
           <em>{{ pendingCount }}</em>
         </router-link>
+
+        <a class="sidebar-link queue-link" href="#organiser-requests">
+          <span>OR</span>
+          <div>
+            <strong>Organiser Requests</strong>
+            <small>{{ pendingOrganiserRequestCount }} pending access</small>
+          </div>
+          <em>{{ pendingOrganiserRequestCount }}</em>
+        </a>
       </aside>
 
       <div class="admin-main">
@@ -67,21 +76,80 @@
 
             <article class="admin-stat-card">
               <span>Active Societies</span>
-              <strong>12</strong>
+              <strong>{{ activeSocietyCount }}</strong>
               <p>Under Faculty of Computing</p>
             </article>
 
             <article class="admin-stat-card">
               <span>Total Registrations</span>
-              <strong>1,204</strong>
+              <strong>{{ totalRegistrations }}</strong>
               <p>This semester</p>
             </article>
 
             <article class="admin-stat-card">
               <span>Overall Attendance Rate</span>
-              <strong>82%</strong>
-              <p>987 of 1,204 attended</p>
+              <strong>{{ overallAttendanceRate }}%</strong>
+              <p>{{ totalCheckedIn }} of {{ totalRegistrations }} attended</p>
             </article>
+          </div>
+        </section>
+
+        <section id="organiser-requests" class="page-section">
+          <div class="section-heading">
+            <h2>Organiser Society Requests</h2>
+            <span class="badge badge-yellow">{{ pendingOrganiserRequestCount }} Pending</span>
+          </div>
+
+          <p v-if="loadingOrganiserRequests" style="color:var(--muted);">Loading organiser requests...</p>
+          <p v-else-if="organiserRequestError" class="auth-error">{{ organiserRequestError }}</p>
+
+          <div v-else class="admin-table-wrap">
+            <table class="admin-table" aria-label="Organiser society requests">
+              <thead>
+                <tr>
+                  <th>Organiser</th>
+                  <th>Society</th>
+                  <th>Description</th>
+                  <th>Requested</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr v-if="organiserRequests.length === 0">
+                  <td colspan="5" style="color:var(--muted);">No pending organiser requests.</td>
+                </tr>
+                <tr v-for="request in organiserRequests" :key="request.id">
+                  <td>
+                    <strong>{{ request.organiser_name }}</strong>
+                    <small>{{ request.organiser_email }}</small>
+                  </td>
+                  <td>{{ request.society_name }}</td>
+                  <td>{{ request.society_description || 'No description provided.' }}</td>
+                  <td>{{ formatRequestDate(request.created_at) }}</td>
+                  <td>
+                    <div class="request-actions">
+                      <button
+                        class="button button-success"
+                        type="button"
+                        :disabled="reviewingRequestId === request.id"
+                        @click="approveOrganiserRequest(request)"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        class="button button-danger"
+                        type="button"
+                        :disabled="reviewingRequestId === request.id"
+                        @click="rejectOrganiserRequest(request)"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
@@ -164,41 +232,69 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useTicketingStore } from '@/stores/ticketing'
 import {
   approvalEvents,
   loadApprovalEvents,
 } from '@/stores/approvalEvents'
 import { loadNotifications as loadStoredNotifications } from '@/stores/notifications'
-import axios from 'axios'
+import {
+  approveOrganiserRequestApi,
+  getPendingOrganiserRequestsApi,
+  getSocietyOverviewApi,
+  rejectOrganiserRequestApi,
+} from '@/api/admin'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const ticketingStore = useTicketingStore()
 
 const societies = ref([])
 const loadingSocieties = ref(true)
 const loadError = ref('')
 const notifications = ref([])
+const organiserRequests = ref([])
+const loadingOrganiserRequests = ref(true)
+const organiserRequestError = ref('')
+const reviewingRequestId = ref(null)
 
 onMounted(async () => {
   loadApprovalEvents()
-
-  try {
-    const response = await axios.get('/mock/societies.json')
-    societies.value = response.data
-  } catch (err) {
-    loadError.value = 'Failed to load society data. Please try again later.'
-  } finally {
-    loadingSocieties.value = false
-  }
+  ticketingStore.loadSeedData()
+  loadOrganiserRequests()
+  loadSocietyOverview()
 
   loadNotifications()
 })
 
-const popularEvents = ref([
-  { rank: 1, title: 'Campus Cultural Night', society: 'Campus Culture Club', date: '20 Jun 2026', category: 'Cultural', badgeClass: 'badge-purple', registered: 312 },
-  { rank: 2, title: 'UTM Sports Day', society: 'UTM Sports Society', date: '5 Jul 2026', category: 'Sports', badgeClass: 'badge-green', registered: 284 },
-  { rank: 3, title: 'Build Your First AI App', society: 'UTM Computing Society', date: '12 Jun 2026', category: 'Academic', badgeClass: 'badge-blue', registered: 198 },
-])
+const activeSocietyCount = computed(() => societies.value.length)
+const totalRegistrations = computed(() =>
+  societies.value.reduce((sum, society) => sum + Number(society.registered || 0), 0)
+)
+const totalCheckedIn = computed(() =>
+  societies.value.reduce((sum, society) => sum + Number(society.attended || 0), 0)
+)
+const overallAttendanceRate = computed(() =>
+  totalRegistrations.value ? Math.round((totalCheckedIn.value / totalRegistrations.value) * 100) : 0
+)
+
+const popularEvents = computed(() =>
+  ticketingStore.events
+    .map((event) => {
+      const summary = ticketingStore.getEventCapacitySummary(event.id)
+      return {
+        title: event.title,
+        society: event.societyName,
+        date: new Date(event.startAt).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }),
+        category: event.category,
+        badgeClass: event.badgeClass,
+        registered: (summary?.occupiedCount || 0) + (summary?.waitlistCount || 0),
+      }
+    })
+    .sort((first, second) => second.registered - first.registered)
+    .slice(0, 3)
+    .map((event, index) => ({ ...event, rank: index + 1 }))
+)
 
 const unreadCount = computed(() =>
   notifications.value.filter(
@@ -209,13 +305,14 @@ const unreadCount = computed(() =>
 const pendingCount = computed(() =>
   approvalEvents.value.filter((event) => event.status === 'pending').length
 )
+const pendingOrganiserRequestCount = computed(() => organiserRequests.value.length)
 
 function goToApprovalQueue() {
   router.push('/admin/approval-queue')
 }
 
 function rate(s) {
-  return Math.round((s.attended / s.registered) * 100)
+  return s.registered ? Math.round((s.attended / s.registered) * 100) : 0
 }
 
 async function loadNotifications() {
@@ -224,6 +321,75 @@ async function loadNotifications() {
   } catch (error) {
     notifications.value = []
   }
+}
+
+async function loadOrganiserRequests() {
+  loadingOrganiserRequests.value = true
+  organiserRequestError.value = ''
+
+  try {
+    const response = await getPendingOrganiserRequestsApi()
+    organiserRequests.value = response.data.data
+  } catch (error) {
+    organiserRequestError.value = 'Failed to load organiser requests.'
+  } finally {
+    loadingOrganiserRequests.value = false
+  }
+}
+
+async function loadSocietyOverview() {
+  loadingSocieties.value = true
+  loadError.value = ''
+
+  try {
+    const response = await getSocietyOverviewApi()
+    societies.value = response.data.data
+  } catch (error) {
+    loadError.value = 'Failed to load society data. Please try again later.'
+  } finally {
+    loadingSocieties.value = false
+  }
+}
+
+async function approveOrganiserRequest(request) {
+  reviewingRequestId.value = request.id
+  organiserRequestError.value = ''
+
+  try {
+    await approveOrganiserRequestApi(request.id)
+    organiserRequests.value = organiserRequests.value.filter((item) => item.id !== request.id)
+  } catch (error) {
+    organiserRequestError.value = 'Could not approve organiser request.'
+  } finally {
+    reviewingRequestId.value = null
+  }
+}
+
+async function rejectOrganiserRequest(request) {
+  const reason = window.prompt('Reason for rejecting this organiser request:')
+  if (!reason || !reason.trim()) return
+
+  reviewingRequestId.value = request.id
+  organiserRequestError.value = ''
+
+  try {
+    await rejectOrganiserRequestApi(request.id, reason.trim())
+    organiserRequests.value = organiserRequests.value.filter((item) => item.id !== request.id)
+  } catch (error) {
+    organiserRequestError.value = 'Could not reject organiser request.'
+  } finally {
+    reviewingRequestId.value = null
+  }
+}
+
+function formatRequestDate(value) {
+  if (!value) return 'Recently'
+
+  return new Date(value).toLocaleDateString('en-MY', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 </script>
 
@@ -415,6 +581,18 @@ async function loadNotifications() {
 .clickable-card:focus {
   outline: 2px solid var(--primary);
   outline-offset: 3px;
+}
+
+.admin-table td small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 @media (max-width: 980px) {
