@@ -236,6 +236,24 @@ const sortedApprovalEvents = computed(() => {
   return [...approvalEvents.value].sort((a, b) => order[a.status] - order[b.status])
 })
 
+const activityMetrics = computed(() => {
+  const stats = activityStats.value || {}
+  const attendanceRate = Number(stats.attendance?.rate_percent ?? 0)
+  const popularCategory = stats.most_popular_category
+  const popularCategoryLabel = popularCategory?.category
+    ? `${formatCategory(popularCategory.category)} (${popularCategory.registrations} registrations)`
+    : 'No registrations yet'
+
+  return {
+    totalEventsThisMonth: stats.total_events_this_month ?? 0,
+    totalSocieties: stats.total_societies ?? 0,
+    totalRegistrations: stats.total_registrations ?? 0,
+    attendanceRateLabel: stats.attendance?.rate_percent == null ? 'N/A' : `${Math.round(attendanceRate)}%`,
+    attendanceRateBar: stats.attendance?.rate_percent == null ? 0 : Math.min(Math.max(attendanceRate, 0), 100),
+    popularCategoryLabel,
+  }
+})
+
 function eventExtra(event) {
   return getApprovalEventDetails(event)
 }
