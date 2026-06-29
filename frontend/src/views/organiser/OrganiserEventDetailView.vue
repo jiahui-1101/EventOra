@@ -408,6 +408,7 @@ const approvalNoteText = computed(() => {
   const map = {
     published: 'This event is approved and visible in the public event list.',
     pending_approval: 'This event has been submitted and is waiting for Faculty Admin review.',
+    completed: 'This event has ended and is kept for attendance, feedback, and certificate records.',
     rejected: 'This event needs changes before it can be submitted again.',
     cancelled: 'This event has been cancelled and is no longer available for registration.',
   }
