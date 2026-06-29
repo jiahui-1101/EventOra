@@ -18,6 +18,76 @@ class EventController
     private array $allowedFeeTypes = ['free', 'paid'];
     private array $editableStatuses = ['draft', 'rejected', 'pending_approval'];
 
+    // GET /api/events
+    // Public attendee-facing listing. Only published events are returned,
+    // so drafts, pending approvals, rejected, cancelled, and completed
+    // events stay hidden from the discovery page.
+    public function listPublic(Request $request, Response $response): Response
+    {
+        $query = $request->getQueryParams();
+        $keyword = trim((string) ($query['q'] ?? $query['search'] ?? ''));
+        $category = strtolower(trim((string) ($query['category'] ?? '')));
+        $price = strtolower(trim((string) ($query['price'] ?? $query['fee_type'] ?? '')));
+
+        $where = ['e.status = :status'];
+        $params = ['status' => 'published'];
+
+        if ($keyword !== '') {
+            $where[] = '(e.title LIKE :keyword_title OR e.description LIKE :keyword_description OR e.venue LIKE :keyword_venue OR s.name LIKE :keyword_society)';
+            $keywordLike = '%' . $keyword . '%';
+            $params['keyword_title'] = $keywordLike;
+            $params['keyword_description'] = $keywordLike;
+            $params['keyword_venue'] = $keywordLike;
+            $params['keyword_society'] = $keywordLike;
+        }
+
+        if ($category !== '' && $category !== 'all') {
+            if (!in_array($category, $this->allowedCategories, true)) {
+                return $this->errorResponse($response, 'VALIDATION_ERROR', 'Validation failed', [
+                    'category' => 'Category must be one of: ' . implode(', ', $this->allowedCategories),
+                ], 422);
+            }
+
+            $where[] = 'e.category = :category';
+            $params['category'] = $category;
+        }
+
+        if ($price !== '' && $price !== 'all') {
+            if (!in_array($price, $this->allowedFeeTypes, true)) {
+                return $this->errorResponse($response, 'VALIDATION_ERROR', 'Validation failed', [
+                    'price' => 'price must be either free or paid',
+                ], 422);
+            }
+
+            $where[] = 'e.fee_type = :fee_type';
+            $params['fee_type'] = $price;
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $db = Database::getConnection();
+        $stmt = $db->prepare(
+            "SELECT e.id, e.title, e.description, e.venue, e.category, e.start_datetime, e.end_datetime,
+                e.reg_deadline, e.capacity, e.fee_type, e.fee_amount, e.waitlist_enabled, e.status,
+                e.poster_url, e.cancellation_reason, e.contact_person, e.contact_email, e.special_instructions,
+                e.created_at, e.updated_at, s.name AS society_name,
+                (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status = 'confirmed') AS confirmed_registrations,
+                (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS registrations
+             FROM events e
+             JOIN societies s ON s.id = e.society_id
+             WHERE {$whereSql}
+             ORDER BY e.start_datetime ASC, e.created_at DESC"
+        );
+        $stmt->execute($params);
+
+        return $this->successResponse(
+            $response,
+            array_map([$this, 'formatPublicEventForFrontend'], $stmt->fetchAll()),
+            null,
+            200
+        );
+    }
+
     // POST /api/events
     // Organiser-only. Creates an event directly in pending_approval status.
     // created_by is taken from the JWT, never from the request body.
@@ -667,6 +737,22 @@ class EventController
             'createdAt' => $event['created_at'] ?? null,
             'updatedAt' => $event['updated_at'] ?? null,
         ];
+    }
+
+    private function formatPublicEventForFrontend(array $event): array
+    {
+        $formatted = $this->formatEventForFrontend($event);
+        $confirmedCount = (int) ($event['confirmed_registrations'] ?? 0);
+        $capacity = (int) $event['capacity'];
+
+        return array_merge($formatted, [
+            'societyName' => $event['society_name'] ?? null,
+            'priceType' => $event['fee_type'],
+            'price' => (float) $event['fee_amount'],
+            'date' => $event['start_datetime'],
+            'confirmedCount' => $confirmedCount,
+            'seatsLeft' => max($capacity - $confirmedCount, 0),
+        ]);
     }
 
     private function successResponse(Response $response, mixed $data, ?string $message, int $status): Response
