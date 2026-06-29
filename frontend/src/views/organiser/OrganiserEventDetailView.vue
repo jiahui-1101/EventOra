@@ -374,7 +374,7 @@ async function loadBackendEvent() {
     }
   } catch (error) {
     backendEvent.value = null
-    console.warn('Falling back to local organiser event detail:', error)
+    console.warn('Could not load backend organiser event detail:', error)
   } finally {
     backendEventLoaded.value = true
   }
