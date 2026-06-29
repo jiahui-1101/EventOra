@@ -15,6 +15,54 @@ use PDO;
 // assume the caller is already authenticated and holds the organiser role.
 class DashboardController
 {
+    // GET /api/dashboard/faculty
+    // Faculty-wide activity snapshot for the admin Activity Monitoring
+    // panel. Unlike organiserDashboard(), this intentionally has no
+    // society filter because faculty admins monitor the whole faculty.
+    public function facultyDashboard(Request $request, Response $response): Response
+    {
+        $db = Database::getConnection();
+        $eventIds = $this->getAllEventIds($db);
+        $eventTotals = $this->getAllEventTotalsByStatus($db);
+        $totalSocieties = (int) $db->query('SELECT COUNT(*) FROM societies')->fetchColumn();
+
+        if (empty($eventIds)) {
+            return $this->successResponse($response, [
+                'event_totals' => $eventTotals,
+                'total_events' => 0,
+                'total_events_this_month' => 0,
+                'total_societies' => $totalSocieties,
+                'total_registrations' => 0,
+                'confirmed_registrations' => 0,
+                'attendance' => [
+                    'checked_in' => 0,
+                    'rate_percent' => null,
+                ],
+                'most_popular_category' => null,
+            ], null, 200);
+        }
+
+        $registrationStats = $this->getRegistrationStats($db, $eventIds);
+        $attendanceStats = $this->getAttendanceStats($db, $eventIds);
+
+        return $this->successResponse($response, [
+            'event_totals' => $eventTotals,
+            'total_events' => array_sum($eventTotals),
+            'total_events_this_month' => $this->getEventsThisMonth($db),
+            'total_societies' => $totalSocieties,
+            'total_registrations' => $registrationStats['total'],
+            'confirmed_registrations' => $registrationStats['confirmed'],
+            'attendance' => [
+                'checked_in' => $attendanceStats['checked_in'],
+                'rate_percent' => $this->getAttendanceRatePercent(
+                    $attendanceStats['checked_in'],
+                    $registrationStats['confirmed']
+                ),
+            ],
+            'most_popular_category' => $this->getMostPopularCategory($db),
+        ], null, 200);
+    }
+
     // GET /api/dashboard/organiser
     // Returns event totals, registration counts, attendance rate,
     // capacity use, and average rating - scoped ONLY to events belonging
