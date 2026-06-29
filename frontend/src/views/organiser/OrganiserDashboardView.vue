@@ -169,71 +169,148 @@
           </div>
         </section>
 
-        <section v-if="currentTab === 'attendance'" class="page-section organiser-panel">
-          <div class="section-heading organiser-panel-heading">
-            <div>
-              <p class="eyebrow">Attendance</p>
-              <h2>Attendance Report</h2>
-              <p class="panel-subtitle">
-                {{ attendanceList.length }} / {{ confirmedRegistrations }} confirmed attendees checked in
-              </p>
-            </div>
-            <button class="button button-primary" @click="exportCSV(attendanceList, 'attendance.csv')">
-              Export Attendance CSV
-            </button>
-          </div>
+<section v-if="currentTab === 'attendance'" class="page-section organiser-panel">
+  <div class="section-heading organiser-panel-heading">
+    <div>
+      <p class="eyebrow">Attendance</p>
+      <h2>Attendance Report</h2>
+      <p class="panel-subtitle">
+        {{ filteredAttendanceList.length }} checked-in record(s) shown
+      </p>
+    </div>
 
-          <div class="capacity-bar attendance-progress">
-            <span :style="{ width: attendanceTabRate + '%' }"></span>
-          </div>
+    <button
+      class="button button-primary"
+      @click="exportCSV(filteredAttendanceList, 'attendance.csv')"
+    >
+      Export Attendance CSV
+    </button>
+  </div>
 
-          <div class="admin-table-wrap">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Attendee</th>
-                  <th>Checked In At</th>
-                  <th>Verified By</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="a in attendanceList" :key="a.attendee">
-                  <td>{{ a.attendee }}</td>
-                  <td>{{ a.checkedInAt }}</td>
-                  <td>{{ a.verifiedBy }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+  <div class="report-filter">
+    <label>
+      Filter by event
+      <select v-model="selectedReportEvent">
+        <option value="all">All completed events</option>
+        <option
+          v-for="event in reportEventOptions"
+          :key="event.id"
+          :value="event.id"
+        >
+          {{ event.title }}
+        </option>
+      </select>
+    </label>
+  </div>
 
-        <section v-if="currentTab === 'feedback'" class="page-section organiser-panel">
-          <div class="section-heading organiser-panel-heading">
-            <div>
-              <p class="eyebrow">Feedback</p>
-              <h2>Feedback & Ratings</h2>
-              <p class="panel-subtitle">
-                Average Rating: <strong>{{ liveAvgRating }} / 5</strong> from {{ feedbackData.length }} reviews
-              </p>
-            </div>
-            <button class="button button-primary" @click="exportCSV(feedbackData, 'Feedback_Report_UTM.csv')">
-              Export Feedback CSV
-            </button>
-          </div>
+  <div class="capacity-bar attendance-progress">
+    <span :style="{ width: filteredAttendanceTabRate + '%' }"></span>
+  </div>
 
-          <div class="chart-card">
-            <canvas ref="feedbackChartCanvas"></canvas>
-          </div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Attendee</th>
+          <th>Event</th>
+          <th>Checked In At</th>
+          <th>Verified By</th>
+        </tr>
+      </thead>
 
-          <div class="event-grid">
-            <article v-for="(f, idx) in feedbackData" :key="idx" class="event-card feedback-card">
-              <div class="event-card-body">
-                <strong style="color: #f59e0b; font-size: 1.1rem;">{{ '★'.repeat(f.rating) }}{{ '☆'.repeat(5 - f.rating) }}</strong>
-                <p style="margin-top: 6px; color: #334155;">"{{ f.comment }}"</p>
-              </div>
-            </article>
-          </div>
-        </section>
+      <tbody>
+        <tr
+          v-for="a in filteredAttendanceList"
+          :key="`${a.event}-${a.attendee}`"
+        >
+          <td>{{ a.attendee }}</td>
+          <td>{{ a.event }}</td>
+          <td>{{ a.checkedInAt }}</td>
+          <td>{{ a.verifiedBy }}</td>
+        </tr>
+
+        <tr v-if="filteredAttendanceList.length === 0">
+          <td colspan="4" style="text-align: center; color: var(--muted);">
+            No attendance records found for this filter.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section v-if="currentTab === 'feedback'" class="page-section organiser-panel">
+  <div class="section-heading organiser-panel-heading">
+    <div>
+      <p class="eyebrow">Feedback</p>
+      <h2>Feedback & Ratings</h2>
+      <p class="panel-subtitle">
+        Average Rating:
+        <strong>{{ filteredLiveAvgRating }} / 5</strong>
+        from {{ filteredFeedbackData.length }} reviews
+      </p>
+    </div>
+
+    <button
+      class="button button-primary"
+      @click="exportCSV(filteredFeedbackData, 'Feedback_Report_UTM.csv')"
+    >
+      Export Feedback CSV
+    </button>
+  </div>
+
+  <div class="report-filter">
+    <label>
+      Filter by event
+      <select v-model="selectedReportEvent">
+        <option value="all">All completed events</option>
+        <option
+          v-for="event in reportEventOptions"
+          :key="event.id"
+          :value="event.id"
+        >
+          {{ event.title }}
+        </option>
+      </select>
+    </label>
+  </div>
+
+  <div class="chart-card">
+    <canvas ref="feedbackChartCanvas"></canvas>
+  </div>
+
+  <div class="event-grid">
+    <article
+      v-for="(f, idx) in filteredFeedbackData"
+      :key="idx"
+      class="event-card feedback-card"
+    >
+      <div class="event-card-body">
+        <span class="event-date">{{ f.event }}</span>
+
+        <strong style="color: #f59e0b; font-size: 1.1rem;">
+          {{ '★'.repeat(f.rating) }}{{ '☆'.repeat(5 - f.rating) }}
+        </strong>
+
+        <p style="margin-top: 6px; color: #334155; white-space: pre-wrap;">
+          {{ f.comment }}
+        </p>
+
+        <small v-if="f.submittedAt" style="color: var(--muted);">
+          Submitted {{ f.submittedAt }}
+        </small>
+      </div>
+    </article>
+
+    <p
+      v-if="filteredFeedbackData.length === 0"
+      class="empty-state"
+      style="grid-column: 1 / -1;"
+    >
+      No feedback found for this filter.
+    </p>
+  </div>
+</section>
       </div>
     </div>
 
@@ -259,6 +336,7 @@ import {
   getOrganiserDashboardApi,
   getOrganiserEventsApi,
   getOrganiserParticipantsApi,
+  getOrganiserFeedbackApi,
 } from '@/api/dashboard'
 import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
 
@@ -273,11 +351,86 @@ const eventsStorageKey = 'eventora_society_events_v2'
 const organiserSocietyId = computed(() => authStore.user?.societyId || 'UTM-CS')
 const dashboardParticipants = ref(null)
 const dashboardAttendance = ref(null)
+const dashboardFeedback = ref(null)
 
 const scopedEventIds = computed(() =>
   new Set(ticketingStore.events
     .filter((event) => event.societyId === organiserSocietyId.value)
     .map((event) => event.id))
+)
+
+const selectedReportEvent = ref('all')
+
+const reportEventOptions = computed(() => {
+  const options = new Map()
+
+  societyEvents.value
+    .filter((event) => event.status === 'completed' || event.checkedIn > 0 || event.avgRating)
+    .forEach((event) => {
+      options.set(String(event.id), { id: String(event.id), title: event.title })
+    })
+
+  attendanceList.value.forEach((row) => {
+    if (row.eventId) options.set(String(row.eventId), { id: String(row.eventId), title: row.event })
+  })
+
+  feedbackData.value.forEach((row) => {
+    if (row.eventId) options.set(String(row.eventId), { id: String(row.eventId), title: row.event })
+  })
+
+  return [...options.values()]
+})
+
+const selectedReportEventTitle = computed(() => {
+  const selected = reportEventOptions.value.find((event) => event.id === selectedReportEvent.value)
+  return selected?.title || null
+})
+
+const filteredAttendanceList = computed(() => {
+  if (selectedReportEvent.value === 'all') return attendanceList.value
+  return attendanceList.value.filter(
+    (row) => String(row.eventId) === selectedReportEvent.value
+  )
+})
+
+const filteredFeedbackData = computed(() => {
+  if (selectedReportEvent.value === 'all') return feedbackData.value
+  return feedbackData.value.filter(
+    (row) => String(row.eventId) === selectedReportEvent.value
+  )
+})
+
+const filteredLiveAvgRating = computed(() => {
+  const list = filteredFeedbackData.value
+  if (!list.length) return '0.0'
+  const sum = list.reduce((acc, curr) => acc + curr.rating, 0)
+  return (sum / list.length).toFixed(1)
+})
+
+const filteredRatingDistribution = computed(() => {
+  const counts = [0, 0, 0, 0, 0]
+
+  filteredFeedbackData.value.forEach((f) => {
+    if (f.rating >= 1 && f.rating <= 5) counts[f.rating - 1] += 1
+  })
+
+  return counts
+})
+
+const filteredConfirmedRegistrations = computed(() => {
+  if (selectedReportEvent.value === 'all' || !selectedReportEventTitle.value) return confirmedRegistrations.value
+
+  return registrationsList.value.filter(
+    (registration) =>
+      registration.status === 'confirmed' &&
+      registration.event === selectedReportEventTitle.value
+  ).length
+})
+
+const filteredAttendanceTabRate = computed(() =>
+  filteredConfirmedRegistrations.value
+    ? Math.round((filteredAttendanceList.value.length / filteredConfirmedRegistrations.value) * 100)
+    : 0
 )
 
 const registrationsList = computed(() => {
@@ -316,15 +469,9 @@ const attendanceList = computed(() => {
 
 const fbKey = 'eventora_feedbacks_v2'
 const feedbackData = computed(() => {
-  const local = JSON.parse(localStorage.getItem(fbKey) || '[]')
-  return local
-    .filter((item) => scopedEventIds.value.has(item.eventId))
-    .map(item => ({
-      event: ticketingStore.getEventById(item.eventId)?.title || item.eventId,
-      rating: Number(item.rating) || 5,
-      comment: item.comment || 'No comment text provided.',
-      submittedAt: item.submittedAt || '',
-    }))
+  if (dashboardFeedback.value) return dashboardFeedback.value
+
+  return []
 })
 
 const liveAvgRating = computed(() => {
@@ -332,15 +479,6 @@ const liveAvgRating = computed(() => {
   if (!list.length) return '0.0'
   const sum = list.reduce((acc, curr) => acc + curr.rating, 0)
   return (sum / list.length).toFixed(1)
-})
-
-const ratingDistribution = computed(() => {
-  const counts = [0, 0, 0, 0, 0]
-  
-  feedbackData.value.forEach((f) => {
-    if (f.rating >= 1 && f.rating <= 5) counts[f.rating - 1] += 1
-  })
-  return counts
 })
 
 const feedbackChartCanvas = ref(null)
@@ -360,7 +498,7 @@ function renderFeedbackChart() {
       datasets: [
         {
           label: 'Number of responses',
-          data: ratingDistribution.value,
+          data: filteredRatingDistribution.value,
           backgroundColor: '#6366f1',
           borderRadius: 6,
         },
@@ -392,7 +530,7 @@ const tabs = [
 const currentTab = ref('events')
 const notifications = ref([])
 
-watch(currentTab, async (tab) => {
+watch([currentTab, selectedReportEvent, filteredFeedbackData], async ([tab]) => {
   if (tab === 'feedback') {
     await nextTick()
     renderFeedbackChart()
@@ -468,9 +606,6 @@ const avgRating = computed(() => {
 const confirmedRegistrations = computed(
   () => registrationsList.value.filter((r) => r.status === 'confirmed').length
 )
-const attendanceTabRate = computed(() =>
-  confirmedRegistrations.value ? Math.round((attendanceList.value.length / confirmedRegistrations.value) * 100) : 0
-)
 
 const unreadCount = computed(() =>
   notifications.value.filter(
@@ -531,6 +666,11 @@ function showCreateEventToast() {
     toast.title = 'Submission cancelled'
     toast.message = 'The event is back to draft and can be edited before resubmission.'
   }
+
+  if (eventAction === 'completed') {
+  toast.title = 'Event marked as completed'
+  toast.message = 'Post-event feedback, certificates, and attendance export are now available.'
+}
 
   if (eventAction === 'cancelled') {
     toast.title = 'Event cancelled'
@@ -660,17 +800,23 @@ async function loadDashboardLists() {
   if (!localStorage.getItem('eventora_token')) return
 
   try {
-    const [participantsResponse, attendanceResponse] = await Promise.all([
-      getOrganiserParticipantsApi(),
-      getOrganiserAttendanceApi(),
-    ])
+    const [participantsResponse, attendanceResponse, feedbackResponse] = await Promise.all([
+  getOrganiserParticipantsApi(),
+  getOrganiserAttendanceApi(),
+  getOrganiserFeedbackApi(),
+])
 
+dashboardFeedback.value = feedbackResponse.data.data.map((row) => ({
+  ...row,
+  submittedAt: row.submittedAt ? formatDateTime(row.submittedAt) : '',
+}))
     dashboardParticipants.value = participantsResponse.data.data
     dashboardAttendance.value = attendanceResponse.data.data.map((row) => ({
       ...row,
       checkedInAt: row.checkedInAt ? formatDateTime(row.checkedInAt) : '-',
     }))
   } catch (error) {
+    dashboardFeedback.value = null
     dashboardParticipants.value = null
     dashboardAttendance.value = null
     console.warn('Using local organiser dashboard list fallback:', error)
@@ -990,6 +1136,35 @@ onMounted(async () => {
   .event-actions {
     justify-items: start;
   }
+}
+
+.report-filter {
+  margin: 0 0 18px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.report-filter label {
+  display: grid;
+  gap: 8px;
+  max-width: 320px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.report-filter select {
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 12px;
+  color: var(--text);
+  background: #fff;
+  font: inherit;
+  text-transform: none;
 }
 
 @media (max-width: 640px) {

@@ -93,117 +93,101 @@
 
         <h2 class="section-title">Available Actions</h2>
 
-        <div class="action-list">
-          <span
-            v-if="status === 'pending_approval'"
-            class="badge badge-yellow status-full"
-          >
-            Waiting for Admin
-          </span>
+<div class="action-list">
+  <span
+    v-if="status === 'pending_approval'"
+    class="badge badge-yellow status-full"
+  >
+    Waiting for Admin
+  </span>
 
-          <router-link
-  v-if="status !== 'cancelled' && status !== 'completed'"
-  :to="`/organiser/create-event?edit=${selectedEvent?.id}`"
-  class="button button-secondary full-width"
->
-  Edit Event
-</router-link>
+  <router-link
+    v-if="status !== 'cancelled' && status !== 'completed'"
+    :to="`/organiser/create-event?edit=${selectedEvent?.id}`"
+    class="button button-secondary full-width"
+  >
+    Edit Event
+  </router-link>
 
-<router-link
-  v-else
-  :to="`/organiser/create-event?view=${selectedEvent?.id}`"
-  class="button button-secondary full-width"
->
-  View Event
-</router-link>
+  <router-link
+    v-else-if="status === 'completed'"
+    :to="`/organiser/create-event?view=${selectedEvent?.id}`"
+    class="button button-secondary full-width"
+  >
+    View Event
+  </router-link>
 
-<router-link
-  v-if="status === 'completed'"
-  :to="`/organiser/event/${selectedEvent?.id}/feedback`"
-  class="button button-primary full-width"
->
-  View Feedback
-</router-link>
+  <router-link
+    v-if="status === 'published'"
+    to="/organiser/check-in"
+    class="button button-primary full-width"
+  >
+    Open QR Check-in
+  </router-link>
 
-<router-link
-  v-if="status === 'completed'"
-  :to="`/organiser/event/${selectedEvent?.id}/attendance`"
-  class="button button-secondary full-width"
->
-  View Attendance
-</router-link>
+  <button
+    v-if="status === 'published'"
+    class="button button-secondary full-width"
+    @click="handleAction('complete')"
+  >
+    Mark as Completed
+  </button>
 
-          <router-link
-            v-if="status === 'published'"
-            to="/organiser/check-in"
-            class="button button-primary full-width"
-          >
-            Open QR Check-in
-          </router-link>
+  <router-link
+    v-if="status === 'completed'"
+    :to="`/organiser/event/${selectedEvent?.id}/feedback`"
+    class="button button-primary full-width"
+  >
+    View Feedback
+  </router-link>
 
-          <button
-  v-if="status === 'published'"
-  class="button button-secondary full-width"
-  @click="handleAction('complete')"
->
-  Mark as Completed
-</button>
+  <router-link
+    v-if="status === 'completed'"
+    :to="`/organiser/event/${selectedEvent?.id}/attendance`"
+    class="button button-secondary full-width"
+  >
+    View Attendance
+  </router-link>
 
-<router-link
-  v-if="status === 'completed'"
-  :to="`/organiser/event/${selectedEvent?.id}/feedback`"
-  class="button button-primary full-width"
->
-  View Feedback
-</router-link>
+  <button
+    v-if="status === 'draft' || status === 'rejected'"
+    class="button button-primary full-width"
+    @click="handleAction('submit')"
+  >
+    {{ status === 'rejected' ? 'Resubmit for Approval' : 'Submit for Approval' }}
+  </button>
 
-<router-link
-  v-if="status === 'completed'"
-  :to="`/organiser/event/${selectedEvent?.id}/attendance`"
-  class="button button-secondary full-width"
->
-  View Attendance
-</router-link>
+  <button
+    v-if="status === 'draft' || status === 'rejected'"
+    class="button button-danger full-width"
+    @click="handleAction('delete')"
+  >
+    Delete Draft
+  </button>
 
-          <button
-            v-if="status === 'draft' || status === 'rejected'"
-            class="button button-primary full-width"
-            @click="handleAction('submit')"
-          >
-            {{ status === 'rejected' ? 'Resubmit for Approval' : 'Submit for Approval' }}
-          </button>
+  <button
+    v-if="status === 'pending_approval'"
+    class="button button-danger full-width"
+    @click="handleAction('cancel_submission')"
+  >
+    Cancel Submission
+  </button>
 
-          <button
-            v-if="status === 'draft' || status === 'rejected'"
-            class="button button-danger full-width"
-            @click="handleAction('delete')"
-          >
-            Delete Draft
-          </button>
+  <button
+    v-if="status === 'published'"
+    class="button button-danger full-width"
+    @click="handleAction('cancel')"
+  >
+    Cancel Event
+  </button>
 
-          <button
-            v-if="status === 'pending_approval'"
-            class="button button-danger full-width"
-            @click="handleAction('cancel_submission')"
-          >
-            Cancel Submission
-          </button>
-
-          <button
-            v-if="status === 'published'"
-            class="button button-danger full-width"
-            @click="handleAction('cancel')"
-          >
-            Cancel Event
-          </button>
-
-          <span
-            v-if="status === 'cancelled' || status === 'completed'"
-            class="badge badge-gray status-full"
-          >
-            No available actions
-          </span>
-        </div>
+  <span
+    v-if="status === 'cancelled'"
+    class="badge badge-gray status-full"
+  >
+    No available actions
+  </span>
+</div>
       </aside>
     </section>
   </main>

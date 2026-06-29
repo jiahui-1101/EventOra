@@ -66,17 +66,3 @@ export function exportAttendanceCsvApi(id) {
 export function completeEventApi(id) {
   return apiClient.patch(`/events/${id}/complete`)
 }
-
-export function completeEventApi(id) {
-  return apiClient.patch(`/events/${id}/complete`)
-}
-
-export function getOrganiserFeedbackApi(id) {
-  return apiClient.get(`/events/${id}/feedback`)
-}
-
-export function exportAttendanceCsvApi(id) {
-  return apiClient.get(`/events/${id}/attendance/export`, {
-    responseType: 'blob',
-  })
-}
