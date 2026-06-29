@@ -117,12 +117,12 @@ INSERT IGNORE INTO payments (registration_id, amount, status, mock_ref, paid_at)
 (@r_ctf1, 10, 'paid', CONCAT('PAY-',@r_ctf1), NOW()), (@r_ctf2, 10, 'paid', CONCAT('PAY-',@r_ctf2), NOW()), (@r_ctf3, 10, 'paid', CONCAT('PAY-',@r_ctf3), NOW()), (@r_ctf4, 10, 'paid', CONCAT('PAY-',@r_ctf4), NOW()), (@r_ctf5, 10, 'paid', CONCAT('PAY-',@r_ctf5), NOW());
 
 
-INSERT IGNORE INTO tickets (registration_id, qr_token, status) VALUES
-(@r_py1, CONCAT('DEMO-TKT-',@r_py1), 'used'), (@r_py2, CONCAT('DEMO-TKT-',@r_py2), 'used'), (@r_py3, CONCAT('DEMO-TKT-',@r_py3), 'used'), (@r_py4, CONCAT('DEMO-TKT-',@r_py4), 'used'), (@r_py5, CONCAT('DEMO-TKT-',@r_py5), 'used'),
-(@r_iot1, CONCAT('DEMO-TKT-',@r_iot1), 'used'), (@r_iot2, CONCAT('DEMO-TKT-',@r_iot2), 'used'), (@r_iot3, CONCAT('DEMO-TKT-',@r_iot3), 'used'), 
-(@r_iot4, CONCAT('DEMO-TKT-',@r_iot4), 'active'), (@r_iot5, CONCAT('DEMO-TKT-',@r_iot5), 'active'), -- 【防呆伏笔】门票有效，但人没去
-(@r_dan1, CONCAT('DEMO-TKT-',@r_dan1), 'used'), (@r_dan2, CONCAT('DEMO-TKT-',@r_dan2), 'used'), (@r_dan3, CONCAT('DEMO-TKT-',@r_dan3), 'used'), (@r_dan4, CONCAT('DEMO-TKT-',@r_dan4), 'used'), (@r_dan5, CONCAT('DEMO-TKT-',@r_dan5), 'used'),
-(@r_ctf1, CONCAT('DEMO-TKT-',@r_ctf1), 'used'), (@r_ctf2, CONCAT('DEMO-TKT-',@r_ctf2), 'used'), (@r_ctf3, CONCAT('DEMO-TKT-',@r_ctf3), 'used'), (@r_ctf4, CONCAT('DEMO-TKT-',@r_ctf4), 'used'), (@r_ctf5, CONCAT('DEMO-TKT-',@r_ctf5), 'used');
+INSERT IGNORE INTO tickets (registration_id, ticket_code, qr_token, status) VALUES
+(@r_py1, CONCAT('EO-FINAL-',@r_py1), CONCAT('DEMO-TKT-',@r_py1), 'used'), (@r_py2, CONCAT('EO-FINAL-',@r_py2), CONCAT('DEMO-TKT-',@r_py2), 'used'), (@r_py3, CONCAT('EO-FINAL-',@r_py3), CONCAT('DEMO-TKT-',@r_py3), 'used'), (@r_py4, CONCAT('EO-FINAL-',@r_py4), CONCAT('DEMO-TKT-',@r_py4), 'used'), (@r_py5, CONCAT('EO-FINAL-',@r_py5), CONCAT('DEMO-TKT-',@r_py5), 'used'),
+(@r_iot1, CONCAT('EO-FINAL-',@r_iot1), CONCAT('DEMO-TKT-',@r_iot1), 'used'), (@r_iot2, CONCAT('EO-FINAL-',@r_iot2), CONCAT('DEMO-TKT-',@r_iot2), 'used'), (@r_iot3, CONCAT('EO-FINAL-',@r_iot3), CONCAT('DEMO-TKT-',@r_iot3), 'used'), 
+(@r_iot4, CONCAT('EO-FINAL-',@r_iot4), CONCAT('DEMO-TKT-',@r_iot4), 'active'), (@r_iot5, CONCAT('EO-FINAL-',@r_iot5), CONCAT('DEMO-TKT-',@r_iot5), 'active'), -- 【防呆伏笔】门票有效，但人没去
+(@r_dan1, CONCAT('EO-FINAL-',@r_dan1), CONCAT('DEMO-TKT-',@r_dan1), 'used'), (@r_dan2, CONCAT('EO-FINAL-',@r_dan2), CONCAT('DEMO-TKT-',@r_dan2), 'used'), (@r_dan3, CONCAT('EO-FINAL-',@r_dan3), CONCAT('DEMO-TKT-',@r_dan3), 'used'), (@r_dan4, CONCAT('EO-FINAL-',@r_dan4), CONCAT('DEMO-TKT-',@r_dan4), 'used'), (@r_dan5, CONCAT('EO-FINAL-',@r_dan5), CONCAT('DEMO-TKT-',@r_dan5), 'used'),
+(@r_ctf1, CONCAT('EO-FINAL-',@r_ctf1), CONCAT('DEMO-TKT-',@r_ctf1), 'used'), (@r_ctf2, CONCAT('EO-FINAL-',@r_ctf2), CONCAT('DEMO-TKT-',@r_ctf2), 'used'), (@r_ctf3, CONCAT('EO-FINAL-',@r_ctf3), CONCAT('DEMO-TKT-',@r_ctf3), 'used'), (@r_ctf4, CONCAT('EO-FINAL-',@r_ctf4), CONCAT('DEMO-TKT-',@r_ctf4), 'used'), (@r_ctf5, CONCAT('EO-FINAL-',@r_ctf5), CONCAT('DEMO-TKT-',@r_ctf5), 'used');
 
 
 SET @t_py1 := (SELECT id FROM tickets WHERE registration_id=@r_py1 LIMIT 1); SET @t_py2 := (SELECT id FROM tickets WHERE registration_id=@r_py2 LIMIT 1); SET @t_py3 := (SELECT id FROM tickets WHERE registration_id=@r_py3 LIMIT 1); SET @t_py4 := (SELECT id FROM tickets WHERE registration_id=@r_py4 LIMIT 1); SET @t_py5 := (SELECT id FROM tickets WHERE registration_id=@r_py5 LIMIT 1);
