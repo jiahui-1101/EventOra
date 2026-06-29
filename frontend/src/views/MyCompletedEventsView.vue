@@ -12,11 +12,12 @@
 
     <section v-else class="event-grid">
       <article v-for="ev in myEvents" :key="ev.id" class="event-card">
-        <div :class="['event-cover', ev.coverClass]">
-          <span :class="['badge', ev.badgeClass]">{{ ev.category }}</span>
-          <span v-if="ev.checkedIn" class="badge badge-green">✓ Attended (Verified)</span>
-          <span v-else class="badge badge-yellow">Missed / Unverified</span>
-        </div>
+        <div class="event-image-container">
+  <img :src="ev.posterImage" :alt="ev.title" loading="lazy" />
+  <span :class="['badge', ev.badgeClass]">{{ ev.category }}</span>
+  <span v-if="ev.checkedIn" class="badge badge-green status-badge">Attended</span>
+  <span v-else class="badge badge-yellow status-badge">Unverified</span>
+</div>
 
         <div class="event-card-body">
           <span class="event-date">📅 Date: {{ formatDate(ev.startAt) }}</span>
@@ -116,6 +117,41 @@ const attendeeName = computed(() => {
   return user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
 })
 
+const completedFallbackPosters = {
+  'event-annual-tech-2026': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=80',
+  'event-ai-app-2026': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=80',
+  'event-cultural-night-2026': 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=900&q=80',
+  'event-hackathon-2026': 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=900&q=80',
+  'event-futsal-cup-2026': 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80',
+}
+
+const completedPosterPool = [
+  'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=900&q=80',
+]
+
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
+  .replace(/\/api\/?$/, '')
+
+function resolveCompletedPoster(event) {
+  const uploaded = event.posterUrl || event.poster_url || event.posterImage
+
+  if (uploaded && /^https?:\/\//i.test(uploaded)) return uploaded
+  if (uploaded && uploaded.startsWith('/')) return `${apiOrigin}${uploaded}`
+  if (uploaded) return `${apiOrigin}/${uploaded}`
+
+  const eventId = String(event.id || '')
+  if (completedFallbackPosters[eventId]) return completedFallbackPosters[eventId]
+
+  const hash = [...eventId || event.title || 'completed'].reduce(
+    (sum, char) => sum + char.charCodeAt(0),
+    0
+  )
+
+  return completedPosterPool[hash % completedPosterPool.length]
+}
+
 onMounted(async () => {
   try {
     const response = await getCompletedEventsApi()
@@ -132,6 +168,7 @@ const myEvents = computed(() => {
     ...event,
     coverClass: `${event.category || 'academic'}-cover`,
     badgeClass: categoryBadge(event.category),
+    posterImage: resolveCompletedPoster(event),
     hasRated: Boolean(event.feedback),
     myRating: event.feedback?.rating || 0,
   }))

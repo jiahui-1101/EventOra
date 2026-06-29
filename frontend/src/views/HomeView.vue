@@ -209,6 +209,48 @@ const categoryDefaultBanners = {
   workshop: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=700&q=80'  // 围坐讨论工作坊
 }
 
+const eventFallbackPosters = {
+  'event-annual-tech-2026': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=80',
+  'event-ai-app-2026': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=80',
+  'event-cultural-night-2026': 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=900&q=80',
+  'event-hackathon-2026': 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=900&q=80',
+  'event-futsal-cup-2026': 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80',
+  'event-traditional-dance-2026': 'https://images.unsplash.com/photo-1519925610903-381054cc2a1c?auto=format&fit=crop&w=900&q=80',
+  'event-robotics-showcase-2026': 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=900&q=80',
+  'event-career-prep-2026': 'https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80',
+  'event-sustainability-day-2026': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=80',
+  'event-startup-pitch-2026': 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=900&q=80',
+}
+
+const fallbackPosterPool = [
+  'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1515169067865-5387ec356754?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=900&q=80',
+]
+
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
+  .replace(/\/api\/?$/, '')
+
+function resolveEventPoster(event, category) {
+  const uploaded = event.posterUrl || event.poster_url || event.posterImage
+
+  if (uploaded && /^https?:\/\//i.test(uploaded)) return uploaded
+  if (uploaded && uploaded.startsWith('/')) return `${apiOrigin}${uploaded}`
+  if (uploaded) return `${apiOrigin}/${uploaded}`
+
+  const eventId = String(event.id || '')
+  if (eventFallbackPosters[eventId]) return eventFallbackPosters[eventId]
+
+  const hash = [...eventId || event.title || category].reduce(
+    (sum, char) => sum + char.charCodeAt(0),
+    0
+  )
+
+  return fallbackPosterPool[hash % fallbackPosterPool.length]
+}
+
 const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
   .replace(/\/api\/?$/, '')
 
@@ -406,10 +448,7 @@ function toPublicEvent(event) {
     seatsLeft: Math.max(capacity - confirmed, 0),
     coverClass: event.coverClass || coverForCategory(category),
     badgeClass: event.badgeClass || badgeForCategory(category),
-    posterImage: resolvePosterUrl(
-  event.posterUrl || event.poster_url || event.posterImage,
-  category
-),
+    posterImage: resolveEventPoster(event, category),
   }
 }
 

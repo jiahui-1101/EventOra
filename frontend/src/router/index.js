@@ -12,6 +12,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/favorites',
+    name: 'my-favorites',
+    component: () => import('@/views/MyFavoritesView.vue'),
+    meta: { requiresAuth: true, role: 'attendee' },
+  },
+  {
     path: '/organiser/event/:id/feedback',
     name: 'organiser-feedback',
     component: () => import('@/views/organiser/OrganiserFeedbackView.vue'),

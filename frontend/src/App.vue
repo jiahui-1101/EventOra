@@ -8,6 +8,12 @@
       <nav class="desktop-nav" aria-label="Main navigation">
         <router-link to="/">Events</router-link>
         <router-link v-if="authStore.role === 'attendee'" to="/tickets">My Tickets</router-link>
+        <router-link v-if="authStore.role === 'attendee'" to="/my-completed">
+  My Completed
+</router-link>
+<router-link v-if="authStore.role === 'attendee'" to="/favorites">
+  Favorites
+</router-link>
         <router-link v-if="authStore.role === 'organiser'" to="/organiser/check-in">Check-in</router-link>
         <router-link v-if="dashboardLink" :to="dashboardLink">Dashboard</router-link>
         <router-link v-if="!authStore.isLoggedIn" to="/login">Login</router-link>
@@ -27,12 +33,35 @@
 
     <nav class="mobile-nav" aria-label="Mobile navigation">
   <router-link to="/">Events</router-link>
-  <router-link v-if="authStore.role === 'attendee'" to="/tickets">Tickets</router-link>
-  <router-link v-if="authStore.role === 'organiser'" to="/organiser/check-in">Check-in</router-link>
-  <router-link v-if="dashboardLink" :to="dashboardLink">Dashboard</router-link>
-  <router-link v-if="!authStore.isLoggedIn" to="/login">Login</router-link>
-  <router-link v-if="authStore.isLoggedIn" to="/profile">Profile</router-link>
-    </nav>
+
+  <router-link v-if="authStore.role === 'attendee'" to="/tickets">
+    Tickets
+  </router-link>
+
+  <router-link v-if="authStore.role === 'attendee'" to="/favorites">
+    Favorites
+  </router-link>
+
+  <router-link v-if="authStore.role === 'attendee'" to="/my-completed">
+    Completed
+  </router-link>
+
+  <router-link v-if="authStore.role === 'organiser'" to="/organiser/check-in">
+    Check-in
+  </router-link>
+
+  <router-link v-if="dashboardLink" :to="dashboardLink">
+    Dashboard
+  </router-link>
+
+  <router-link v-if="!authStore.isLoggedIn" to="/login">
+    Login
+  </router-link>
+
+  <router-link v-if="authStore.isLoggedIn" to="/profile">
+    Profile
+  </router-link>
+</nav>
   </div>
 </template>
 
