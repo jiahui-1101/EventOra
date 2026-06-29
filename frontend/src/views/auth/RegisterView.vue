@@ -47,12 +47,27 @@
             </div>
           </div>
 
+          <div v-if="role === 'organiser'" class="organiser-request-fields">
+            <div class="input-label">
+              Society name
+              <input type="text" v-model="societyName" placeholder="e.g. Computing Society" />
+            </div>
+            <div class="input-label">
+              Society description
+              <textarea
+                v-model="societyDescription"
+                rows="3"
+                placeholder="Briefly describe the society you represent"
+              ></textarea>
+            </div>
+          </div>
+
           <div v-if="errorMessage" class="auth-error">{{ errorMessage }}</div>
           <div
             v-if="showSuccess"
             style="display:block;margin:10px 0;padding:10px 14px;border-radius:var(--radius-sm);background:var(--success-soft);color:#065f46;font-size:0.84rem;"
           >
-            Account created successfully. Redirecting to sign in...
+            {{ successMessage }}
           </div>
 
           <button
