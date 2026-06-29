@@ -14,11 +14,10 @@ use PDOException;
 class AuthController
 {
     // POST /api/auth/register
-    // Public endpoint - creates a new attendee account.
-    // (Organiser/faculty_admin accounts are assigned separately by an
-    // existing faculty_admin via the societies/organisers endpoint,
-    // not through public self-registration - matches PR1's role model.)
-public function register(Request $request, Response $response): Response
+    // Public endpoint - creates a new attendee or organiser account.
+    // Organiser accounts submit a society request that faculty admin must
+    // approve before society_members gives them event-management access.
+    public function register(Request $request, Response $response): Response
     {
         $data = $request->getParsedBody();
 
