@@ -88,7 +88,7 @@ export function saveApprovalEvents() {
 }
 
 export async function loadApprovalEvents() {
-  if (hasLoadedApprovalEvents) return
+  if (hasLoadedApprovalEvents && !hasBackendToken()) return
 
   loadingApprovalEvents.value = true
   approvalLoadError.value = ''
@@ -159,11 +159,12 @@ async function updateApprovalEventInBackend(id, status, reason = '') {
     await rejectApprovalEventApi(id, reason)
   }
 
-  const event = approvalEvents.value.find((item) => String(item.id) === String(id))
-  if (event) {
-    event.status = status
-    event.reason = reason
-  }
+  await refreshBackendApprovalEvents()
+}
+
+async function refreshBackendApprovalEvents() {
+  const response = await getPendingApprovalEventsApi()
+  approvalEvents.value = response.data.data.map(formatBackendApprovalEvent)
 }
 
 function addApprovalDecisionNotifications(event, status, reason = '') {

@@ -267,13 +267,12 @@ class EventController
     }
 
     // GET /api/events/mine
-    // Organiser-only. Lists events created by the currently logged-in
-    // organiser, regardless of status - useful for the organiser to see
-    // what they've submitted and its current approval state.
+    // Organiser-only. Lists events from societies the organiser belongs to,
+    // matching the organiser dashboard's society-scoped totals.
     public function listMine(Request $request, Response $response): Response
     {
         $authUser = $request->getAttribute('user');
-        $createdBy = (int) $authUser['sub'];
+        $organiserId = (int) $authUser['sub'];
 
         $db = Database::getConnection();
         $stmt = $db->prepare(
@@ -284,10 +283,12 @@ class EventController
                 (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status <> "cancelled") AS registrations
              FROM events e
              JOIN societies s ON s.id = e.society_id
-             WHERE e.created_by = :created_by
+             WHERE e.society_id IN (
+                SELECT society_id FROM society_members WHERE user_id = :organiser_id
+             )
              ORDER BY e.created_at DESC'
         );
-        $stmt->execute(['created_by' => $createdBy]);
+        $stmt->execute(['organiser_id' => $organiserId]);
 
         return $this->successResponse($response, array_map([$this, 'formatEventForFrontend'], $stmt->fetchAll()), null, 200);
     }
@@ -696,8 +697,17 @@ public function showPublic(Request $request, Response $response, array $args): R
         }
 
         $errors = [];
+        $now = time();
+
+        if ($startTimestamp <= $now) {
+            $errors['start_datetime'] = 'start_datetime must be in the future';
+        }
+
         if ($startTimestamp >= $endTimestamp) {
             $errors['end_datetime'] = 'end_datetime must be after start_datetime';
+        }
+        if ($deadlineTimestamp <= $now) {
+            $errors['reg_deadline'] = 'reg_deadline must be in the future';
         }
         if ($deadlineTimestamp >= $startTimestamp) {
             $errors['reg_deadline'] = 'reg_deadline must be before start_datetime';
@@ -745,7 +755,7 @@ public function showPublic(Request $request, Response $response, array $args): R
     private function findOwnedEvent(Request $request, int $eventId): ?array
     {
         $authUser = $request->getAttribute('user');
-        $createdBy = (int) $authUser['sub'];
+        $organiserId = (int) $authUser['sub'];
 
         $db = Database::getConnection();
         $stmt = $db->prepare(
@@ -753,9 +763,12 @@ public function showPublic(Request $request, Response $response, array $args): R
                 (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status <> "cancelled") AS registrations
              FROM events e
              JOIN societies s ON s.id = e.society_id
-             WHERE e.id = :id AND e.created_by = :created_by'
+             WHERE e.id = :id
+               AND e.society_id IN (
+                    SELECT society_id FROM society_members WHERE user_id = :organiser_id
+               )'
         );
-        $stmt->execute(['id' => $eventId, 'created_by' => $createdBy]);
+        $stmt->execute(['id' => $eventId, 'organiser_id' => $organiserId]);
         $event = $stmt->fetch();
 
         return $event ?: null;
