@@ -264,6 +264,28 @@ function statusText(status) {
   return 'Pending Review'
 }
 
+async function loadActivityMetrics() {
+  loadingActivity.value = true
+  activityError.value = ''
+
+  try {
+    const response = await getFacultyDashboardApi()
+    activityStats.value = response.data.data
+  } catch (error) {
+    activityError.value = 'Could not load activity metrics.'
+  } finally {
+    loadingActivity.value = false
+  }
+}
+
+function formatCategory(category) {
+  return String(category || '')
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+}
+
 async function approveEvent(event) {
   try {
     await updateApprovalEvent(event.id, 'approved', '')
