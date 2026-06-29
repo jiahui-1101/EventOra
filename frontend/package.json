@@ -11,6 +11,9 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
     "@vitejs/plugin-vue": "^6.0.7",
     "vite": "^7.2.2",
     "vitest": "^4.1.9"

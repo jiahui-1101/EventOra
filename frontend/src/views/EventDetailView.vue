@@ -254,6 +254,12 @@ import {
   addFavoriteApi,
   removeFavoriteApi,
 } from '@/api/events'
+import {
+  registerForEventApi,
+  confirmRegistrationPaymentApi,
+  getMyRegistrationsApi,
+  cancelRegistrationApi,
+} from '@/api/ticketing'
 
 const route = useRoute()
 const router = useRouter()
@@ -354,7 +360,7 @@ onMounted(async () => {
       favorites.value = favResponse.data.data.isFavorited ? [event.value.id] : []
     }
 
-    hydrateExistingRegistration()
+    await hydrateExistingRegistration()
   } catch (e) {
     console.error('Backend event detail failed, using mock fallback:', e)
 
@@ -366,7 +372,7 @@ onMounted(async () => {
       .find((candidate) => String(candidate.id) === String(route.params.id))
 
     event.value = target ? ticketingStore.ensureEventAvailable(target) : null
-    hydrateExistingRegistration()
+    await hydrateExistingRegistration()
   } finally {
     loading.value = false
   }
@@ -499,22 +505,41 @@ function setNotice(type, message) {
   registrationNotice.value = { type, message }
 }
 
-function hydrateExistingRegistration() {
+async function hydrateExistingRegistration() {
   pendingRegistration.value = null
   confirmedTicket.value = null
   waitlistedRegistration.value = null
 
   if (!event.value || !authStore.isLoggedIn || authStore.role !== 'attendee') return
 
+  try {
+    const response = await getMyRegistrationsApi()
+    const registration = response.data.data.find((item) =>
+      Number(item.eventId) === Number(event.value.id)
+      && ['pending_payment', 'confirmed', 'waitlisted'].includes(item.status)
+    )
+
+    if (registration) {
+      applyRegistrationState(registration)
+      return
+    }
+  } catch (error) {
+    console.warn('Backend registration state unavailable, using local fallback:', error)
+  }
+
   ticketingStore.expirePendingPayments()
   const registration = ticketingStore.getActiveRegistrationForAttendee(event.value.id, attendeePayload())
   if (!registration) return
 
+  applyRegistrationState(registration)
+}
+
+function applyRegistrationState(registration) {
   if (registration.status === 'pending_payment') {
     pendingRegistration.value = registration
     holdExpiresAt.value = registration.paymentHoldExpiresAt
       ? new Date(registration.paymentHoldExpiresAt)
-      : null
+      : new Date(Date.now() + 10 * 60 * 1000)
     setNotice('info', 'You already have a reserved seat. Complete payment to receive your QR ticket.')
     return
   }
@@ -526,7 +551,7 @@ function hydrateExistingRegistration() {
   }
 
   if (registration.status === 'confirmed') {
-    confirmedTicket.value = ticketingStore
+    confirmedTicket.value = registration.ticket || ticketingStore
       .getTicketsForAttendee(registration.attendeeEmail)
       .find((ticket) => ticket.registrationId === registration.id) || null
     if (confirmedTicket.value) {
@@ -535,7 +560,7 @@ function hydrateExistingRegistration() {
   }
 }
 
-function reserveSeat() {
+async function reserveSeat() {
   if (!event.value) return
 
   if (!authStore.isLoggedIn) {
@@ -552,6 +577,36 @@ function reserveSeat() {
   if (registrationClosedReason.value) {
     setNotice('error', registrationClosedReason.value)
     return
+  }
+
+  try {
+    const response = await registerForEventApi(event.value.id)
+    const result = response.data.data
+    const registration = result.registration
+
+    if (registration.status === 'pending_payment') {
+      pendingRegistration.value = registration
+      holdExpiresAt.value = new Date(Date.now() + 10 * 60 * 1000)
+      paymentConsent.value = false
+      setNotice('info', 'Your seat is held while you complete payment.')
+      return
+    }
+
+    if (registration.status === 'waitlisted') {
+      waitlistedRegistration.value = registration
+      setNotice('warning', `You have joined the waitlist at position #${registration.waitlistPosition}.`)
+      return
+    }
+
+    confirmedTicket.value = result.ticket
+    setNotice('success', 'Registration confirmed. Your QR ticket has been issued.')
+    return
+  } catch (backendError) {
+    const backendMessage = backendError.response?.data?.error?.message
+    if (backendMessage) {
+      setNotice('error', backendMessage)
+      return
+    }
   }
 
   try {
@@ -585,7 +640,7 @@ function reserveSeat() {
   }
 }
 
-function approvePayment() {
+async function approvePayment() {
   if (!pendingRegistration.value) return
 
   try {
@@ -594,6 +649,22 @@ function approvePayment() {
       return
     }
 
+    const response = await confirmRegistrationPaymentApi(pendingRegistration.value.id)
+    const result = response.data.data
+    confirmedTicket.value = result.ticket
+    pendingRegistration.value = null
+    holdExpiresAt.value = null
+    setNotice('success', 'Payment approved. Your QR ticket has been issued.')
+    return
+  } catch (backendError) {
+    const backendMessage = backendError.response?.data?.error?.message
+    if (backendMessage) {
+      setNotice('error', backendMessage)
+      return
+    }
+  }
+
+  try {
     const result = ticketingStore.completeMockPayment(pendingRegistration.value.id)
     confirmedTicket.value = result.ticket
     pendingRegistration.value = null
@@ -618,9 +689,25 @@ function declinePayment() {
   }
 }
 
-function cancelCurrentRegistration() {
+async function cancelCurrentRegistration() {
   const registration = pendingRegistration.value || waitlistedRegistration.value
   if (!registration) return
+
+  try {
+    await cancelRegistrationApi(registration.id)
+    pendingRegistration.value = null
+    waitlistedRegistration.value = null
+    holdExpiresAt.value = null
+    paymentConsent.value = false
+    setNotice('info', 'Your registration has been cancelled.')
+    return
+  } catch (backendError) {
+    const backendMessage = backendError.response?.data?.error?.message
+    if (backendMessage) {
+      setNotice('error', backendMessage)
+      return
+    }
+  }
 
   try {
     ticketingStore.cancelRegistration(registration.id)

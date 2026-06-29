@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EventOra</string>
+    <string name="title_activity_main">EventOra</string>
+    <string name="package_name">com.nextlevel.eventora</string>
+    <string name="custom_url_scheme">com.nextlevel.eventora</string>
+</resources>

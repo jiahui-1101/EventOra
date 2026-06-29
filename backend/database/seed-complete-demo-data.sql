@@ -210,18 +210,18 @@ ON DUPLICATE KEY UPDATE
     status = VALUES(status),
     paid_at = VALUES(paid_at);
 
-INSERT INTO tickets (registration_id, qr_token, status)
+INSERT INTO tickets (registration_id, ticket_code, qr_token, status)
 VALUES
-    (@ai_reg_1, CONCAT('DEMO-TICKET-', @ai_reg_1), 'used'),
-    (@ai_reg_2, CONCAT('DEMO-TICKET-', @ai_reg_2), 'used'),
-    (@ai_reg_3, CONCAT('DEMO-TICKET-', @ai_reg_3), 'active'),
-    (@robot_reg_2, CONCAT('DEMO-TICKET-', @robot_reg_2), 'used'),
-    (@robot_reg_3, CONCAT('DEMO-TICKET-', @robot_reg_3), 'active'),
-    (@hackathon_reg_1, CONCAT('DEMO-TICKET-', @hackathon_reg_1), 'active'),
-    (@hackathon_reg_2, CONCAT('DEMO-TICKET-', @hackathon_reg_2), 'active'),
-    (@culture_reg_1, CONCAT('DEMO-TICKET-', @culture_reg_1), 'active'),
-    (@culture_reg_3, CONCAT('DEMO-TICKET-', @culture_reg_3), 'active'),
-    (@culture_reg_4, CONCAT('DEMO-TICKET-', @culture_reg_4), 'active')
+    (@ai_reg_1, CONCAT('EO-DEMO-', @ai_reg_1), CONCAT('DEMO-TICKET-', @ai_reg_1), 'used'),
+    (@ai_reg_2, CONCAT('EO-DEMO-', @ai_reg_2), CONCAT('DEMO-TICKET-', @ai_reg_2), 'used'),
+    (@ai_reg_3, CONCAT('EO-DEMO-', @ai_reg_3), CONCAT('DEMO-TICKET-', @ai_reg_3), 'active'),
+    (@robot_reg_2, CONCAT('EO-DEMO-', @robot_reg_2), CONCAT('DEMO-TICKET-', @robot_reg_2), 'used'),
+    (@robot_reg_3, CONCAT('EO-DEMO-', @robot_reg_3), CONCAT('DEMO-TICKET-', @robot_reg_3), 'active'),
+    (@hackathon_reg_1, CONCAT('EO-DEMO-', @hackathon_reg_1), CONCAT('DEMO-TICKET-', @hackathon_reg_1), 'active'),
+    (@hackathon_reg_2, CONCAT('EO-DEMO-', @hackathon_reg_2), CONCAT('DEMO-TICKET-', @hackathon_reg_2), 'active'),
+    (@culture_reg_1, CONCAT('EO-DEMO-', @culture_reg_1), CONCAT('DEMO-TICKET-', @culture_reg_1), 'active'),
+    (@culture_reg_3, CONCAT('EO-DEMO-', @culture_reg_3), CONCAT('DEMO-TICKET-', @culture_reg_3), 'active'),
+    (@culture_reg_4, CONCAT('EO-DEMO-', @culture_reg_4), CONCAT('DEMO-TICKET-', @culture_reg_4), 'active')
 ON DUPLICATE KEY UPDATE
     status = VALUES(status);
 

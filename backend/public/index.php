@@ -11,6 +11,8 @@ use App\Controllers\DashboardController;
 use App\Controllers\EventController;
 use App\Controllers\SocietyController;
 use App\Controllers\NotificationController;
+use App\Controllers\TicketingController;
+use App\Controllers\CheckInController;
 use App\Middleware\JwtMiddleware;
 use App\Middleware\RoleMiddleware;
 use App\Controllers\FavoriteController;
@@ -40,9 +42,10 @@ $app->addBodyParsingMiddleware();
 // reaches our routes - this is purely a browser-side security check,
 // not something PHP can see or control after the fact.
 $app->add(function ($request, $handler) {
+    $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'http://localhost:5173';
     $response = $handler->handle($request);
     return $response
-        ->withHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
+        ->withHeader('Access-Control-Allow-Origin', $frontendUrl)
         ->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
 });
@@ -153,6 +156,14 @@ $app->get('/api/dashboard/faculty', [new DashboardController(), 'facultyDashboar
 $app->get('/api/me/completed-events', [new AttendeeController(), 'completedEvents'])
     ->add(new JwtMiddleware());
 
+$app->get('/api/me/registrations', [new TicketingController(), 'listMyRegistrations'])
+    ->add(new RoleMiddleware(['attendee']))
+    ->add(new JwtMiddleware());
+
+$app->get('/api/me/tickets', [new TicketingController(), 'listMyTickets'])
+    ->add(new RoleMiddleware(['attendee']))
+    ->add(new JwtMiddleware());
+
 $app->post('/api/events/{id}/feedback', [new AttendeeController(), 'submitFeedback'])
     ->add(new JwtMiddleware());
 
@@ -172,6 +183,31 @@ $app->get('/api/dashboard/organiser/feedback', [new DashboardController(), 'orga
 // guests must be able to browse published events before registering.
 $app->get('/api/events', [new EventController(), 'listPublic']);
 $app->get('/api/public/events/{id}', [new EventController(), 'showPublic']);
+$app->get('/api/events/{id}/public', [new EventController(), 'showPublic']);
+
+$app->post('/api/events/{id}/registrations', [new TicketingController(), 'registerForEvent'])
+    ->add(new RoleMiddleware(['attendee']))
+    ->add(new JwtMiddleware());
+
+$app->post('/api/registrations/{id}/payment', [new TicketingController(), 'confirmPayment'])
+    ->add(new RoleMiddleware(['attendee']))
+    ->add(new JwtMiddleware());
+
+$app->delete('/api/registrations/{id}', [new TicketingController(), 'cancelRegistration'])
+    ->add(new RoleMiddleware(['attendee']))
+    ->add(new JwtMiddleware());
+
+$app->patch('/api/tickets/{id}/cancel', [new TicketingController(), 'cancelTicket'])
+    ->add(new RoleMiddleware(['attendee']))
+    ->add(new JwtMiddleware());
+
+$app->post('/api/check-ins', [new CheckInController(), 'create'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
+$app->get('/api/events/{id}/check-in/tickets', [new CheckInController(), 'listEventTickets'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
 
 // MINIMAL SCAFFOLD - see EventController.php for context. Organiser-only,
 // lets the Admin Approval Queue have real events to review.
@@ -260,6 +296,7 @@ $app->group('/api/notifications', function ($group) {
     $group->get('/unread-count', [$controller, 'unreadCount']);
     $group->post('/send-event-reminders', [$controller, 'sendEventReminders']);
     $group->post('/{id}/read', [$controller, 'markAsRead']);
+    $group->patch('/{id}/read', [$controller, 'markAsRead']);
     $group->post('/read-all', [$controller, 'markAllAsRead']);
 })->add(new JwtMiddleware());
 

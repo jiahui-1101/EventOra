@@ -149,9 +149,10 @@ WHERE email = 'demo.attendee5@example.com'
         AND registrations.user_id = users.id
   );
 
-INSERT INTO tickets (registration_id, qr_token, status)
+INSERT INTO tickets (registration_id, ticket_code, qr_token, status)
 SELECT
     r.id,
+    CONCAT('EO-DASH-', r.id),
     CONCAT('DEMO-DASHBOARD-QR-', r.id),
     'active'
 FROM registrations r
