@@ -164,15 +164,19 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTicketingStore } from '@/stores/ticketing'
+import { getMyEventApi } from '@/api/events'
 
 const route = useRoute()
 const router = useRouter()
 const ticketingStore = useTicketingStore()
 
 const eventsStorageKey = 'eventora_society_events_v2'
+const backendEvent = ref(null)
+const backendEventLoaded = ref(false)
+const hasBackendToken = computed(() => Boolean(localStorage.getItem('eventora_token')))
 
 const defaultEvents = [
   {
