@@ -82,9 +82,7 @@
 
           <div>
             <dt>Public listing</dt>
-            <dd>
-              {{ status === 'published' ? 'Visible in public event list' : 'Hidden until Faculty Admin approval' }}
-            </dd>
+            <dd>{{ publicListingText }}</dd>
           </div>
 
           <div>
