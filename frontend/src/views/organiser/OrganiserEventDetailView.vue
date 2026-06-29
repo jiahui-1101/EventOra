@@ -416,6 +416,19 @@ const approvalNoteText = computed(() => {
   return map[status.value] || 'This event is still editable. Submit it when all details are ready.'
 })
 
+const publicListingText = computed(() => {
+  const map = {
+    published: 'Visible in public event list',
+    completed: 'Archived after completion',
+    pending_approval: 'Hidden until Faculty Admin approval',
+    cancelled: 'Hidden because the event was cancelled',
+    rejected: 'Hidden until changes are resubmitted',
+    loading: 'Loading event visibility',
+  }
+
+  return map[status.value] || 'Hidden until submitted for approval'
+})
+
 function saveEvents() {
   localStorage.setItem(eventsStorageKey, JSON.stringify(societyEvents.value))
 }
