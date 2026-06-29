@@ -264,6 +264,11 @@ class DashboardController
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
+    private function getAllEventIds(PDO $db): array
+    {
+        return $db->query('SELECT id FROM events')->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     // Finds every event belonging to the given societies, regardless of
     // status - the dashboard should show drafts and pending events too,
     // not just published ones, since the organiser needs visibility into
