@@ -267,13 +267,13 @@ class EventController
     }
 
     // GET /api/events/mine
-    // Organiser-only. Lists events for every society the organiser belongs
-    // to, regardless of status. This matches the organiser dashboard totals,
-    // which are society-scoped rather than only created_by-scoped.
+    // Organiser-only. Lists events created by the currently logged-in
+    // organiser, regardless of status - useful for the organiser to see
+    // what they've submitted and its current approval state.
     public function listMine(Request $request, Response $response): Response
     {
         $authUser = $request->getAttribute('user');
-        $organiserId = (int) $authUser['sub'];
+        $createdBy = (int) $authUser['sub'];
 
         $db = Database::getConnection();
         $stmt = $db->prepare(
@@ -284,12 +284,10 @@ class EventController
                 (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status <> "cancelled") AS registrations
              FROM events e
              JOIN societies s ON s.id = e.society_id
-             WHERE e.society_id IN (
-                SELECT society_id FROM society_members WHERE user_id = :organiser_id
-             )
+             WHERE e.created_by = :created_by
              ORDER BY e.created_at DESC'
         );
-        $stmt->execute(['organiser_id' => $organiserId]);
+        $stmt->execute(['created_by' => $createdBy]);
 
         return $this->successResponse($response, array_map([$this, 'formatEventForFrontend'], $stmt->fetchAll()), null, 200);
     }
@@ -747,7 +745,7 @@ public function showPublic(Request $request, Response $response, array $args): R
     private function findOwnedEvent(Request $request, int $eventId): ?array
     {
         $authUser = $request->getAttribute('user');
-        $organiserId = (int) $authUser['sub'];
+        $createdBy = (int) $authUser['sub'];
 
         $db = Database::getConnection();
         $stmt = $db->prepare(
@@ -755,12 +753,9 @@ public function showPublic(Request $request, Response $response, array $args): R
                 (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status <> "cancelled") AS registrations
              FROM events e
              JOIN societies s ON s.id = e.society_id
-             WHERE e.id = :id
-               AND e.society_id IN (
-                    SELECT society_id FROM society_members WHERE user_id = :organiser_id
-               )'
+             WHERE e.id = :id AND e.created_by = :created_by'
         );
-        $stmt->execute(['id' => $eventId, 'organiser_id' => $organiserId]);
+        $stmt->execute(['id' => $eventId, 'created_by' => $createdBy]);
         $event = $stmt->fetch();
 
         return $event ?: null;
