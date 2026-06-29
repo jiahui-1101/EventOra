@@ -20,6 +20,171 @@ use PDOException;
 // business logic of the approval workflow itself.
 class AdminController
 {
+    public function listPendingOrganiserRequests(Request $request, Response $response): Response
+    {
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare(
+            'SELECT
+                osr.id,
+                osr.user_id,
+                osr.society_name,
+                osr.society_description,
+                osr.status,
+                osr.created_at,
+                u.name AS organiser_name,
+                u.email AS organiser_email
+             FROM organiser_society_requests osr
+             JOIN users u ON u.id = osr.user_id
+             WHERE osr.status = :status
+             ORDER BY osr.created_at ASC'
+        );
+        $stmt->execute(['status' => 'pending']);
+
+        return $this->successResponse($response, $stmt->fetchAll(), null, 200);
+    }
+
+    public function approveOrganiserRequest(Request $request, Response $response, array $args): Response
+    {
+        $requestId = (int) $args['id'];
+        $authUser = $request->getAttribute('user');
+        $reviewerId = (int) $authUser['sub'];
+
+        $db = Database::getConnection();
+        $organiserRequest = $this->findOrganiserRequestOrNull($db, $requestId);
+
+        if ($organiserRequest === null) {
+            return $this->errorResponse($response, 'REQUEST_NOT_FOUND', 'Organiser request not found', [], 404);
+        }
+        if ($organiserRequest['status'] !== 'pending') {
+            return $this->errorResponse($response, 'ALREADY_REVIEWED', 'This organiser request has already been reviewed', [], 409);
+        }
+
+        try {
+            $db->beginTransaction();
+
+            $societyId = $this->findOrCreateSociety(
+                $db,
+                $organiserRequest['society_name'],
+                $organiserRequest['society_description'],
+                $reviewerId
+            );
+
+            $memberStmt = $db->prepare(
+                'INSERT INTO society_members (society_id, user_id, role)
+                 VALUES (:society_id, :user_id, :role)
+                 ON DUPLICATE KEY UPDATE role = VALUES(role)'
+            );
+            $memberStmt->execute([
+                'society_id' => $societyId,
+                'user_id' => (int) $organiserRequest['user_id'],
+                'role' => 'organiser',
+            ]);
+
+            $updateStmt = $db->prepare(
+                'UPDATE organiser_society_requests
+                 SET status = :status, reviewed_by = :reviewed_by, reviewed_at = CURRENT_TIMESTAMP, rejection_reason = NULL
+                 WHERE id = :id'
+            );
+            $updateStmt->execute([
+                'status' => 'approved',
+                'reviewed_by' => $reviewerId,
+                'id' => $requestId,
+            ]);
+
+            $this->notifyUserIfPossible(
+                (int) $organiserRequest['user_id'],
+                'organiser_request_approved',
+                'Society access approved',
+                "Your organiser access for '{$organiserRequest['society_name']}' has been approved.",
+                null
+            );
+
+            $db->commit();
+        } catch (PDOException $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            return $this->errorResponse($response, 'DB_ERROR', 'Could not approve organiser request', [], 500);
+        }
+
+        return $this->successResponse(
+            $response,
+            [
+                'request_id' => $requestId,
+                'status' => 'approved',
+                'society_id' => $societyId,
+            ],
+            'Organiser request approved',
+            200
+        );
+    }
+
+    public function rejectOrganiserRequest(Request $request, Response $response, array $args): Response
+    {
+        $requestId = (int) $args['id'];
+        $authUser = $request->getAttribute('user');
+        $reviewerId = (int) $authUser['sub'];
+
+        $data = $request->getParsedBody();
+        $reason = trim((string) ($data['reason'] ?? ''));
+
+        if ($reason === '') {
+            return $this->errorResponse(
+                $response,
+                'VALIDATION_ERROR',
+                'Validation failed',
+                ['reason' => 'A rejection reason is required'],
+                422
+            );
+        }
+
+        $db = Database::getConnection();
+        $organiserRequest = $this->findOrganiserRequestOrNull($db, $requestId);
+
+        if ($organiserRequest === null) {
+            return $this->errorResponse($response, 'REQUEST_NOT_FOUND', 'Organiser request not found', [], 404);
+        }
+        if ($organiserRequest['status'] !== 'pending') {
+            return $this->errorResponse($response, 'ALREADY_REVIEWED', 'This organiser request has already been reviewed', [], 409);
+        }
+
+        try {
+            $updateStmt = $db->prepare(
+                'UPDATE organiser_society_requests
+                 SET status = :status, reviewed_by = :reviewed_by, reviewed_at = CURRENT_TIMESTAMP, rejection_reason = :reason
+                 WHERE id = :id'
+            );
+            $updateStmt->execute([
+                'status' => 'rejected',
+                'reviewed_by' => $reviewerId,
+                'reason' => $reason,
+                'id' => $requestId,
+            ]);
+
+            $this->notifyUserIfPossible(
+                (int) $organiserRequest['user_id'],
+                'organiser_request_rejected',
+                'Society access rejected',
+                "Your organiser access request for '{$organiserRequest['society_name']}' was rejected. Reason: {$reason}",
+                null
+            );
+        } catch (PDOException $e) {
+            return $this->errorResponse($response, 'DB_ERROR', 'Could not reject organiser request', [], 500);
+        }
+
+        return $this->successResponse(
+            $response,
+            [
+                'request_id' => $requestId,
+                'status' => 'rejected',
+                'reason' => $reason,
+            ],
+            'Organiser request rejected',
+            200
+        );
+    }
+
     // GET /api/admin/events/pending
     // Lists all events currently awaiting approval, per PR1 5.1:
     // "Approval queue dashboard lists all pending events with: society name,
@@ -290,6 +455,57 @@ class AdminController
         $event = $stmt->fetch();
 
         return $event ?: null;
+    }
+
+    private function findOrganiserRequestOrNull(PDO $db, int $requestId): ?array
+    {
+        $stmt = $db->prepare(
+            'SELECT id, user_id, society_name, society_description, status
+             FROM organiser_society_requests
+             WHERE id = :id'
+        );
+        $stmt->execute(['id' => $requestId]);
+        $request = $stmt->fetch();
+
+        return $request ?: null;
+    }
+
+    private function findOrCreateSociety(PDO $db, string $name, ?string $description, int $createdBy): int
+    {
+        $findStmt = $db->prepare('SELECT id FROM societies WHERE name = :name');
+        $findStmt->execute(['name' => $name]);
+        $society = $findStmt->fetch();
+
+        if ($society) {
+            return (int) $society['id'];
+        }
+
+        $createStmt = $db->prepare(
+            'INSERT INTO societies (name, description, created_by)
+             VALUES (:name, :description, :created_by)'
+        );
+        $createStmt->execute([
+            'name' => $name,
+            'description' => $description,
+            'created_by' => $createdBy,
+        ]);
+
+        return (int) $db->lastInsertId();
+    }
+
+    private function notifyUserIfPossible(
+        int $userId,
+        string $type,
+        string $title,
+        string $message,
+        ?int $relatedEventId = null
+    ): void {
+        try {
+            NotificationService::create($userId, $type, $title, $message, $relatedEventId);
+        } catch (PDOException $e) {
+            // Some deployments may not have the optional notifications table yet.
+            // The organiser approval itself should still succeed.
+        }
     }
 
     // Looks up a user's display name by id. Used to attach a human-
