@@ -208,15 +208,20 @@ import {
   updateApprovalEvent,
   getApprovalEventDetails,
 } from '@/stores/approvalEvents'
+import { getFacultyDashboardApi } from '@/api/dashboard'
 
 const showModal = ref(false)
 const selectedEvent = ref(null)
 const rejectReason = ref('')
 const modalError = ref('')
 const toast = ref({ message: '', type: 'success' })
+const activityStats = ref(null)
+const loadingActivity = ref(false)
+const activityError = ref('')
 
 onMounted(() => {
   loadApprovalEvents()
+  loadActivityMetrics()
 })
 
 const loadingEvents = loadingApprovalEvents
