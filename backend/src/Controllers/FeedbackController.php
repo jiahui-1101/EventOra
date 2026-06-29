@@ -245,3 +245,39 @@ class FeedbackController
         return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
     }
 }
+
+public function submitFeedback(Request $request, Response $response, array $args): Response
+{
+    $userId  = (int) $request->getAttribute('user')['sub'];
+    $eventId = (int) $args['id'];
+    $data    = $request->getParsedBody();
+
+    $rating  = (int) ($data['rating'] ?? 0);
+    $comment = trim((string) ($data['comment'] ?? ''));
+
+    if ($rating < 1 || $rating > 5) {
+        return $this->errorResponse($response, 'VALIDATION_ERROR', 'Rating must be between 1 and 5', ['rating' => 'Invalid rating value'], 422);
+    }
+
+    $db = Database::getConnection();
+
+    $checkStmt = $db->prepare(
+        "SELECT ci.id FROM registrations r
+         JOIN tickets t ON t.registration_id = r.id
+         JOIN check_ins ci ON ci.ticket_id = t.id
+         WHERE r.event_id = :eid AND r.user_id = :uid AND r.status = 'confirmed' LIMIT 1"
+    );
+    $checkStmt->execute(['eid' => $eventId, 'uid' => $userId]);
+    
+    if (!$checkStmt->fetch()) {
+        return $this->errorResponse($response, 'NOT_ELIGIBLE', 'Only attendees who have checked in can submit feedback for this event', [], 403);
+    }
+
+    $stmt = $db->prepare(
+        "INSERT INTO feedback (event_id, user_id, rating, comment) VALUES (:eid, :uid, :rating, :comment)
+         ON DUPLICATE KEY UPDATE rating = :r2, comment = :c2"
+    );
+    $stmt->execute(['eid'=>$eventId, 'uid'=>$userId, 'rating'=>$rating, 'comment'=>$comment, 'r2'=>$rating, 'c2'=>$comment]);
+
+    return $this->successResponse($response, ['rating' => $rating], 'Thank you for your feedback!', 201);
+}
