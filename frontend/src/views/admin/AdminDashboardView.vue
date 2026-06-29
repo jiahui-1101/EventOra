@@ -238,6 +238,11 @@ import {
   loadApprovalEvents,
 } from '@/stores/approvalEvents'
 import { loadNotifications as loadStoredNotifications } from '@/stores/notifications'
+import {
+  approveOrganiserRequestApi,
+  getPendingOrganiserRequestsApi,
+  rejectOrganiserRequestApi,
+} from '@/api/admin'
 import axios from 'axios'
 
 const router = useRouter()
@@ -248,10 +253,15 @@ const societies = ref([])
 const loadingSocieties = ref(true)
 const loadError = ref('')
 const notifications = ref([])
+const organiserRequests = ref([])
+const loadingOrganiserRequests = ref(true)
+const organiserRequestError = ref('')
+const reviewingRequestId = ref(null)
 
 onMounted(async () => {
   loadApprovalEvents()
   ticketingStore.loadSeedData()
+  loadOrganiserRequests()
 
   try {
     const response = await axios.get('/mock/societies.json')
@@ -306,13 +316,14 @@ const unreadCount = computed(() =>
 const pendingCount = computed(() =>
   approvalEvents.value.filter((event) => event.status === 'pending').length
 )
+const pendingOrganiserRequestCount = computed(() => organiserRequests.value.length)
 
 function goToApprovalQueue() {
   router.push('/admin/approval-queue')
 }
 
 function rate(s) {
-  return Math.round((s.attended / s.registered) * 100)
+  return s.registered ? Math.round((s.attended / s.registered) * 100) : 0
 }
 
 async function loadNotifications() {
