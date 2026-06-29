@@ -48,6 +48,15 @@
           </div>
           <em>{{ pendingCount }}</em>
         </router-link>
+
+        <a class="sidebar-link queue-link" href="#organiser-requests">
+          <span>OR</span>
+          <div>
+            <strong>Organiser Requests</strong>
+            <small>{{ pendingOrganiserRequestCount }} pending access</small>
+          </div>
+          <em>{{ pendingOrganiserRequestCount }}</em>
+        </a>
       </aside>
 
       <div class="admin-main">
