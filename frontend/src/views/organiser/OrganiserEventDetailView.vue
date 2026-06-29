@@ -117,13 +117,21 @@
   View Event
 </router-link>
 
-          <router-link
-    v-if="status === 'completed'"
-    :to="`/organiser/event/${selectedEvent?.id}/feedback`"
-    class="button button-primary full-width"
-  >
-    View Feedback & Export Attendance
-  </router-link>
+<router-link
+  v-if="status === 'completed'"
+  :to="`/organiser/event/${selectedEvent?.id}/feedback`"
+  class="button button-primary full-width"
+>
+  View Feedback
+</router-link>
+
+<router-link
+  v-if="status === 'completed'"
+  :to="`/organiser/event/${selectedEvent?.id}/attendance`"
+  class="button button-secondary full-width"
+>
+  View Attendance
+</router-link>
 
           <router-link
             v-if="status === 'published'"
@@ -132,6 +140,30 @@
           >
             Open QR Check-in
           </router-link>
+
+          <button
+  v-if="status === 'published'"
+  class="button button-secondary full-width"
+  @click="handleAction('complete')"
+>
+  Mark as Completed
+</button>
+
+<router-link
+  v-if="status === 'completed'"
+  :to="`/organiser/event/${selectedEvent?.id}/feedback`"
+  class="button button-primary full-width"
+>
+  View Feedback
+</router-link>
+
+<router-link
+  v-if="status === 'completed'"
+  :to="`/organiser/event/${selectedEvent?.id}/attendance`"
+  class="button button-secondary full-width"
+>
+  View Attendance
+</router-link>
 
           <button
             v-if="status === 'draft' || status === 'rejected'"
@@ -181,7 +213,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTicketingStore } from '@/stores/ticketing'
-import { getMyEventApi } from '@/api/events'
+import { getMyEventApi, completeEventApi } from '@/api/events'
 
 const route = useRoute()
 const router = useRouter()
@@ -449,7 +481,7 @@ function saveEvents() {
   localStorage.setItem(eventsStorageKey, JSON.stringify(societyEvents.value))
 }
 
-function handleAction(action) {
+async function handleAction(action) {
   const id = selectedEvent.value?.id
 
   if (action === 'submit') {
@@ -473,6 +505,19 @@ function handleAction(action) {
     saveEvents()
     router.push({ path: '/organiser/dashboard', query: { eventAction: 'submission_cancelled' } })
   }
+
+  if (action === 'complete') {
+  try {
+    await completeEventApi(id)
+    backendEvent.value = {
+      ...selectedEvent.value,
+      status: 'completed',
+    }
+    router.push({ path: '/organiser/dashboard', query: { eventAction: 'completed' } })
+  } catch (error) {
+    alert(error.response?.data?.error?.message || 'Unable to mark event as completed.')
+  }
+}
 
   if (action === 'cancel') {
     societyEvents.value = societyEvents.value.map((ev) =>

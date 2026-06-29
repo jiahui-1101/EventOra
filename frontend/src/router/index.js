@@ -89,6 +89,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/organiser/event/:id/feedback',
+    name: 'organiser-feedback',
+    component: () => import('@/views/organiser/OrganiserFeedbackView.vue'),
+    meta: { requiresAuth: true, role: 'organiser' },
+  },
+  {
+    path: '/organiser/event/:id/attendance',
+    name: 'organiser-attendance',
+    component: () => import('@/views/organiser/OrganiserAttendanceView.vue'),
+    meta: { requiresAuth: true, role: 'organiser' },
+  },
+  {
     path: '/my-completed',
     name: 'my-completed',
     component: () => import('@/views/MyCompletedEventsView.vue'),

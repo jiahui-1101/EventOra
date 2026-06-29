@@ -564,23 +564,23 @@ onMounted(async () => {
   if (!event) return
 
   editingEventId.value = event.id
-  form.title = event.title || ''
-  form.category = event.category || ''
-  form.society = event.society || 'Computer Society UTM'
-  form.location = event.location || ''
-  form.description = event.description || ''
-  form.bannerImage = resolvePosterUrl(event.bannerImage || '')
-  form.posterImage = resolvePosterUrl(event.posterImage || '')
-  form.capacity = event.capacity || null
-  form.deadline = toDateTimeLocal(event.registrationDeadline)
-  form.feeType = event.feeType || 'Free'
-  form.feeAmount = event.feeAmount || 0
-  form.waitlist = event.waitlist || 'enabled'
-  form.contactName = event.contactName || ''
-  form.contactEmail = event.contactEmail || ''
-  form.instructions = event.instructions || ''
-  form.startDateTime = combineDateAndTime(event.eventDate, event.startTime)
-  form.endDateTime = combineDateAndTime(event.eventDate, event.endTime)
+form.title = event.title || ''
+form.category = event.category || ''
+form.society = event.society || 'Computer Society UTM'
+form.location = event.location || ''
+form.description = event.description || ''
+form.bannerImage = resolvePosterUrl(event.bannerImage || event.posterImage || '')
+form.posterImage = resolvePosterUrl(event.posterImage || event.bannerImage || '')
+form.capacity = event.capacity || null
+form.deadline = toDateTimeLocal(event.registrationDeadline)
+form.feeType = event.feeType || 'Free'
+form.feeAmount = event.feeAmount || 0
+form.waitlist = event.waitlist || 'enabled'
+form.contactName = event.contactName || ''
+form.contactEmail = event.contactEmail || ''
+form.instructions = event.instructions || ''
+form.startDateTime = combineDateAndTime(event.eventDate, event.startTime)
+form.endDateTime = combineDateAndTime(event.eventDate, event.endTime)
 })
 
 function handleBannerUpload(event) {
@@ -806,8 +806,10 @@ async function loadBackendEventForEdit(id) {
     form.society = event.society || event.society_name || form.society
     form.location = event.venue || event.location || ''
     form.description = event.description || ''
+
     form.bannerImage = resolvePosterUrl(event.posterUrl || event.poster_url || '')
     form.posterImage = resolvePosterUrl(event.posterUrl || event.poster_url || '')
+
     form.capacity = event.capacity || null
     form.deadline = toDateTimeLocal(event.registrationDeadline)
     form.feeType = event.feeType === 'paid' ? 'Paid' : 'Free'
