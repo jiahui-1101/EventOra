@@ -219,6 +219,7 @@ class DashboardController
         $stmt = $db->prepare(
             "SELECT
                 ci.id,
+                e.id AS event_id,
                 attendee.name AS attendee_name,
                 e.title AS event_title,
                 ci.checked_at,
@@ -237,6 +238,7 @@ class DashboardController
         $rows = array_map(
             fn (array $row): array => [
                 'id' => (int) $row['id'],
+                'eventId' => (int) $row['event_id'],
                 'attendee' => $row['attendee_name'],
                 'event' => $row['event_title'],
                 'checkedInAt' => $row['checked_at'],
@@ -247,6 +249,56 @@ class DashboardController
 
         return $this->successResponse($response, $rows, null, 200);
     }
+
+    public function organiserFeedback(Request $request, Response $response): Response
+{
+    $authUser = $request->getAttribute('user');
+    $organiserId = (int) $authUser['sub'];
+
+    $db = Database::getConnection();
+    $societyIds = $this->getOrganiserSocietyIds($db, $organiserId);
+
+    if (empty($societyIds)) {
+        return $this->successResponse($response, [], null, 200);
+    }
+
+    $placeholders = $this->buildPlaceholders($societyIds);
+
+    $stmt = $db->prepare(
+        "SELECT
+            f.id,
+            f.event_id,
+            e.title AS event_title,
+            attendee.name AS reviewer_name,
+            attendee.matric_no,
+            f.rating,
+            f.comment,
+            f.created_at AS submitted_at
+         FROM feedback f
+         JOIN events e ON e.id = f.event_id
+         JOIN users attendee ON attendee.id = f.user_id
+         WHERE e.society_id IN ({$placeholders})
+         ORDER BY f.created_at DESC"
+    );
+
+    $stmt->execute($societyIds);
+
+    $rows = array_map(
+        fn (array $row): array => [
+            'id' => (int) $row['id'],
+            'eventId' => (int) $row['event_id'],
+            'event' => $row['event_title'],
+            'reviewerName' => $row['reviewer_name'],
+            'matricNo' => $row['matric_no'],
+            'rating' => (int) $row['rating'],
+            'comment' => $row['comment'] ?? '',
+            'submittedAt' => $row['submitted_at'],
+        ],
+        $stmt->fetchAll()
+    );
+
+    return $this->successResponse($response, $rows, null, 200);
+}
 
     // Finds every society this organiser belongs to. Per the data
     // dictionary, society_members.role can be 'organiser' or

@@ -176,6 +176,77 @@ class FeedbackController
             ->withStatus(200);
     }
 
+    public function listAttendance(Request $request, Response $response, array $args): Response
+{
+    $organiserId = (int) $request->getAttribute('user')['sub'];
+    $eventId = (int) $args['id'];
+    $db = Database::getConnection();
+
+    if (!$this->organiserOwnsEvent($db, $organiserId, $eventId)) {
+        return $this->errorResponse($response, 'FORBIDDEN', 'You do not have access to this event', [], 403);
+    }
+
+    $eventStmt = $db->prepare('SELECT id, title, capacity FROM events WHERE id = :id LIMIT 1');
+    $eventStmt->execute(['id' => $eventId]);
+    $event = $eventStmt->fetch();
+
+    if ($event === false) {
+        return $this->errorResponse($response, 'NOT_FOUND', 'Event not found', [], 404);
+    }
+
+    $stmt = $db->prepare(
+        "SELECT
+            reg.id AS registration_id,
+            u.name,
+            u.matric_no,
+            u.email,
+            t.qr_token AS ticket_code,
+            CASE WHEN ci.id IS NOT NULL THEN 1 ELSE 0 END AS checked_in,
+            ci.checked_at,
+            ci.method AS check_in_method
+         FROM registrations reg
+         JOIN users u ON u.id = reg.user_id
+         LEFT JOIN tickets t ON t.registration_id = reg.id
+         LEFT JOIN check_ins ci ON ci.ticket_id = t.id
+         WHERE reg.event_id = :event_id
+           AND reg.status = 'confirmed'
+         ORDER BY u.name ASC"
+    );
+
+    $stmt->execute(['event_id' => $eventId]);
+    $rows = $stmt->fetchAll();
+
+    $checkedInCount = 0;
+
+    $participants = array_map(function (array $row) use (&$checkedInCount): array {
+        $checkedIn = (bool) $row['checked_in'];
+
+        if ($checkedIn) {
+            $checkedInCount++;
+        }
+
+        return [
+            'registrationId' => (int) $row['registration_id'],
+            'name' => $row['name'],
+            'matricNo' => $row['matric_no'] ?? '',
+            'email' => $row['email'],
+            'ticketCode' => $row['ticket_code'] ?? '',
+            'checkedIn' => $checkedIn,
+            'checkedAt' => $row['checked_at'],
+            'checkInMethod' => $row['check_in_method'] ?? '',
+        ];
+    }, $rows);
+
+    return $this->successResponse($response, [
+        'eventId' => (int) $event['id'],
+        'eventTitle' => $event['title'],
+        'capacity' => (int) $event['capacity'],
+        'totalParticipants' => count($participants),
+        'checkedInCount' => $checkedInCount,
+        'participants' => $participants,
+    ], null, 200);
+}
+
     // ----------------------------------------------------------------
     // Private helpers
     // ----------------------------------------------------------------

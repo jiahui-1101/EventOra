@@ -163,6 +163,10 @@ $app->get('/api/societies/mine', [new SocietyController(), 'listMine'])
     ->add(new RoleMiddleware(['organiser']))
     ->add(new JwtMiddleware());
 
+$app->get('/api/dashboard/organiser/feedback', [new DashboardController(), 'organiserFeedback'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
 // Public attendee-facing event discovery. This route intentionally sits
 // outside the organiser-only /api/events group below, because students and
 // guests must be able to browse published events before registering.
@@ -238,6 +242,10 @@ $app->get('/api/events/{id}/feedback', [new FeedbackController(), 'listFeedback'
     ->add(new JwtMiddleware());
 
 $app->get('/api/events/{id}/attendance/export', [new FeedbackController(), 'exportAttendanceCsv'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
+$app->get('/api/events/{id}/attendance', [new FeedbackController(), 'listAttendance'])
     ->add(new RoleMiddleware(['organiser']))
     ->add(new JwtMiddleware());
 

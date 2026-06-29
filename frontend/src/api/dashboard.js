@@ -32,3 +32,7 @@ export function getOrganiserAttendanceApi() {
 export function getFacultyDashboardApi() {
   return dashboardClient.get('/dashboard/faculty')
 }
+
+export function getOrganiserFeedbackApi() {
+  return dashboardClient.get('/dashboard/organiser/feedback')
+}

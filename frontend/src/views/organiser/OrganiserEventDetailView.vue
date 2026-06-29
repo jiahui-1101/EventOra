@@ -15,8 +15,8 @@
         <div
           class="poster-preview"
           :style="eventImage ? {
-            backgroundImage: `linear-gradient(rgba(49, 46, 129, 0.35), rgba(49, 46, 129, 0.55)), url(${eventImage})`
-          } : {}"
+  backgroundImage: `linear-gradient(rgba(49, 46, 129, 0.35), rgba(49, 46, 129, 0.55)), url('${eventImage}')`
+} : {}"
         >
           <div>
             <span :class="['badge', category === 'Sports' ? 'badge-yellow' : 'badge-blue']">
@@ -93,117 +93,101 @@
 
         <h2 class="section-title">Available Actions</h2>
 
-        <div class="action-list">
-          <span
-            v-if="status === 'pending_approval'"
-            class="badge badge-yellow status-full"
-          >
-            Waiting for Admin
-          </span>
+<div class="action-list">
+  <span
+    v-if="status === 'pending_approval'"
+    class="badge badge-yellow status-full"
+  >
+    Waiting for Admin
+  </span>
 
-          <router-link
-  v-if="status !== 'cancelled' && status !== 'completed'"
-  :to="`/organiser/create-event?edit=${selectedEvent?.id}`"
-  class="button button-secondary full-width"
->
-  Edit Event
-</router-link>
+  <router-link
+    v-if="status !== 'cancelled' && status !== 'completed'"
+    :to="`/organiser/create-event?edit=${selectedEvent?.id}`"
+    class="button button-secondary full-width"
+  >
+    Edit Event
+  </router-link>
 
-<router-link
-  v-else
-  :to="`/organiser/create-event?view=${selectedEvent?.id}`"
-  class="button button-secondary full-width"
->
-  View Event
-</router-link>
+  <router-link
+    v-else-if="status === 'completed'"
+    :to="`/organiser/create-event?view=${selectedEvent?.id}`"
+    class="button button-secondary full-width"
+  >
+    View Event
+  </router-link>
 
-<router-link
-  v-if="status === 'completed'"
-  :to="`/organiser/event/${selectedEvent?.id}/feedback`"
-  class="button button-primary full-width"
->
-  View Feedback
-</router-link>
+  <router-link
+    v-if="status === 'published'"
+    to="/organiser/check-in"
+    class="button button-primary full-width"
+  >
+    Open QR Check-in
+  </router-link>
 
-<router-link
-  v-if="status === 'completed'"
-  :to="`/organiser/event/${selectedEvent?.id}/attendance`"
-  class="button button-secondary full-width"
->
-  View Attendance
-</router-link>
+  <button
+    v-if="status === 'published'"
+    class="button button-secondary full-width"
+    @click="handleAction('complete')"
+  >
+    Mark as Completed
+  </button>
 
-          <router-link
-            v-if="status === 'published'"
-            to="/organiser/check-in"
-            class="button button-primary full-width"
-          >
-            Open QR Check-in
-          </router-link>
+  <router-link
+    v-if="status === 'completed'"
+    :to="`/organiser/event/${selectedEvent?.id}/feedback`"
+    class="button button-primary full-width"
+  >
+    View Feedback
+  </router-link>
 
-          <button
-  v-if="status === 'published'"
-  class="button button-secondary full-width"
-  @click="handleAction('complete')"
->
-  Mark as Completed
-</button>
+  <router-link
+    v-if="status === 'completed'"
+    :to="`/organiser/event/${selectedEvent?.id}/attendance`"
+    class="button button-secondary full-width"
+  >
+    View Attendance
+  </router-link>
 
-<router-link
-  v-if="status === 'completed'"
-  :to="`/organiser/event/${selectedEvent?.id}/feedback`"
-  class="button button-primary full-width"
->
-  View Feedback
-</router-link>
+  <button
+    v-if="status === 'draft' || status === 'rejected'"
+    class="button button-primary full-width"
+    @click="handleAction('submit')"
+  >
+    {{ status === 'rejected' ? 'Resubmit for Approval' : 'Submit for Approval' }}
+  </button>
 
-<router-link
-  v-if="status === 'completed'"
-  :to="`/organiser/event/${selectedEvent?.id}/attendance`"
-  class="button button-secondary full-width"
->
-  View Attendance
-</router-link>
+  <button
+    v-if="status === 'draft' || status === 'rejected'"
+    class="button button-danger full-width"
+    @click="handleAction('delete')"
+  >
+    Delete Draft
+  </button>
 
-          <button
-            v-if="status === 'draft' || status === 'rejected'"
-            class="button button-primary full-width"
-            @click="handleAction('submit')"
-          >
-            {{ status === 'rejected' ? 'Resubmit for Approval' : 'Submit for Approval' }}
-          </button>
+  <button
+    v-if="status === 'pending_approval'"
+    class="button button-danger full-width"
+    @click="handleAction('cancel_submission')"
+  >
+    Cancel Submission
+  </button>
 
-          <button
-            v-if="status === 'draft' || status === 'rejected'"
-            class="button button-danger full-width"
-            @click="handleAction('delete')"
-          >
-            Delete Draft
-          </button>
+  <button
+    v-if="status === 'published'"
+    class="button button-danger full-width"
+    @click="handleAction('cancel')"
+  >
+    Cancel Event
+  </button>
 
-          <button
-            v-if="status === 'pending_approval'"
-            class="button button-danger full-width"
-            @click="handleAction('cancel_submission')"
-          >
-            Cancel Submission
-          </button>
-
-          <button
-            v-if="status === 'published'"
-            class="button button-danger full-width"
-            @click="handleAction('cancel')"
-          >
-            Cancel Event
-          </button>
-
-          <span
-            v-if="status === 'cancelled' || status === 'completed'"
-            class="badge badge-gray status-full"
-          >
-            No available actions
-          </span>
-        </div>
+  <span
+    v-if="status === 'cancelled'"
+    class="badge badge-gray status-full"
+  >
+    No available actions
+  </span>
+</div>
       </aside>
     </section>
   </main>
@@ -308,8 +292,44 @@ const status = computed(() => {
   return selectedEvent.value?.status || 'draft'
 })
 const category = computed(() => selectedEvent.value?.category || 'Academic')
-const eventImage = computed(() => selectedEvent.value?.posterImage || selectedEvent.value?.bannerImage)
 
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
+  .replace(/\/api\/?$/, '')
+
+function resolvePosterUrl(value) {
+  if (!value) return ''
+  if (/^(https?:|data:|blob:)/i.test(value)) return value
+  if (value.startsWith('/')) return `${apiOrigin}${value}`
+  return `${apiOrigin}/${value}`
+}
+
+const fallbackEventImages = [
+  'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1200&q=80',
+]
+
+function getFallbackEventImage(event) {
+  const key = String(event?.id || event?.title || 'event')
+  const hash = [...key].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  return fallbackEventImages[hash % fallbackEventImages.length]
+}
+
+const eventImage = computed(() => {
+  const event = selectedEvent.value
+
+  const uploadedImage =
+    event?.posterImage ||
+    event?.bannerImage ||
+    event?.posterUrl ||
+    event?.poster_url ||
+    ''
+
+  return resolvePosterUrl(uploadedImage) || getFallbackEventImage(event)
+})
 const description = computed(
   () => selectedEvent.value?.description || 'No description has been added for this event yet.'
 )

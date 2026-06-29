@@ -218,7 +218,11 @@
           :class="{ 'has-preview': form.posterImage, 'is-readonly': isViewMode }"
           @click="!isViewMode && $refs.posterInput.click()"
         >
-          <img v-if="form.posterImage" :src="form.posterImage" alt="Event poster preview" />
+          <img
+  v-if="form.posterImage || form.bannerImage"
+  :src="resolvePosterUrl(form.posterImage || form.bannerImage)"
+  alt="Event poster preview"
+/>
           <div v-else>
             Drag &amp; drop poster here or <strong>browse</strong><br />
             <span>PNG, JPG up to 5MB. Recommended 1200x400px</span>
