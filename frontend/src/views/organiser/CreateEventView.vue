@@ -290,6 +290,8 @@
           <div><dt>Approval status</dt><dd>Draft → Pending approval</dd></div>
         </div>
 
+        <p v-if="stepError" class="auth-error">{{ stepError }}</p>
+
         <div class="create-actions">
           <button class="button button-ghost" @click="prevStep">Back</button>
 
