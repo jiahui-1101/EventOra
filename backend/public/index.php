@@ -112,6 +112,10 @@ $app->group('/api/admin/events', function ($group) {
     ->add(new RoleMiddleware(['faculty_admin']))
     ->add(new JwtMiddleware());
 
+$app->get('/api/admin/societies/overview', [new AdminController(), 'societyOverview'])
+    ->add(new RoleMiddleware(['faculty_admin']))
+    ->add(new JwtMiddleware());
+
 $app->group('/api/admin/organiser-requests', function ($group) {
     $controller = new AdminController();
 
@@ -138,6 +142,15 @@ $app->get('/api/dashboard/organiser/participants', [new DashboardController(), '
 
 $app->get('/api/dashboard/organiser/attendance', [new DashboardController(), 'organiserAttendance'])
     ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
+$app->get('/api/me/completed-events', [new AttendeeController(), 'completedEvents'])
+    ->add(new JwtMiddleware());
+
+$app->post('/api/events/{id}/feedback', [new AttendeeController(), 'submitFeedback'])
+    ->add(new JwtMiddleware());
+
+$app->post('/api/events/{id}/certificate', [new AttendeeController(), 'issueCertificate'])
     ->add(new JwtMiddleware());
 
 $app->get('/api/societies/mine', [new SocietyController(), 'listMine'])
