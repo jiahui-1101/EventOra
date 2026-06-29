@@ -213,32 +213,30 @@
           {{ buttonLabel }}
         </button>
 
-        <div v-if="event.status === 'completed'" class="post-event-zone" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
-    
-    <div v-if="userHasCheckedIn" class="feedback-box">
-      <h3>⭐️ Post-Event Feedback</h3>
-      <textarea 
-        v-model="myComment" 
-        placeholder="Share your thoughts about this event..." 
-        style="width: 100%; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; min-height: 80px;"
-      ></textarea>
-      <button 
-  @click="submitMyFeedback" 
-  :disabled="isSubmitting" 
-  class="button button-primary full-width"
+        <div
+  v-if="event.status === 'completed'"
+  class="post-event-zone"
+  style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0;"
 >
-  {{ isSubmitting ? 'Submitting...' : 'Submit Feedback' }}
-</button>
+  <div
+    class="notice-card"
+    style="background: #f8fafc; padding: 14px; border-radius: 10px; color: #475569; border: 1px solid #e2e8f0;"
+  >
+    <strong style="display: block; color: #0f172a; margin-bottom: 6px;">
+      This event has ended
+    </strong>
+    <p style="margin: 0 0 12px;">
+      Feedback and e-certificate are available from My Completed Events for attendees who checked in.
+    </p>
 
-      <hr style="margin: 16px 0;" />
-      
-      <button @click="downloadCert" class="button button-secondary full-width">🎓 Download Official Certificate (.pdf)</button>
-    </div>
-
-    <div v-else class="notice-card warning" style="background: #fffbeb; padding: 12px; border-radius: 8px; color: #92400e; border: 1px solid #fde68a;">
-      ⚠️ Access Restricted: Our system indicates you did not check in at the event venue. Therefore, feedback submission and certificate download are unavailable.
-    </div>
-
+    <router-link
+      v-if="authStore.role === 'attendee'"
+      to="/my-completed"
+      class="button button-primary full-width"
+    >
+      Go to My Completed Events
+    </router-link>
+  </div>
 </div>
       </aside>
     </section>
@@ -320,54 +318,6 @@ const paymentMethods = [
   },
 ]
 
-const myComment = ref('')
-const isSubmitting = ref(false)
-
-const userHasCheckedIn = computed(() => {
-  return confirmedTicket.value !== null && confirmedTicket.value.status === 'used'
-})
-
-async function submitMyFeedback() {
-  if (!myComment.value.trim()) {
-    alert('Please enter your feedback before submitting.')
-    return
-  }
-
-  isSubmitting.value = true
-  try {
-    const response = await fetch(`/api/events/${event.value.id}/feedback`, {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${authStore.token}`, 
-        'Content-Type': 'application/json' 
-      },
-      body: JSON.stringify({ 
-        rating: 5, // You can make this dynamic later if you add a star-rating UI
-        comment: myComment.value 
-      })
-    })
-
-    const result = await response.json()
-
-    if (response.ok) {
-      alert('Feedback submitted successfully! Thank you for your input.')
-      myComment.value = '' // Clear the input after success
-    } else {
-      // Handle backend validation errors (e.g., 403 Forbidden)
-      alert(result.error?.message || 'Failed to submit feedback. Please try again.')
-    }
-  } catch (e) {
-    console.error(e)
-    alert('An error occurred while connecting to the server.')
-  } finally {
-    isSubmitting.value = false
-  }
-
-}
-
-function downloadCert() {
-  alert('Certificate generation service is being invoked... Your download will begin shortly.')
-}
 const favKey = 'eventora_favs_v2'
 const societyEventsStorageKey = 'eventora_society_events_v2'
 

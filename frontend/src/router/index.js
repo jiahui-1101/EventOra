@@ -72,11 +72,6 @@ const routes = [
     meta: { requiresAuth: true, role: 'organiser' },
   },
   {
-    path: '/event/:id',
-    name: 'event-detail',
-    component: () => import('@/views/EventDetailView.vue'),
-  },
-  {
     path: '/tickets',
     name: 'my-tickets',
     component: () => import('@/views/MyTicketsView.vue'),
