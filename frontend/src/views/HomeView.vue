@@ -196,6 +196,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { loadNotifications } from '@/stores/notifications'
+import apiClient from '@/api/client'
 
 const authStore = useAuthStore()
 
@@ -355,19 +356,11 @@ onMounted(async () => {
   notifications.value = await loadNotifications()
 
   try {
-    const res = await fetch('/mock/events.json')
-    if (res.ok) {
-      const rawEvents = await res.json()
-      const fetchedEvents = rawEvents
-        .filter((event) => event.status === 'published')
-        .map(toPublicEvent)
-
-      events.value = mergePublicEvents(fetchedEvents, loadPublishedSocietyEvents())
-    } else {
-      events.value = [...basePublicEvents]
-    }
+    const res = await apiClient.get('/events')
+    const fetchedEvents = (res.data.data || []).map(toPublicEvent)
+    events.value = mergePublicEvents(fetchedEvents, loadPublishedSocietyEvents())
   } catch (err) {
-    console.error("Unable to load event data, using local fallback", err)
+    console.error('Unable to load events from backend, using local fallback', err)
     events.value = [...basePublicEvents]
   } finally {
     loadingEvents.value = false
