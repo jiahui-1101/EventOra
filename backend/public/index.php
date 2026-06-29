@@ -26,10 +26,9 @@ $app = AppFactory::create();
 // Leave empty for local dev.
 // $app->setBasePath('/api');
 
-// Error middleware: displayErrorDetails is true for now so we can see
-// actual PHP errors while developing. MUST be set to false before
-// deploying for the demo, or it'll leak internal error details to the client.
-$app->addErrorMiddleware(true, true, true);
+// Deploy-safe error handling: do not expose stack traces or server paths
+// to API clients. Keep detailed errors in logs instead.
+$app->addErrorMiddleware(false, true, true);
 
 // Needed so $request->getParsedBody() actually works for JSON POST/PUT bodies
 $app->addBodyParsingMiddleware();
