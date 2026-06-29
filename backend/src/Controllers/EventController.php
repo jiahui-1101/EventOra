@@ -63,6 +63,42 @@ class EventController
             $params['fee_type'] = $price;
         }
 
+        $date = strtolower(trim((string) ($query['date'] ?? '')));
+
+        if ($date !== '' && $date !== 'all') {
+            // Accepted values:
+            //   upcoming   → events that haven't started yet (most common browse view)
+            //   today      → events starting any time today (local server date)
+            //   this_week  → events starting within the next 7 days
+            //   past       → events whose end_datetime is already in the past
+            //                (useful for post-event features / completed tab)
+            switch ($date) {
+                case 'upcoming':
+                    $where[]  = 'e.start_datetime > NOW()';
+                    break;
+
+                case 'today':
+                    // DATE() strips the time component so "today" means
+                    // any event starting on the current calendar date.
+                    $where[] = 'DATE(e.start_datetime) = CURDATE()';
+                    break;
+
+                case 'this_week':
+                    // NOW() to NOW()+7 days — covers the next full 7 × 24 h window
+                    $where[] = 'e.start_datetime BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 7 DAY)';
+                    break;
+
+                case 'past':
+                    $where[] = 'e.end_datetime < NOW()';
+                    break;
+
+                default:
+                    return $this->errorResponse($response, 'VALIDATION_ERROR', 'Validation failed', [
+                        'date' => 'date must be one of: upcoming, today, this_week, past',
+                    ], 422);
+            }
+        }
+
         $whereSql = implode(' AND ', $where);
 
         $db = Database::getConnection();
