@@ -27,6 +27,8 @@ class AuthController
         $role = $data['role'] ?? 'attendee';
         $matricNo = trim($data['matric_no'] ?? '') ?: null;
         $phone = trim($data['phone'] ?? '') ?: null;
+        $societyName = trim($data['society_name'] ?? '');
+        $societyDescription = trim($data['society_description'] ?? '') ?: null;
 
         // Server-side validation - the client validates too, but the
         // server must never trust the client (project brief requirement)
@@ -48,6 +50,12 @@ class AuthController
         // so a misconfigured frontend fails loudly instead of quietly.
         if (!in_array($role, ['attendee', 'organiser'], true)) {
             $errors['role'] = 'Role must be either attendee or organiser';
+        }
+        if ($role === 'organiser' && $societyName === '') {
+            $errors['society_name'] = 'Society name is required for organiser registration';
+        }
+        if (strlen($societyName) > 100) {
+            $errors['society_name'] = 'Society name must be 100 characters or less';
         }
 
         if (!empty($errors)) {
