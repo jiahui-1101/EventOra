@@ -77,6 +77,8 @@ class AuthController
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
 
         try {
+            $db->beginTransaction();
+
             $stmt = $db->prepare(
                 'INSERT INTO users (name, email, password_hash, role, matric_no, phone)
                  VALUES (:name, :email, :password_hash, :role, :matric_no, :phone)'
