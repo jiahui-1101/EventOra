@@ -1,0 +1,47 @@
+@baseUrl = http://localhost:8000
+@attendeeToken = paste-attendee-jwt-here
+@organiserToken = paste-organiser-jwt-here
+@eventId = 1
+@registrationId = 1
+@ticketCode = EO-PASTE-CODE
+
+### Register for an event
+POST {{baseUrl}}/api/events/{{eventId}}/registrations
+Authorization: Bearer {{attendeeToken}}
+Content-Type: application/json
+
+{}
+
+### Confirm mock payment for a pending registration
+POST {{baseUrl}}/api/registrations/{{registrationId}}/payment
+Authorization: Bearer {{attendeeToken}}
+Content-Type: application/json
+
+{}
+
+### List my registrations
+GET {{baseUrl}}/api/me/registrations
+Authorization: Bearer {{attendeeToken}}
+
+### List my tickets
+GET {{baseUrl}}/api/me/tickets
+Authorization: Bearer {{attendeeToken}}
+
+### Cancel a registration
+DELETE {{baseUrl}}/api/registrations/{{registrationId}}
+Authorization: Bearer {{attendeeToken}}
+
+### List issued tickets for organiser check-in
+GET {{baseUrl}}/api/events/{{eventId}}/check-in/tickets
+Authorization: Bearer {{organiserToken}}
+
+### Manual ticket check-in
+POST {{baseUrl}}/api/check-ins
+Authorization: Bearer {{organiserToken}}
+Content-Type: application/json
+
+{
+  "event_id": {{eventId}},
+  "code": "{{ticketCode}}",
+  "method": "manual_entry"
+}
