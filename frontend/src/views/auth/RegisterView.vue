@@ -132,6 +132,10 @@ async function handleRegister() {
     errorMessage.value = 'Passwords do not match.'
     return
   }
+  if (role.value === 'organiser' && !societyName.value.trim()) {
+    errorMessage.value = 'Please enter the society you are applying to manage.'
+    return
+  }
 
   isSubmitting.value = true
 
