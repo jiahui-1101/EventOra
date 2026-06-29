@@ -66,12 +66,24 @@
       <div class="input-row-2">
         <label class="form-label">
           Start date &amp; time *
-          <input type="datetime-local" v-model="form.startDateTime" :disabled="isViewMode" />
+          <input
+            type="datetime-local"
+            v-model="form.startDateTime"
+            lang="en-GB"
+            :min="minimumDateTime"
+            :disabled="isViewMode"
+          />
         </label>
 
         <label class="form-label">
           End date &amp; time *
-          <input type="datetime-local" v-model="form.endDateTime" :disabled="isViewMode" />
+          <input
+            type="datetime-local"
+            v-model="form.endDateTime"
+            lang="en-GB"
+            :min="form.startDateTime || minimumDateTime"
+            :disabled="isViewMode"
+          />
         </label>
       </div>
 
@@ -144,7 +156,14 @@
 
         <label class="form-label">
           Registration deadline *
-          <input type="datetime-local" v-model="form.deadline" :disabled="isViewMode" />
+          <input
+            type="datetime-local"
+            v-model="form.deadline"
+            lang="en-GB"
+            :min="minimumDateTime"
+            :max="form.startDateTime || undefined"
+            :disabled="isViewMode"
+          />
         </label>
       </div>
 
@@ -549,6 +568,7 @@ const formattedDeadline = computed(() => {
 })
 
 const previewImage = computed(() => form.posterImage || form.bannerImage)
+const minimumDateTime = computed(() => toDateTimeLocal(new Date()))
 
 onMounted(async () => {
   await loadBackendSocieties()
@@ -632,11 +652,23 @@ function nextStep() {
       stepError.value = 'Please fill in all required fields marked with *.'
       return
     }
+
+    const scheduleError = validateScheduleFields()
+    if (scheduleError) {
+      stepError.value = scheduleError
+      return
+    }
   }
 
   if (!isViewMode.value && currentStep.value === 1) {
     if (!form.capacity || form.capacity < 1 || !form.deadline) {
       stepError.value = 'Please provide a valid capacity and registration deadline.'
+      return
+    }
+
+    const scheduleError = validateScheduleFields()
+    if (scheduleError) {
+      stepError.value = scheduleError
       return
     }
   }
@@ -724,6 +756,13 @@ async function submitEvent(action) {
 
 async function submitEventToBackend(action) {
   stepError.value = ''
+
+  const scheduleError = validateScheduleFields()
+  if (scheduleError) {
+    stepError.value = scheduleError
+    return
+  }
+
   isSubmitting.value = true
 
   try {
@@ -918,7 +957,41 @@ function toBackendDateTime(value) {
 
 function getApiErrorMessage(error, fallback) {
   if (error?.message && !error.response) return error.message
-  return error?.response?.data?.error?.message || fallback
+
+  const apiError = error?.response?.data?.error
+  const fieldErrors = apiError?.fields || {}
+  const details = Object.values(fieldErrors).filter(Boolean)
+
+  if (details.length > 0) {
+    return details.join('\n')
+  }
+
+  return apiError?.message || fallback
+}
+
+function validateScheduleFields() {
+  const now = new Date()
+  const start = form.startDateTime ? new Date(form.startDateTime) : null
+  const end = form.endDateTime ? new Date(form.endDateTime) : null
+  const deadline = form.deadline ? new Date(form.deadline) : null
+
+  if (start && start < now) {
+    return 'Start date and time cannot be in the past.'
+  }
+
+  if (end && start && end <= start) {
+    return 'End date and time must be after start date and time.'
+  }
+
+  if (deadline && deadline < now) {
+    return 'Registration deadline cannot be in the past.'
+  }
+
+  if (deadline && start && deadline >= start) {
+    return 'Registration deadline must be before start date and time.'
+  }
+
+  return ''
 }
 </script>
 
@@ -1195,6 +1268,10 @@ function getApiErrorMessage(error, fallback) {
   color: #1d4ed8;
   font-size: 0.86rem;
   margin-bottom: 16px;
+}
+
+.auth-error {
+  white-space: pre-line;
 }
 
 @media (max-width: 760px) {

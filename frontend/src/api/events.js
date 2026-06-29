@@ -24,6 +24,22 @@ export function updateDraftEventApi(id, payload) {
   return apiClient.put(`/events/${id}/draft`, payload)
 }
 
+export function submitEventForApprovalApi(id) {
+  return apiClient.post(`/events/${id}/submit`)
+}
+
+export function deleteDraftEventApi(id) {
+  return apiClient.delete(`/events/${id}`)
+}
+
+export function cancelSubmissionApi(id) {
+  return apiClient.patch(`/events/${id}/cancel-submission`)
+}
+
+export function cancelEventApi(id, reason = '') {
+  return apiClient.patch(`/events/${id}/cancel`, { reason })
+}
+
 export function uploadEventPosterApi(id, posterFile) {
   const formData = new FormData()
   formData.append('poster', posterFile)

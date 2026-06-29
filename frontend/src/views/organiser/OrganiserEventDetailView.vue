@@ -93,6 +93,8 @@
 
         <h2 class="section-title">Available Actions</h2>
 
+        <p v-if="actionError" class="auth-error">{{ actionError }}</p>
+
 <div class="action-list">
   <span
     v-if="status === 'pending_approval'"
@@ -197,7 +199,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTicketingStore } from '@/stores/ticketing'
-import { getMyEventApi, completeEventApi } from '@/api/events'
+import {
+  cancelEventApi,
+  cancelSubmissionApi,
+  completeEventApi,
+  deleteDraftEventApi,
+  getMyEventApi,
+  submitEventForApprovalApi,
+} from '@/api/events'
 
 const route = useRoute()
 const router = useRouter()
@@ -206,6 +215,7 @@ const ticketingStore = useTicketingStore()
 const eventsStorageKey = 'eventora_society_events_v2'
 const backendEvent = ref(null)
 const backendEventLoaded = ref(false)
+const actionError = ref('')
 const hasBackendToken = computed(() => Boolean(localStorage.getItem('eventora_token')))
 
 const defaultEvents = [
@@ -503,6 +513,12 @@ function saveEvents() {
 
 async function handleAction(action) {
   const id = selectedEvent.value?.id
+  actionError.value = ''
+
+  if (hasBackendToken.value && id) {
+    await handleBackendAction(action, id)
+    return
+  }
 
   if (action === 'submit') {
     societyEvents.value = societyEvents.value.map((ev) =>
@@ -536,6 +552,41 @@ async function handleAction(action) {
     router.push({ path: '/organiser/dashboard', query: { eventAction: 'completed' } })
   } catch (error) {
     alert(error.response?.data?.error?.message || 'Unable to mark event as completed.')
+  }
+}
+
+async function handleBackendAction(action, id) {
+  try {
+    if (action === 'submit') {
+      await submitEventForApprovalApi(id)
+      router.push({ path: '/organiser/dashboard', query: { eventAction: 'submitted' } })
+      return
+    }
+
+    if (action === 'delete') {
+      await deleteDraftEventApi(id)
+      router.push({ path: '/organiser/dashboard', query: { eventAction: 'deleted' } })
+      return
+    }
+
+    if (action === 'cancel_submission') {
+      await cancelSubmissionApi(id)
+      router.push({ path: '/organiser/dashboard', query: { eventAction: 'submission_cancelled' } })
+      return
+    }
+
+    if (action === 'complete') {
+      await completeEventApi(id)
+      router.push({ path: '/organiser/dashboard', query: { eventAction: 'completed' } })
+      return
+    }
+
+    if (action === 'cancel') {
+      await cancelEventApi(id)
+      router.push({ path: '/organiser/dashboard', query: { eventAction: 'cancelled' } })
+    }
+  } catch (error) {
+    actionError.value = error.response?.data?.error?.message || 'Action failed. Please try again.'
   }
 }
 
