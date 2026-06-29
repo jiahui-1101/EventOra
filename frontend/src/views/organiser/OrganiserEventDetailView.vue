@@ -396,6 +396,7 @@ const approvalNoteTitle = computed(() => {
   const map = {
     published: 'Published',
     pending_approval: 'Pending approval',
+    completed: 'Completed',
     rejected: 'Rejected',
     cancelled: 'Cancelled',
   }
