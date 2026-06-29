@@ -333,6 +333,61 @@ async function loadNotifications() {
     notifications.value = []
   }
 }
+
+async function loadOrganiserRequests() {
+  loadingOrganiserRequests.value = true
+  organiserRequestError.value = ''
+
+  try {
+    const response = await getPendingOrganiserRequestsApi()
+    organiserRequests.value = response.data.data
+  } catch (error) {
+    organiserRequestError.value = 'Failed to load organiser requests.'
+  } finally {
+    loadingOrganiserRequests.value = false
+  }
+}
+
+async function approveOrganiserRequest(request) {
+  reviewingRequestId.value = request.id
+  organiserRequestError.value = ''
+
+  try {
+    await approveOrganiserRequestApi(request.id)
+    organiserRequests.value = organiserRequests.value.filter((item) => item.id !== request.id)
+  } catch (error) {
+    organiserRequestError.value = 'Could not approve organiser request.'
+  } finally {
+    reviewingRequestId.value = null
+  }
+}
+
+async function rejectOrganiserRequest(request) {
+  const reason = window.prompt('Reason for rejecting this organiser request:')
+  if (!reason || !reason.trim()) return
+
+  reviewingRequestId.value = request.id
+  organiserRequestError.value = ''
+
+  try {
+    await rejectOrganiserRequestApi(request.id, reason.trim())
+    organiserRequests.value = organiserRequests.value.filter((item) => item.id !== request.id)
+  } catch (error) {
+    organiserRequestError.value = 'Could not reject organiser request.'
+  } finally {
+    reviewingRequestId.value = null
+  }
+}
+
+function formatRequestDate(value) {
+  if (!value) return 'Recently'
+
+  return new Date(value).toLocaleDateString('en-MY', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
 </script>
 
 <style scoped>
