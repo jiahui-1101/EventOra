@@ -12,6 +12,24 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/favorites',
+    name: 'my-favorites',
+    component: () => import('@/views/MyFavoritesView.vue'),
+    meta: { requiresAuth: true, role: 'attendee' },
+  },
+  {
+    path: '/organiser/event/:id/feedback',
+    name: 'organiser-feedback',
+    component: () => import('@/views/organiser/OrganiserFeedbackView.vue'),
+    meta: { requiresAuth: true, role: 'organiser' },
+  },
+  {
+    path: '/event/:id',
+    name: 'event-detail',
+    component: () => import('@/views/EventDetailView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
   path: '/notifications',
   name: 'notifications',
   component: () => import('@/views/NotificationView.vue'),
@@ -69,6 +87,18 @@ const routes = [
     name: 'my-tickets',
     component: () => import('@/views/MyTicketsView.vue'),
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/organiser/event/:id/feedback',
+    name: 'organiser-feedback',
+    component: () => import('@/views/organiser/OrganiserFeedbackView.vue'),
+    meta: { requiresAuth: true, role: 'organiser' },
+  },
+  {
+    path: '/organiser/event/:id/attendance',
+    name: 'organiser-attendance',
+    component: () => import('@/views/organiser/OrganiserAttendanceView.vue'),
+    meta: { requiresAuth: true, role: 'organiser' },
   },
   {
     path: '/my-completed',

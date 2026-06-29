@@ -2,8 +2,14 @@
   <main class="create-shell">
     <section class="create-header">
       <router-link to="/organiser/dashboard">← Back to Dashboard</router-link>
-      <h1>{{ editingEventId ? 'Edit Event' : 'Create New Event' }}</h1>
-      <p>Fill in the details. Faculty admin will review before publishing.</p>
+      <h1>{{ pageTitle }}</h1>
+      <p>
+        {{
+          isViewMode
+            ? 'This event is read-only because it is completed or no longer editable.'
+            : 'Fill in the details. Faculty admin will review before publishing.'
+        }}
+      </p>
     </section>
 
     <section class="stepper">
@@ -22,13 +28,18 @@
 
       <label class="form-label">
         Event title *
-        <input type="text" v-model="form.title" placeholder="e.g. Annual Tech Symposium 2026" />
+        <input
+          type="text"
+          v-model="form.title"
+          placeholder="e.g. Annual Tech Symposium 2026"
+          :disabled="isViewMode"
+        />
       </label>
 
       <div class="input-row-2">
         <label class="form-label">
           Category *
-          <select v-model="form.category">
+          <select v-model="form.category" :disabled="isViewMode">
             <option value="">Select category...</option>
             <option>Academic</option>
             <option>Sports</option>
@@ -40,7 +51,7 @@
 
         <label class="form-label">
           Society *
-          <select v-model="form.society">
+          <select v-model="form.society" :disabled="isViewMode">
             <option
               v-for="society in societyOptions"
               :key="society.id || society.name"
@@ -55,18 +66,23 @@
       <div class="input-row-2">
         <label class="form-label">
           Start date &amp; time *
-          <input type="datetime-local" v-model="form.startDateTime" />
+          <input type="datetime-local" v-model="form.startDateTime" :disabled="isViewMode" />
         </label>
 
         <label class="form-label">
           End date &amp; time *
-          <input type="datetime-local" v-model="form.endDateTime" />
+          <input type="datetime-local" v-model="form.endDateTime" :disabled="isViewMode" />
         </label>
       </div>
 
       <label class="form-label">
         Venue *
-        <input type="text" v-model="form.location" placeholder="e.g. Dewan Sultan Iskandar, UTM JB" />
+        <input
+          type="text"
+          v-model="form.location"
+          placeholder="e.g. Dewan Sultan Iskandar, UTM JB"
+          :disabled="isViewMode"
+        />
       </label>
 
       <label class="form-label">
@@ -74,6 +90,7 @@
         <textarea
           v-model="form.description"
           placeholder="Describe your event - agenda, speakers, requirements..."
+          :disabled="isViewMode"
         ></textarea>
       </label>
 
@@ -84,13 +101,14 @@
           type="file"
           accept="image/png,image/jpeg,image/jpg"
           class="hidden-file-input"
+          :disabled="isViewMode"
           @change="handleBannerUpload"
         />
 
         <div
           class="upload-box"
-          :class="{ 'has-preview': form.bannerImage }"
-          @click="$refs.bannerInput.click()"
+          :class="{ 'has-preview': form.bannerImage, 'is-readonly': isViewMode }"
+          @click="!isViewMode && $refs.bannerInput.click()"
         >
           <img v-if="form.bannerImage" :src="form.bannerImage" alt="Event banner preview" />
           <div v-else>
@@ -103,7 +121,9 @@
       <p v-if="stepError" class="auth-error">{{ stepError }}</p>
 
       <div class="create-actions">
-        <router-link class="button button-ghost" to="/organiser/dashboard">Cancel</router-link>
+        <router-link class="button button-ghost" to="/organiser/dashboard">
+          {{ isViewMode ? 'Back to Dashboard' : 'Cancel' }}
+        </router-link>
         <button class="button button-primary" @click="nextStep">Next: Ticketing →</button>
       </div>
     </section>
@@ -114,12 +134,17 @@
       <div class="input-row-2">
         <label class="form-label">
           Capacity *
-          <input type="number" v-model.number="form.capacity" placeholder="80" />
+          <input
+            type="number"
+            v-model.number="form.capacity"
+            placeholder="80"
+            :disabled="isViewMode"
+          />
         </label>
 
         <label class="form-label">
           Registration deadline *
-          <input type="datetime-local" v-model="form.deadline" />
+          <input type="datetime-local" v-model="form.deadline" :disabled="isViewMode" />
         </label>
       </div>
 
@@ -128,7 +153,7 @@
         <div class="input-row-2">
           <div class="ticket-option">
             <strong>
-              <input type="radio" value="Free" v-model="form.feeType" />
+              <input type="radio" value="Free" v-model="form.feeType" :disabled="isViewMode" />
               Free event
             </strong>
             <p>Students can register without payment confirmation.</p>
@@ -136,7 +161,7 @@
 
           <div class="ticket-option">
             <strong>
-              <input type="radio" value="Paid" v-model="form.feeType" />
+              <input type="radio" value="Paid" v-model="form.feeType" :disabled="isViewMode" />
               Paid event
             </strong>
             <p>Students complete payment confirmation before ticket confirmation.</p>
@@ -152,14 +177,14 @@
             min="0"
             step="0.01"
             v-model.number="form.feeAmount"
-            :disabled="form.feeType === 'Free'"
+            :disabled="isViewMode || form.feeType === 'Free'"
             placeholder="0.00"
           />
         </label>
 
         <label class="form-label">
           Waitlist
-          <select v-model="form.waitlist">
+          <select v-model="form.waitlist" :disabled="isViewMode">
             <option value="enabled">Enable when event is full</option>
             <option value="disabled">Disable waitlist</option>
           </select>
@@ -184,13 +209,14 @@
           type="file"
           accept="image/png,image/jpeg,image/jpg"
           class="hidden-file-input"
+          :disabled="isViewMode"
           @change="handlePosterUpload"
         />
 
         <div
           class="upload-box"
-          :class="{ 'has-preview': form.posterImage }"
-          @click="$refs.posterInput.click()"
+          :class="{ 'has-preview': form.posterImage, 'is-readonly': isViewMode }"
+          @click="!isViewMode && $refs.posterInput.click()"
         >
           <img v-if="form.posterImage" :src="form.posterImage" alt="Event poster preview" />
           <div v-else>
@@ -203,12 +229,22 @@
       <div class="input-row-2">
         <label class="form-label">
           Contact person
-          <input type="text" v-model="form.contactName" placeholder="e.g. Siti Noor" />
+          <input
+            type="text"
+            v-model="form.contactName"
+            placeholder="e.g. Siti Noor"
+            :disabled="isViewMode"
+          />
         </label>
 
         <label class="form-label">
           Contact email
-          <input type="email" v-model="form.contactEmail" placeholder="society@utm.my" />
+          <input
+            type="email"
+            v-model="form.contactEmail"
+            placeholder="society@utm.my"
+            :disabled="isViewMode"
+          />
         </label>
       </div>
 
@@ -217,6 +253,7 @@
         <textarea
           v-model="form.instructions"
           placeholder="Optional: dress code, materials to bring, prerequisite knowledge, or check-in notes."
+          :disabled="isViewMode"
         ></textarea>
       </label>
 
@@ -271,23 +308,27 @@
 
           <div class="review-item">
             <span>Status</span>
-            <strong>{{ editingEventId ? 'Updated Draft' : 'Draft' }}</strong>
+            <strong>{{ isViewMode ? 'Read only' : editingEventId ? 'Updated Draft' : 'Draft' }}</strong>
           </div>
         </div>
       </article>
 
       <aside class="review-panel">
-        <h2>Submission Checklist</h2>
+        <h2>{{ isViewMode ? 'Event Summary' : 'Submission Checklist' }}</h2>
 
         <div class="approval-note">
-          This event will move from draft to pending approval after submission. Faculty Admin must approve it before it appears in the public event list.
+          {{
+            isViewMode
+              ? 'This event is locked for editing. You can still review its details from this page.'
+              : 'This event will move from draft to pending approval after submission. Faculty Admin must approve it before it appears in the public event list.'
+          }}
         </div>
 
         <div class="detail-list">
           <div><dt>Basic information</dt><dd>Complete</dd></div>
           <div><dt>Ticketing</dt><dd>{{ form.feeType }} event configured</dd></div>
           <div><dt>Poster</dt><dd>{{ form.posterImage ? 'Ready for review' : 'Not uploaded' }}</dd></div>
-          <div><dt>Approval status</dt><dd>Draft → Pending approval</dd></div>
+          <div><dt>Approval status</dt><dd>{{ isViewMode ? 'Completed / archived' : 'Draft → Pending approval' }}</dd></div>
         </div>
 
         <p v-if="stepError" class="auth-error">{{ stepError }}</p>
@@ -295,7 +336,7 @@
         <div class="create-actions">
           <button class="button button-ghost" @click="prevStep">Back</button>
 
-          <div style="display:flex;gap:10px;">
+          <div v-if="!isViewMode" style="display:flex;gap:10px;">
             <button class="button button-secondary" :disabled="isSubmitting" @click="submitEvent('draft')">
               Save Draft
             </button>
@@ -303,6 +344,14 @@
               Submit for Approval
             </button>
           </div>
+
+          <router-link
+            v-else
+            class="button button-primary"
+            :to="`/organiser/event-detail/${editingEventId}`"
+          >
+            Back to Event
+          </router-link>
         </div>
       </aside>
     </section>
@@ -421,6 +470,14 @@ const stepError = ref('')
 const editingEventId = ref(null)
 const isSubmitting = ref(false)
 const posterFile = ref(null)
+const isViewMode = computed(() => Boolean(route.query.view))
+
+const pageTitle = computed(() => {
+  if (isViewMode.value) return 'View Event'
+  if (editingEventId.value) return 'Edit Event'
+  return 'Create New Event'
+})
+
 const societyOptions = ref([
   { id: null, name: 'Computer Society UTM' },
   { id: null, name: 'IEEE UTM' },
@@ -447,6 +504,9 @@ const form = reactive({
   contactEmail: '',
   instructions: '',
 })
+
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
+  .replace(/\/api\/?$/, '')
 
 const formattedDateRange = computed(() => {
   if (!form.startDateTime) return 'Not set'
@@ -489,47 +549,47 @@ const previewImage = computed(() => form.posterImage || form.bannerImage)
 onMounted(async () => {
   await loadBackendSocieties()
 
-  const editId = route.query.edit
-  if (!editId) return
+  const eventId = route.query.edit || route.query.view
+  if (!eventId) return
 
   if (hasBackendToken()) {
-    const loaded = await loadBackendEventForEdit(editId)
+    const loaded = await loadBackendEventForEdit(eventId)
     if (loaded) return
   }
 
   const storedEvents = JSON.parse(localStorage.getItem(eventsStorageKey) || 'null')
   const events = storedEvents || defaultEvents
-  const event = events.find((ev) => String(ev.id) === String(editId))
+  const event = events.find((ev) => String(ev.id) === String(eventId))
 
   if (!event) return
 
   editingEventId.value = event.id
-
-  form.title = event.title || ''
-  form.category = event.category || ''
-  form.society = event.society || 'Computer Society UTM'
-  form.location = event.location || ''
-  form.description = event.description || ''
-  form.bannerImage = event.bannerImage || ''
-  form.posterImage = event.posterImage || ''
-  form.capacity = event.capacity || null
-  form.deadline = toDateTimeLocal(event.registrationDeadline)
-  form.feeType = event.feeType || 'Free'
-  form.feeAmount = event.feeAmount || 0
-  form.waitlist = event.waitlist || 'enabled'
-  form.contactName = event.contactName || ''
-  form.contactEmail = event.contactEmail || ''
-  form.instructions = event.instructions || ''
-
-  form.startDateTime = combineDateAndTime(event.eventDate, event.startTime)
-  form.endDateTime = combineDateAndTime(event.eventDate, event.endTime)
+form.title = event.title || ''
+form.category = event.category || ''
+form.society = event.society || 'Computer Society UTM'
+form.location = event.location || ''
+form.description = event.description || ''
+form.bannerImage = resolvePosterUrl(event.bannerImage || event.posterImage || '')
+form.posterImage = resolvePosterUrl(event.posterImage || event.bannerImage || '')
+form.capacity = event.capacity || null
+form.deadline = toDateTimeLocal(event.registrationDeadline)
+form.feeType = event.feeType || 'Free'
+form.feeAmount = event.feeAmount || 0
+form.waitlist = event.waitlist || 'enabled'
+form.contactName = event.contactName || ''
+form.contactEmail = event.contactEmail || ''
+form.instructions = event.instructions || ''
+form.startDateTime = combineDateAndTime(event.eventDate, event.startTime)
+form.endDateTime = combineDateAndTime(event.eventDate, event.endTime)
 })
 
 function handleBannerUpload(event) {
+  if (isViewMode.value) return
   handleImageUpload(event, 'bannerImage', 'Banner image must be less than 5MB.')
 }
 
 function handlePosterUpload(event) {
+  if (isViewMode.value) return
   handleImageUpload(event, 'posterImage', 'Poster image must be less than 5MB.')
 }
 
@@ -556,7 +616,7 @@ function handleImageUpload(event, targetField, errorMessage) {
 function nextStep() {
   stepError.value = ''
 
-  if (currentStep.value === 0) {
+  if (!isViewMode.value && currentStep.value === 0) {
     if (
       !form.title ||
       !form.category ||
@@ -570,7 +630,7 @@ function nextStep() {
     }
   }
 
-  if (currentStep.value === 1) {
+  if (!isViewMode.value && currentStep.value === 1) {
     if (!form.capacity || form.capacity < 1 || !form.deadline) {
       stepError.value = 'Please provide a valid capacity and registration deadline.'
       return
@@ -586,6 +646,8 @@ function prevStep() {
 }
 
 async function submitEvent(action) {
+  if (isViewMode.value) return
+
   if (hasBackendToken()) {
     await submitEventToBackend(action)
     return
@@ -744,8 +806,10 @@ async function loadBackendEventForEdit(id) {
     form.society = event.society || event.society_name || form.society
     form.location = event.venue || event.location || ''
     form.description = event.description || ''
-    form.bannerImage = event.posterUrl || event.poster_url || ''
-    form.posterImage = event.posterUrl || event.poster_url || ''
+
+    form.bannerImage = resolvePosterUrl(event.posterUrl || event.poster_url || '')
+    form.posterImage = resolvePosterUrl(event.posterUrl || event.poster_url || '')
+
     form.capacity = event.capacity || null
     form.deadline = toDateTimeLocal(event.registrationDeadline)
     form.feeType = event.feeType === 'paid' ? 'Paid' : 'Free'
@@ -820,6 +884,13 @@ function toDateTimeLocal(value) {
   const pad = (number) => String(number).padStart(2, '0')
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function resolvePosterUrl(value) {
+  if (!value) return ''
+  if (/^(https?:|data:|blob:)/i.test(value)) return value
+  if (value.startsWith('/')) return `${apiOrigin}${value}`
+  return `${apiOrigin}/${value}`
 }
 
 function hasBackendToken() {
@@ -932,7 +1003,8 @@ function getApiErrorMessage(error, fallback) {
   color: #fff;
 }
 
-.create-card {
+.create-card,
+.review-panel {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -940,7 +1012,8 @@ function getApiErrorMessage(error, fallback) {
   padding: 24px;
 }
 
-.create-card h2 {
+.create-card h2,
+.review-panel h2 {
   margin: 0 0 22px;
   font-size: 1rem;
 }
@@ -978,6 +1051,14 @@ function getApiErrorMessage(error, fallback) {
   resize: vertical;
 }
 
+.form-label input:disabled,
+.form-label select:disabled,
+.form-label textarea:disabled {
+  cursor: not-allowed;
+  background: #f8fafc;
+  color: #64748b;
+}
+
 .hidden-file-input {
   display: none;
 }
@@ -1004,6 +1085,15 @@ function getApiErrorMessage(error, fallback) {
   min-height: 180px;
   padding: 0;
   border-style: solid;
+}
+
+.upload-box.is-readonly {
+  cursor: default;
+  opacity: 0.9;
+}
+
+.upload-box.is-readonly strong {
+  display: none;
 }
 
 .upload-box img {
@@ -1045,14 +1135,6 @@ function getApiErrorMessage(error, fallback) {
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: 18px;
   align-items: start;
-}
-
-.review-panel {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  padding: 24px;
 }
 
 .review-banner {

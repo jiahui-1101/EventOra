@@ -113,25 +113,29 @@
         :key="event.id"
         class="event-card"
       >
-        <div :class="['event-cover', event.coverClass]">
-          <span :class="['badge', event.badgeClass]">
-            {{ capitalize(event.category) }}
-          </span>
 
-          <span
-            v-if="event.seatsLeft > 0"
-            class="badge badge-gray"
-          >
-            {{ event.seatsLeft }} seats left
-          </span>
+<div class="event-image-container" style="height: 160px; position: relative; overflow: hidden; border-radius: 12px 12px 0 0; background: #f1f5f9;">
+  
+  <img
+  :src="event.posterImage"
+  :alt="event.title"
+  loading="lazy"
+  style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; display: block;"
+  @error="useFallbackPoster($event, event)"
+/>
 
-          <span
-            v-else
-            class="badge badge-yellow"
-          >
-            Full
-          </span>
-        </div>
+  <span :class="['badge', event.badgeClass]" style="position: absolute; top: 12px; left: 12px; z-index: 2;">
+    {{ capitalize(event.category) }}
+  </span>
+
+  <span v-if="event.seatsLeft > 0" class="badge badge-gray" style="position: absolute; top: 12px; right: 12px; z-index: 2; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px);">
+    {{ event.seatsLeft }} seats left
+  </span>
+  <span v-else class="badge badge-yellow" style="position: absolute; top: 12px; right: 12px; z-index: 2;">
+    Full
+  </span>
+
+</div>
 
         <div class="event-card-body">
           <span class="event-date">
@@ -197,6 +201,83 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { loadNotifications } from '@/stores/notifications'
 import apiClient from '@/api/client'
+
+const categoryDefaultBanners = {
+  academic: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=700&q=80', // 敲代码的极客茶话会
+  sports:   'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80', // 热血体育馆
+  cultural: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=700&q=80', // 舞台灯光晚会
+  religious:'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=700&q=80', // 庄严肃穆建筑群
+  workshop: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=700&q=80'  // 围坐讨论工作坊
+}
+
+const eventFallbackPosters = {
+  'event-annual-tech-2026': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=80',
+  'event-ai-app-2026': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=80',
+  'event-cultural-night-2026': 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=900&q=80',
+  'event-hackathon-2026': 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=900&q=80',
+  'event-futsal-cup-2026': 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80',
+  'event-traditional-dance-2026': 'https://images.unsplash.com/photo-1519925610903-381054cc2a1c?auto=format&fit=crop&w=900&q=80',
+  'event-robotics-showcase-2026': 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=900&q=80',
+  'event-career-prep-2026': 'https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80',
+  'event-sustainability-day-2026': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=80',
+  'event-startup-pitch-2026': 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=900&q=80',
+}
+
+const eventTitleFallbackPosters = {
+  'Campus Cultural Night': 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=900&q=80',
+  'Campus Photography Workshop': 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=80',
+}
+
+const fallbackPosterPool = [
+  'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1515169067865-5387ec356754?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=900&q=80',
+]
+
+function resolveEventPoster(event, category) {
+  const uploaded = event.posterUrl || event.poster_url || event.posterImage
+
+  if (uploaded && /^https?:\/\//i.test(uploaded)) return uploaded
+  if (uploaded && uploaded.startsWith('/')) return `${apiOrigin}${uploaded}`
+  if (uploaded) return `${apiOrigin}/${uploaded}`
+
+  const eventId = String(event.id || '')
+  if (eventFallbackPosters[eventId]) return eventFallbackPosters[eventId]
+
+  if (eventTitleFallbackPosters[event.title]) {
+    return eventTitleFallbackPosters[event.title]
+  }
+
+  const hash = [...(eventId || event.title || category)].reduce(
+    (sum, char) => sum + char.charCodeAt(0),
+    0
+  )
+
+  return fallbackPosterPool[hash % fallbackPosterPool.length]
+}
+
+function useFallbackPoster(imageEvent, event) {
+  const fallback =
+    eventTitleFallbackPosters[event.title] ||
+    eventFallbackPosters[String(event.id || '')] ||
+    categoryDefaultBanners[event.category] ||
+    categoryDefaultBanners.academic
+
+  imageEvent.target.src = fallback
+}
+
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
+  .replace(/\/api\/?$/, '')
+
+function resolvePosterUrl(value, category) {
+  if (value && /^https?:\/\//i.test(value)) return value
+  if (value && value.startsWith('/')) return `${apiOrigin}${value}`
+  if (value) return `${apiOrigin}/${value}`
+
+  return categoryDefaultBanners[category] || categoryDefaultBanners.academic
+}
 
 const authStore = useAuthStore()
 
@@ -384,6 +465,7 @@ function toPublicEvent(event) {
     seatsLeft: Math.max(capacity - confirmed, 0),
     coverClass: event.coverClass || coverForCategory(category),
     badgeClass: event.badgeClass || badgeForCategory(category),
+    posterImage: resolveEventPoster(event, category),
   }
 }
 

@@ -32,3 +32,51 @@ export function uploadEventPosterApi(id, posterFile) {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }
+
+export function getPublicEventApi(id) {
+  return apiClient.get(`/public/events/${id}`)
+}
+
+export function getFavoritesApi() {
+  return apiClient.get('/favorites')
+}
+
+export function addFavoriteApi(id) {
+  return apiClient.post(`/favorites/${id}`)
+}
+
+export function removeFavoriteApi(id) {
+  return apiClient.delete(`/favorites/${id}`)
+}
+
+export function getFavoriteStatusApi(id) {
+  return apiClient.get(`/favorites/${id}/status`)
+}
+
+export function getOrganiserFeedbackApi(id) {
+  return apiClient.get(`/events/${id}/feedback`)
+}
+
+export function exportAttendanceCsvApi(id) {
+  return apiClient.get(`/events/${id}/attendance/export`, {
+    responseType: 'blob',
+  })
+}
+
+export function completeEventApi(id) {
+  return apiClient.patch(`/events/${id}/complete`)
+}
+
+export function completeEventApi(id) {
+  return apiClient.patch(`/events/${id}/complete`)
+}
+
+export function getOrganiserFeedbackApi(id) {
+  return apiClient.get(`/events/${id}/feedback`)
+}
+
+export function exportAttendanceCsvApi(id) {
+  return apiClient.get(`/events/${id}/attendance/export`, {
+    responseType: 'blob',
+  })
+}

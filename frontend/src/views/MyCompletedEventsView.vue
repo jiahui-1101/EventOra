@@ -12,11 +12,12 @@
 
     <section v-else class="event-grid">
       <article v-for="ev in myEvents" :key="ev.id" class="event-card">
-        <div :class="['event-cover', ev.coverClass]">
-          <span :class="['badge', ev.badgeClass]">{{ ev.category }}</span>
-          <span v-if="ev.checkedIn" class="badge badge-green">✓ Attended (Verified)</span>
-          <span v-else class="badge badge-yellow">Missed / Unverified</span>
-        </div>
+        <div class="event-image-container">
+  <img :src="ev.posterImage" :alt="ev.title" loading="lazy" />
+  <span :class="['badge', ev.badgeClass]">{{ ev.category }}</span>
+  <span v-if="ev.checkedIn" class="badge badge-green status-badge">Attended</span>
+  <span v-else class="badge badge-yellow status-badge">Unverified</span>
+</div>
 
         <div class="event-card-body">
           <span class="event-date">📅 Date: {{ formatDate(ev.startAt) }}</span>
@@ -62,34 +63,82 @@
     </p>
 
     <div v-if="activeEvent" class="modal-overlay">
-      <div class="modal-content">
-        <h3 style="margin-top: 0; color: #1e293b;">Rate: {{ activeEvent.title }}</h3>
-        <p style="color: #64748b; font-size: 0.9rem;">Your feedback helps student organizers improve future sessions.</p>
+  <div class="modal-content feedback-form-modal">
+    <h3 style="margin-top: 0; color: #1e293b;">Event Feedback Form</h3>
+    <p style="color: #64748b; font-size: 0.9rem;">
+      {{ activeEvent.title }}
+    </p>
 
-        <div class="star-rating-box">
-          <span 
-            v-for="star in 5" 
-            :key="star"
-            @click="currentRating = star"
-            :style="{ color: star <= currentRating ? '#f59e0b' : '#e2e8f0' }"
-          >
-            ★
-          </span>
-        </div>
-
-        <textarea 
-          v-model="currentComment" 
-          rows="4" 
-          placeholder="Share your experience (e.g., great speaker, lab AC was too cold)..."
-          class="feedback-textarea"
-        ></textarea>
-
-        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
-          <button class="button button-ghost" @click="closeModal">Cancel</button>
-          <button class="button button-primary" :disabled="currentRating === 0" @click="submitFeedback">Submit Review</button>
-        </div>
+    <div class="form-section">
+      <label class="form-question">Overall rating</label>
+      <div class="star-rating-box">
+        <span
+          v-for="star in 5"
+          :key="star"
+          @click="currentRating = star"
+          :style="{ color: star <= currentRating ? '#f59e0b' : '#e2e8f0' }"
+        >
+          ★
+        </span>
       </div>
     </div>
+
+    <div class="form-section">
+      <label class="form-question">How was the event environment?</label>
+      <label v-for="option in environmentOptions" :key="option" class="radio-option">
+        <input v-model="feedbackForm.environment" type="radio" :value="option" />
+        <span>{{ option }}</span>
+      </label>
+    </div>
+
+    <div class="form-section">
+      <label class="form-question">How was the event atmosphere?</label>
+      <label v-for="option in atmosphereOptions" :key="option" class="radio-option">
+        <input v-model="feedbackForm.atmosphere" type="radio" :value="option" />
+        <span>{{ option }}</span>
+      </label>
+    </div>
+
+    <div class="form-section">
+      <label class="form-question">Was the event flow smooth?</label>
+      <label v-for="option in flowOptions" :key="option" class="radio-option">
+        <input v-model="feedbackForm.flow" type="radio" :value="option" />
+        <span>{{ option }}</span>
+      </label>
+    </div>
+
+    <div class="form-section">
+      <label class="form-question">Would you join a similar event again?</label>
+      <label v-for="option in recommendOptions" :key="option" class="radio-option">
+        <input v-model="feedbackForm.recommend" type="radio" :value="option" />
+        <span>{{ option }}</span>
+      </label>
+    </div>
+
+    <div class="form-section">
+      <label class="form-question">Additional comments</label>
+      <textarea
+        v-model="currentComment"
+        rows="4"
+        placeholder="Share anything the organiser should improve or keep doing..."
+        class="feedback-textarea"
+      ></textarea>
+    </div>
+
+    <div v-if="feedbackError" class="auth-error">{{ feedbackError }}</div>
+
+    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+      <button class="button button-ghost" @click="closeModal">Cancel</button>
+      <button
+        class="button button-primary"
+        :disabled="!canSubmitFeedback"
+        @click="submitFeedback"
+      >
+        Submit Feedback
+      </button>
+    </div>
+  </div>
+</div>
   </main>
 </template>
 
@@ -109,12 +158,69 @@ const currentRating = ref(0)
 const currentComment = ref('')
 const loadError = ref('')
 
+const feedbackError = ref('')
+
+const environmentOptions = ['Very comfortable', 'Comfortable', 'Neutral', 'Needs improvement']
+const atmosphereOptions = ['Very engaging', 'Friendly', 'Neutral', 'Not engaging']
+const flowOptions = ['Very smooth', 'Mostly smooth', 'Some delays', 'Disorganized']
+const recommendOptions = ['Definitely yes', 'Maybe', 'Not sure', 'No']
+
+const feedbackForm = ref({
+  environment: '',
+  atmosphere: '',
+  flow: '',
+  recommend: '',
+})
+
+const canSubmitFeedback = computed(() =>
+  currentRating.value > 0 &&
+  feedbackForm.value.environment &&
+  feedbackForm.value.atmosphere &&
+  feedbackForm.value.flow &&
+  feedbackForm.value.recommend
+)
+
 const authStore = useAuthStore()
 const attendeeName = computed(() => {
   const user = authStore.user
   if (!user) return 'EventOra attendee'
   return user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
 })
+
+const completedFallbackPosters = {
+  'event-annual-tech-2026': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=80',
+  'event-ai-app-2026': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=80',
+  'event-cultural-night-2026': 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=900&q=80',
+  'event-hackathon-2026': 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=900&q=80',
+  'event-futsal-cup-2026': 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80',
+}
+
+const completedPosterPool = [
+  'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=900&q=80',
+]
+
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
+  .replace(/\/api\/?$/, '')
+
+function resolveCompletedPoster(event) {
+  const uploaded = event.posterUrl || event.poster_url || event.posterImage
+
+  if (uploaded && /^https?:\/\//i.test(uploaded)) return uploaded
+  if (uploaded && uploaded.startsWith('/')) return `${apiOrigin}${uploaded}`
+  if (uploaded) return `${apiOrigin}/${uploaded}`
+
+  const eventId = String(event.id || '')
+  if (completedFallbackPosters[eventId]) return completedFallbackPosters[eventId]
+
+  const hash = [...eventId || event.title || 'completed'].reduce(
+    (sum, char) => sum + char.charCodeAt(0),
+    0
+  )
+
+  return completedPosterPool[hash % completedPosterPool.length]
+}
 
 onMounted(async () => {
   try {
@@ -132,6 +238,7 @@ const myEvents = computed(() => {
     ...event,
     coverClass: `${event.category || 'academic'}-cover`,
     badgeClass: categoryBadge(event.category),
+    posterImage: resolveCompletedPoster(event),
     hasRated: Boolean(event.feedback),
     myRating: event.feedback?.rating || 0,
   }))
@@ -139,27 +246,58 @@ const myEvents = computed(() => {
 
 function openRateModal(ev) {
   activeEvent.value = ev
+  feedbackError.value = ''
+
   const existing = ev.feedback
   currentRating.value = existing ? existing.rating : 5
-  currentComment.value = existing ? existing.comment : ''
+  currentComment.value = ''
+
+  feedbackForm.value = {
+    environment: '',
+    atmosphere: '',
+    flow: '',
+    recommend: '',
+  }
 }
 
 function closeModal() {
   activeEvent.value = null
   currentRating.value = 0
   currentComment.value = ''
+  feedbackError.value = ''
+  feedbackForm.value = {
+    environment: '',
+    atmosphere: '',
+    flow: '',
+    recommend: '',
+  }
 }
 
 async function submitFeedback() {
   if (!activeEvent.value) return
+
+  if (!canSubmitFeedback.value) {
+    feedbackError.value = 'Please answer all required feedback questions.'
+    return
+  }
+
   const targetId = activeEvent.value.id
+
+  const structuredComment = [
+    `Environment: ${feedbackForm.value.environment}`,
+    `Atmosphere: ${feedbackForm.value.atmosphere}`,
+    `Event flow: ${feedbackForm.value.flow}`,
+    `Join similar event again: ${feedbackForm.value.recommend}`,
+    `Additional comment: ${currentComment.value.trim() || 'No additional comment.'}`,
+  ].join('\n')
 
   const payload = {
     rating: currentRating.value,
-    comment: currentComment.value.trim() || 'No text comment provided.'
+    comment: structuredComment,
   }
 
   await submitFeedbackApi(targetId, payload)
+
   completedEvents.value = completedEvents.value.map((event) =>
     event.id === targetId
       ? {
@@ -172,7 +310,8 @@ async function submitFeedback() {
         }
       : event
   )
-  alert('✓ Feedback submitted successfully! Your E-Certificate is officially logged.')
+
+  alert('Feedback submitted successfully. Thank you!')
   closeModal()
 }
 
@@ -245,4 +384,40 @@ function categoryBadge(category) {
 .star-rating-box { display: flex; gap: 12px; font-size: 2.6rem; justify-content: center; margin: 20px 0; cursor: pointer; user-select: none; }
 .feedback-textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
 .feedback-textarea:focus { border-color: #3b82f6; }
+.feedback-form-modal {
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.form-section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.form-question {
+  display: block;
+  margin-bottom: 10px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.radio-option:hover {
+  background: #f8fafc;
+}
+
+.radio-option input {
+  width: auto;
+}
 </style>

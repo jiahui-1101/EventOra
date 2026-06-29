@@ -24,6 +24,7 @@ class AttendeeController
                 e.category,
                 e.venue,
                 e.start_datetime,
+                e.poster_url,
                 s.name AS society_name,
                 r.id AS registration_id,
                 ci.checked_at,
@@ -186,6 +187,8 @@ class AttendeeController
             'startAt' => $row['start_datetime'],
             'checkedIn' => $row['checked_at'] !== null,
             'checkedInAt' => $row['checked_at'],
+            'posterUrl' => $row['poster_url'] ?? null,
+            'poster_url' => $row['poster_url'] ?? null,
             'feedback' => $row['rating'] === null ? null : [
                 'rating' => (int) $row['rating'],
                 'comment' => $row['comment'],

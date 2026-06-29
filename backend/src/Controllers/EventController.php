@@ -302,6 +302,28 @@ class EventController
         return $this->successResponse($response, $this->formatEventForFrontend($event), null, 200);
     }
 
+public function showPublic(Request $request, Response $response, array $args): Response
+{
+    $eventId = (int) $args['id'];
+    $db = Database::getConnection();
+
+    $stmt = $db->prepare(
+        "SELECT e.*, s.name AS society_name,
+            (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status = 'confirmed') AS confirmed_registrations
+         FROM events e
+         JOIN societies s ON s.id = e.society_id
+         WHERE e.id = :id AND e.status IN ('published', 'completed')"
+    );
+    $stmt->execute(['id' => $eventId]);
+    $event = $stmt->fetch();
+
+    if (!$event) {
+        return $this->errorResponse($response, 'EVENT_NOT_FOUND', 'Event not found', [], 404);
+    }
+
+    return $this->successResponse($response, $this->formatPublicEventForFrontend($event), null, 200);
+}
+
     public function preview(Request $request, Response $response, array $args): Response
     {
         $event = $this->findOwnedEvent($request, (int) $args['id']);
