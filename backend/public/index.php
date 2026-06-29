@@ -13,6 +13,8 @@ use App\Controllers\SocietyController;
 use App\Controllers\NotificationController;
 use App\Middleware\JwtMiddleware;
 use App\Middleware\RoleMiddleware;
+use App\Controllers\FavoriteController;
+use App\Controllers\FeedbackController;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -28,7 +30,7 @@ $app = AppFactory::create();
 
 // Deploy-safe error handling: do not expose stack traces or server paths
 // to API clients. Keep detailed errors in logs instead.
-$app->addErrorMiddleware(false, true, true);
+$app->addErrorMiddleware(true, true, true);
 
 // Needed so $request->getParsedBody() actually works for JSON POST/PUT bodies
 $app->addBodyParsingMiddleware();
@@ -186,6 +188,58 @@ $app->group('/api/events', function ($group) {
 })
     ->add(new RoleMiddleware(['organiser']))
     ->add(new JwtMiddleware());
+
+// ------------------------------------------------------------
+// Favorites routes — Module 3 (Activity Discovery)
+// Any authenticated user (attendee / organiser) can favorite.
+// ------------------------------------------------------------
+$app->group('/api/favorites', function ($group) {
+    $controller = new FavoriteController();
+
+    // List all events the current user has favorited
+    $group->get('', [$controller, 'listFavorites']);
+
+    // Add event {id} to favorites  (idempotent — safe to call twice)
+    $group->post('/{id}', [$controller, 'addFavorite']);
+
+    // Remove event {id} from favorites (idempotent — safe if not favorited)
+    $group->delete('/{id}', [$controller, 'removeFavorite']);
+})->add(new JwtMiddleware());
+
+// Also expose a convenience endpoint so the HomeView can show a
+// "is this event favorited?" badge without fetching the full list.
+// GET /api/favorites/{id}/status  →  { isFavorited: true|false }
+$app->get('/api/favorites/{id}/status', function (
+    \Psr\Http\Message\ServerRequestInterface $request,
+    \Psr\Http\Message\ResponseInterface $response,
+    array $args
+): \Psr\Http\Message\ResponseInterface {
+    $userId  = (int) $request->getAttribute('user')['sub'];
+    $eventId = (int) $args['id'];
+    $db = \App\Helpers\Database::getConnection();
+
+    $stmt = $db->prepare(
+        'SELECT 1 FROM favorites WHERE user_id = :user_id AND event_id = :event_id LIMIT 1'
+    );
+    $stmt->execute(['user_id' => $userId, 'event_id' => $eventId]);
+
+    $payload = json_encode(['success' => true, 'data' => ['isFavorited' => $stmt->fetch() !== false]]);
+    $response->getBody()->write($payload);
+    return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+})->add(new JwtMiddleware());
+
+// ------------------------------------------------------------
+// Organiser Feedback & Attendance Export — Module 7
+// Organiser-only. Ownership check happens inside the controller.
+// ------------------------------------------------------------
+$app->get('/api/events/{id}/feedback', [new FeedbackController(), 'listFeedback'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
+$app->get('/api/events/{id}/attendance/export', [new FeedbackController(), 'exportAttendanceCsv'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
 
 // ============================================
 // Notification routes
