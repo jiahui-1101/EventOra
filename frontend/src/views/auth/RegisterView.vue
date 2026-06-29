@@ -147,6 +147,8 @@ async function handleRegister() {
     email: email.value,
     password: password.value,
     role: role.value,
+    society_name: role.value === 'organiser' ? societyName.value.trim() : undefined,
+    society_description: role.value === 'organiser' ? societyDescription.value.trim() : undefined,
   })
 
   isSubmitting.value = false
