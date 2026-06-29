@@ -198,6 +198,7 @@ CREATE TABLE payments (
 CREATE TABLE tickets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     registration_id INT NOT NULL UNIQUE,
+    ticket_code VARCHAR(24) NOT NULL UNIQUE,
     qr_token VARCHAR(64) NOT NULL UNIQUE,
     status ENUM('active', 'used', 'cancelled') NOT NULL DEFAULT 'active',
     issued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
