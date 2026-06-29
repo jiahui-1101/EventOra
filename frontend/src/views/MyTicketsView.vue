@@ -42,7 +42,7 @@
             <span class="ticket-status">Upcoming</span>
             <h3>{{ ticket.eventName }}</h3>
             <p>{{ formatDate(ticket.eventStartAt) }} · {{ ticket.venue }}</p>
-            <strong>{{ ticket.id }}</strong>
+            <strong>{{ ticket.ticketCode || ticket.id }}</strong>
             <button
               class="button button-secondary cancel-ticket-button"
               type="button"
@@ -54,8 +54,8 @@
 
           <div class="ticket-qr-panel">
             <img
-              v-if="qrCodes[ticket.id]"
-              :src="qrCodes[ticket.id]"
+              v-if="qrCodes[ticket.ticketCode || ticket.id]"
+              :src="qrCodes[ticket.ticketCode || ticket.id]"
               :alt="`QR code for ${ticket.eventName}`"
             />
             <div
@@ -177,37 +177,57 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watchEffect } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useTicketingStore } from '@/stores/ticketing'
 import { createTicketQrDataUrl } from '@/utils/ticketQr'
+import {
+  getMyTicketsApi,
+  getMyRegistrationsApi,
+  cancelRegistrationApi,
+} from '@/api/ticketing'
 
 const authStore = useAuthStore()
-const ticketingStore = useTicketingStore()
 const qrCodes = reactive({})
 const ticketNotice = ref('')
+const wallet = ref({ upcoming: [], past: [], all: [] })
+const registrationCards = ref([])
 
 const attendeeEmail = computed(() => authStore.user?.email || 'student@utm.my')
-const wallet = computed(() => ticketingStore.getTicketWalletForAttendee(attendeeEmail.value))
-const registrationWallet = computed(() => ticketingStore.getRegistrationWalletForAttendee(attendeeEmail.value))
-const registrationCards = computed(() =>
-  registrationWallet.value.filter((registration) =>
-    registration.status === 'pending_payment'
-    || registration.status === 'waitlisted'
-    || registration.status === 'cancelled'
-  )
-)
 const totalActiveTickets = computed(() => wallet.value.upcoming.length + wallet.value.past.length)
 
 onMounted(() => {
-  ticketingStore.loadSeedData()
+  loadWallet()
 })
 
 watchEffect(() => {
   wallet.value.upcoming.forEach(async (ticket) => {
-    if (!qrCodes[ticket.id]) {
-      qrCodes[ticket.id] = await createTicketQrDataUrl(ticket)
+    const key = ticket.ticketCode || ticket.id
+    if (!qrCodes[key]) {
+      qrCodes[key] = await createTicketQrDataUrl({
+        id: ticket.ticketCode || ticket.id,
+        qrToken: ticket.qrToken,
+        eventId: ticket.eventId,
+        societyId: ticket.societyId,
+      })
     }
   })
 })
+
+async function loadWallet() {
+  try {
+    const [ticketsResponse, registrationsResponse] = await Promise.all([
+      getMyTicketsApi(),
+      getMyRegistrationsApi(),
+    ])
+
+    wallet.value = ticketsResponse.data.data
+    registrationCards.value = registrationsResponse.data.data.filter((registration) =>
+      registration.status === 'pending_payment'
+      || registration.status === 'waitlisted'
+      || registration.status === 'cancelled'
+    )
+  } catch (error) {
+    ticketNotice.value = error.response?.data?.error?.message || 'Unable to load tickets from the backend.'
+  }
+}
 
 function formatDate(dateValue) {
   return new Intl.DateTimeFormat('en-MY', {
@@ -216,28 +236,30 @@ function formatDate(dateValue) {
   }).format(new Date(dateValue))
 }
 
-function cancelTicket(ticket) {
+async function cancelTicket(ticket) {
   try {
-    const result = ticketingStore.cancelRegistration(ticket.registrationId)
+    const result = await cancelRegistrationApi(ticket.registrationId)
 
-    delete qrCodes[ticket.id]
-    ticketNotice.value = result.promoted
+    delete qrCodes[ticket.ticketCode || ticket.id]
+    ticketNotice.value = result.data.data.promoted
       ? 'Registration cancelled. The first waitlisted attendee has been promoted automatically.'
       : 'Registration cancelled. The ticket is no longer active.'
+    await loadWallet()
   } catch (error) {
     ticketNotice.value = error instanceof Error
-      ? error.message
+      ? (error.response?.data?.error?.message || error.message)
       : 'Unable to cancel this registration.'
   }
 }
 
-function cancelRegistration(registration) {
+async function cancelRegistration(registration) {
   try {
-    ticketingStore.cancelRegistration(registration.id)
+    await cancelRegistrationApi(registration.id)
     ticketNotice.value = 'Registration cancelled. Your seat or waitlist position has been released.'
+    await loadWallet()
   } catch (error) {
     ticketNotice.value = error instanceof Error
-      ? error.message
+      ? (error.response?.data?.error?.message || error.message)
       : 'Unable to cancel this registration.'
   }
 }

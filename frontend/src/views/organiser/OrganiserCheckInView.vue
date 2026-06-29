@@ -116,13 +116,13 @@
                 <strong>{{ ticket.attendeeName }}</strong>
                 <small>{{ ticket.attendeeEmail }}</small>
               </div>
-              <code>{{ ticket.id }}</code>
+              <code>{{ ticket.ticketCode || ticket.id }}</code>
               <span>{{ ticket.checkedInAt ? 'Checked in' : 'Not checked in' }}</span>
               <button
                 class="button button-secondary"
                 type="button"
                 :disabled="Boolean(ticket.checkedInAt)"
-                @click="useTicketCode(ticket.id)"
+                @click="useTicketCode(ticket.ticketCode || ticket.id)"
               >
                 Use code
               </button>
@@ -184,15 +184,16 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useTicketingStore } from '@/stores/ticketing'
+import { getOrganiserEventsApi } from '@/api/dashboard'
+import { getCheckInTicketsApi, checkInTicketApi } from '@/api/ticketing'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const ticketingStore = useTicketingStore()
-const societyEventsStorageKey = 'eventora_society_events_v2'
 
 const selectedEventId = ref(route.params.eventId || '')
+const organiserEvents = ref([])
+const selectedEventTickets = ref([])
 const manualCode = ref('')
 const cameraMessage = ref('Camera scanner is ready. Start the scanner and place the QR code inside the frame.')
 const videoRef = ref(null)
@@ -205,25 +206,8 @@ const result = ref({
   ticket: null,
 })
 
-const organiserSocietyId = computed(() => authStore.user?.societyId || 'UTM-CS')
-
-const organiserEvents = computed(() =>
-  ticketingStore.publishedEvents.filter((event) => event.societyId === organiserSocietyId.value)
-)
-
 const selectedEvent = computed(() =>
-  ticketingStore.getEventById(selectedEventId.value) || organiserEvents.value[0] || null
-)
-const selectedEventTickets = computed(() =>
-  ticketingStore.activeTickets
-    .filter((ticket) => ticket.eventId === selectedEvent.value?.id)
-    .sort((first, second) => {
-      if (Boolean(first.checkedInAt) !== Boolean(second.checkedInAt)) {
-        return first.checkedInAt ? 1 : -1
-      }
-
-      return first.attendeeName.localeCompare(second.attendeeName)
-    })
+  organiserEvents.value.find((event) => Number(event.id) === Number(selectedEventId.value)) || organiserEvents.value[0] || null
 )
 const checkedInTickets = computed(() =>
   selectedEventTickets.value.filter((ticket) => ticket.checkedInAt)
@@ -242,6 +226,7 @@ const resultLabel = computed(() => {
     idle: 'Waiting',
     success: 'Success',
     invalid: 'Invalid ticket',
+    invalid_ticket: 'Invalid ticket',
     wrong_society: 'Wrong society',
     wrong_event: 'Wrong event',
     already_checked_in: 'Duplicate check-in',
@@ -252,30 +237,61 @@ const resultLabel = computed(() => {
 })
 
 onMounted(async () => {
-  await ticketingStore.loadSeedData()
-  loadPublishedSocietyEvents()
+  await loadOrganiserEvents()
   if (!selectedEventId.value && organiserEvents.value[0]) {
     selectedEventId.value = organiserEvents.value[0].id
   }
+  await loadSelectedEventTickets()
 })
 
-function loadPublishedSocietyEvents() {
+async function loadOrganiserEvents() {
   try {
-    const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || '[]')
-    if (!Array.isArray(savedEvents)) return
-
-    savedEvents
-      .filter((event) => event.status === 'published')
-      .forEach((event) => ticketingStore.ensureEventAvailable(event))
+    const response = await getOrganiserEventsApi()
+    organiserEvents.value = response.data.data
+      .filter((event) => ['published', 'completed'].includes(event.status))
+      .map((event) => ({
+        ...event,
+        societyName: event.societyName || event.society_name || event.society || 'Organiser society',
+      }))
   } catch (error) {
-    // Keep the scanner usable even if local event data is unavailable.
+    result.value = {
+      status: 'invalid',
+      message: error.response?.data?.error?.message || 'Unable to load organiser events from backend.',
+      ticket: null,
+    }
   }
 }
 
-watch(selectedEventId, (eventId) => {
+async function loadSelectedEventTickets() {
+  if (!selectedEvent.value) {
+    selectedEventTickets.value = []
+    return
+  }
+
+  try {
+    const response = await getCheckInTicketsApi(selectedEvent.value.id)
+    selectedEventTickets.value = response.data.data.sort((first, second) => {
+      if (Boolean(first.checkedInAt) !== Boolean(second.checkedInAt)) {
+        return first.checkedInAt ? 1 : -1
+      }
+
+      return first.attendeeName.localeCompare(second.attendeeName)
+    })
+  } catch (error) {
+    selectedEventTickets.value = []
+    result.value = {
+      status: 'invalid',
+      message: error.response?.data?.error?.message || 'Unable to load issued tickets from backend.',
+      ticket: null,
+    }
+  }
+}
+
+watch(selectedEventId, async (eventId) => {
   if (eventId && eventId !== route.params.eventId) {
     router.replace({ name: 'organiser-check-in', params: { eventId } })
   }
+  await loadSelectedEventTickets()
 })
 
 async function requestCameraPermission() {
@@ -347,7 +363,7 @@ function useTicketCode(ticketCode) {
   processTicketCode(ticketCode)
 }
 
-function processTicketCode(ticketCode) {
+async function processTicketCode(ticketCode) {
   if (!selectedEvent.value) {
     result.value = {
       status: 'invalid',
@@ -357,12 +373,23 @@ function processTicketCode(ticketCode) {
     return
   }
 
-  result.value = ticketingStore.checkInTicket(ticketCode, {
-    eventId: selectedEvent.value.id,
-    societyId: selectedEvent.value.societyId,
-    organizerId: authStore.user?.email || 'organiser@utm.my',
-  })
-  manualCode.value = ''
+  try {
+    const response = await checkInTicketApi({
+      eventId: selectedEvent.value.id,
+      code: ticketCode,
+      method: ticketCode.trim().startsWith('{') ? 'qr_scan' : 'manual_entry',
+    })
+    result.value = response.data.data
+    await loadSelectedEventTickets()
+  } catch (error) {
+    result.value = error.response?.data?.data || {
+      status: 'invalid',
+      message: error.response?.data?.error?.message || 'Unable to check in this ticket.',
+      ticket: null,
+    }
+  } finally {
+    manualCode.value = ''
+  }
 }
 
 function formatDate(dateValue) {
