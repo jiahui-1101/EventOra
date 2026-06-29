@@ -14,11 +14,10 @@ use PDOException;
 class AuthController
 {
     // POST /api/auth/register
-    // Public endpoint - creates a new attendee account.
-    // (Organiser/faculty_admin accounts are assigned separately by an
-    // existing faculty_admin via the societies/organisers endpoint,
-    // not through public self-registration - matches PR1's role model.)
-public function register(Request $request, Response $response): Response
+    // Public endpoint - creates a new attendee or organiser account.
+    // Organiser accounts submit a society request that faculty admin must
+    // approve before society_members gives them event-management access.
+    public function register(Request $request, Response $response): Response
     {
         $data = $request->getParsedBody();
 
@@ -28,6 +27,8 @@ public function register(Request $request, Response $response): Response
         $role = $data['role'] ?? 'attendee';
         $matricNo = trim($data['matric_no'] ?? '') ?: null;
         $phone = trim($data['phone'] ?? '') ?: null;
+        $societyName = trim($data['society_name'] ?? '');
+        $societyDescription = trim($data['society_description'] ?? '') ?: null;
 
         // Server-side validation - the client validates too, but the
         // server must never trust the client (project brief requirement)
@@ -50,6 +51,12 @@ public function register(Request $request, Response $response): Response
         if (!in_array($role, ['attendee', 'organiser'], true)) {
             $errors['role'] = 'Role must be either attendee or organiser';
         }
+        if ($role === 'organiser' && $societyName === '') {
+            $errors['society_name'] = 'Society name is required for organiser registration';
+        }
+        if (strlen($societyName) > 100) {
+            $errors['society_name'] = 'Society name must be 100 characters or less';
+        }
 
         if (!empty($errors)) {
             return $this->errorResponse($response, 'VALIDATION_ERROR', 'Validation failed', $errors, 422);
@@ -70,6 +77,8 @@ public function register(Request $request, Response $response): Response
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
 
         try {
+            $db->beginTransaction();
+
             $stmt = $db->prepare(
                 'INSERT INTO users (name, email, password_hash, role, matric_no, phone)
                  VALUES (:name, :email, :password_hash, :role, :matric_no, :phone)'
@@ -84,7 +93,31 @@ public function register(Request $request, Response $response): Response
             ]);
 
             $userId = (int) $db->lastInsertId();
+
+            $organiserRequest = null;
+            if ($role === 'organiser') {
+                $requestStmt = $db->prepare(
+                    'INSERT INTO organiser_society_requests (user_id, society_name, society_description)
+                     VALUES (:user_id, :society_name, :society_description)'
+                );
+                $requestStmt->execute([
+                    'user_id' => $userId,
+                    'society_name' => $societyName,
+                    'society_description' => $societyDescription,
+                ]);
+
+                $organiserRequest = [
+                    'id' => (int) $db->lastInsertId(),
+                    'society_name' => $societyName,
+                    'status' => 'pending',
+                ];
+            }
+
+            $db->commit();
         } catch (PDOException $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             return $this->errorResponse($response, 'DB_ERROR', 'Could not create account', [], 500);
         }
 
@@ -98,6 +131,7 @@ public function register(Request $request, Response $response): Response
                 'email' => $email,
                 'role' => $role,
             ],
+            'organiser_request' => $organiserRequest,
         ], 'Account created successfully', 201);
     }
 
@@ -204,6 +238,15 @@ public function register(Request $request, Response $response): Response
         $memberships = $memberStmt->fetchAll();
 
         $profile['society_memberships'] = $memberships;
+
+        $requestStmt = $db->prepare(
+            'SELECT id, society_name, society_description, status, rejection_reason, created_at, reviewed_at
+             FROM organiser_society_requests
+             WHERE user_id = :user_id
+             ORDER BY created_at DESC'
+        );
+        $requestStmt->execute(['user_id' => $userId]);
+        $profile['organiser_requests'] = $requestStmt->fetchAll();
 
         return $this->successResponse($response, $profile, null, 200);
     }
