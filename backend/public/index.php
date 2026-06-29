@@ -112,6 +112,16 @@ $app->group('/api/admin/events', function ($group) {
     ->add(new RoleMiddleware(['faculty_admin']))
     ->add(new JwtMiddleware());
 
+$app->group('/api/admin/organiser-requests', function ($group) {
+    $controller = new AdminController();
+
+    $group->get('/pending', [$controller, 'listPendingOrganiserRequests']);
+    $group->post('/{id}/approve', [$controller, 'approveOrganiserRequest']);
+    $group->post('/{id}/reject', [$controller, 'rejectOrganiserRequest']);
+})
+    ->add(new RoleMiddleware(['faculty_admin']))
+    ->add(new JwtMiddleware());
+
 // ============================================
 // Organiser Dashboard route
 // ============================================
