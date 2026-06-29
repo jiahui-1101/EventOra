@@ -250,6 +250,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTicketingStore } from '@/stores/ticketing'
+import {
+  getPublicEventApi,
+  getFavoriteStatusApi,
+  addFavoriteApi,
+  removeFavoriteApi,
+} from '@/api/events'
 
 const route = useRoute()
 const router = useRouter()
@@ -274,11 +280,17 @@ const detailDefaultBanners = {
   workshop: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80'
 }
 
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
+  .replace(/\/api\/?$/, '')
+
 function getHeroBanner(ev) {
   if (!ev) return detailDefaultBanners.academic
+
   const img = ev.posterImage || ev.posterUrl || ev.poster_url || ev.bannerImage
-  if (img && typeof img === 'string' && img.startsWith('http')) return img
-  
+  if (img && /^https?:\/\//i.test(img)) return img
+  if (img && img.startsWith('/')) return `${apiOrigin}${img}`
+  if (img) return `${apiOrigin}/${img}`
+
   const cat = String(ev.category || 'academic').toLowerCase()
   return detailDefaultBanners[cat] || detailDefaultBanners.academic
 }
@@ -381,29 +393,30 @@ const backupAnnualTech = {
 }
 
 onMounted(async () => {
-  favorites.value = JSON.parse(localStorage.getItem(favKey) || '[]')
   try {
     await ticketingStore.loadSeedData()
+
+    const response = await getPublicEventApi(route.params.id)
+    event.value = ticketingStore.ensureEventAvailable(response.data.data)
+
+    if (authStore.isLoggedIn) {
+      const favResponse = await getFavoriteStatusApi(event.value.id)
+      favorites.value = favResponse.data.data.isFavorited ? [event.value.id] : []
+    }
+
+    hydrateExistingRegistration()
+  } catch (e) {
+    console.error('Backend event detail failed, using mock fallback:', e)
+
     const res = await fetch('/mock/events.json')
     const all = await res.json()
     const localEvents = loadPublishedSocietyEvents()
-    
-    let target = [...all.filter((candidate) => candidate.status === 'published'), ...localEvents]
-      .find(e => String(e.id) === String(route.params.id))
-    
-    if (!target && route.params.id === 'event-annual-tech-2026') {
-      target = backupAnnualTech
-    }
-    
+
+    const target = [...all.filter((candidate) => candidate.status === 'published'), ...localEvents]
+      .find((candidate) => String(candidate.id) === String(route.params.id))
+
     event.value = target ? ticketingStore.ensureEventAvailable(target) : null
     hydrateExistingRegistration()
-  } catch(e) {
-    console.error(e)
-    if (route.params.id === 'event-annual-tech-2026') {
-      event.value = backupAnnualTech
-      ticketingStore.ensureEventAvailable(backupAnnualTech)
-      hydrateExistingRegistration()
-    }
   } finally {
     loading.value = false
   }
@@ -466,11 +479,21 @@ const registrationClosedReason = computed(() => {
   return ''
 })
 
-function toggleFavorite() {
+async function toggleFavorite() {
   if (!event.value) return
-  if (isFavorited.value) favorites.value = favorites.value.filter(id => id !== event.value.id)
-  else favorites.value.push(event.value.id)
-  localStorage.setItem(favKey, JSON.stringify(favorites.value))
+
+  if (!authStore.isLoggedIn) {
+    router.push({ name: 'login' })
+    return
+  }
+
+  if (isFavorited.value) {
+    await removeFavoriteApi(event.value.id)
+    favorites.value = favorites.value.filter((id) => id !== event.value.id)
+  } else {
+    await addFavoriteApi(event.value.id)
+    favorites.value = [...favorites.value, event.value.id]
+  }
 }
 
 function shareEvent() {

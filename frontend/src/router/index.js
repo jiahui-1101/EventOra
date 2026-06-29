@@ -12,6 +12,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/organiser/event/:id/feedback',
+    name: 'organiser-feedback',
+    component: () => import('@/views/organiser/OrganiserFeedbackView.vue'),
+    meta: { requiresAuth: true, role: 'organiser' },
+  },
+  {
     path: '/event/:id',
     name: 'event-detail',
     component: () => import('@/views/EventDetailView.vue'),

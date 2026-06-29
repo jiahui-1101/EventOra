@@ -167,6 +167,7 @@ $app->get('/api/societies/mine', [new SocietyController(), 'listMine'])
 // outside the organiser-only /api/events group below, because students and
 // guests must be able to browse published events before registering.
 $app->get('/api/events', [new EventController(), 'listPublic']);
+$app->get('/api/public/events/{id}', [new EventController(), 'showPublic']);
 
 // MINIMAL SCAFFOLD - see EventController.php for context. Organiser-only,
 // lets the Admin Approval Queue have real events to review.

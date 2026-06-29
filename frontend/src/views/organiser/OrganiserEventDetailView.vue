@@ -110,6 +110,14 @@
           </router-link>
 
           <router-link
+    v-if="status === 'completed'"
+    :to="`/organiser/event/${selectedEvent?.id}/feedback`"
+    class="button button-primary full-width"
+  >
+    View Feedback & Export Attendance
+  </router-link>
+
+          <router-link
             v-if="status === 'published'"
             to="/organiser/check-in"
             class="button button-primary full-width"

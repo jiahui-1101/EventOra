@@ -209,6 +209,17 @@ const categoryDefaultBanners = {
   workshop: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=700&q=80'  // 围坐讨论工作坊
 }
 
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
+  .replace(/\/api\/?$/, '')
+
+function resolvePosterUrl(value, category) {
+  if (value && /^https?:\/\//i.test(value)) return value
+  if (value && value.startsWith('/')) return `${apiOrigin}${value}`
+  if (value) return `${apiOrigin}/${value}`
+
+  return categoryDefaultBanners[category] || categoryDefaultBanners.academic
+}
+
 const authStore = useAuthStore()
 
 const keyword = ref('')
@@ -395,7 +406,10 @@ function toPublicEvent(event) {
     seatsLeft: Math.max(capacity - confirmed, 0),
     coverClass: event.coverClass || coverForCategory(category),
     badgeClass: event.badgeClass || badgeForCategory(category),
-    posterImage: event.posterUrl || event.poster_url || categoryDefaultBanners[category] || categoryDefaultBanners.academic,
+    posterImage: resolvePosterUrl(
+  event.posterUrl || event.poster_url || event.posterImage,
+  category
+),
   }
 }
 
