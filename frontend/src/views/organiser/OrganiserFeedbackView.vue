@@ -68,7 +68,31 @@
             <span class="review-stars">{{ '★'.repeat(review.rating) }}</span>
           </div>
 
-          <pre>{{ review.comment || 'No written comment.' }}</pre>
+          <div class="review-breakdown">
+  <div v-if="parseStructuredFeedback(review.comment).environment">
+    <span>Environment</span>
+    <strong>{{ parseStructuredFeedback(review.comment).environment }}</strong>
+  </div>
+
+  <div v-if="parseStructuredFeedback(review.comment).atmosphere">
+    <span>Atmosphere</span>
+    <strong>{{ parseStructuredFeedback(review.comment).atmosphere }}</strong>
+  </div>
+
+  <div v-if="parseStructuredFeedback(review.comment).flow">
+    <span>Event Flow</span>
+    <strong>{{ parseStructuredFeedback(review.comment).flow }}</strong>
+  </div>
+
+  <div v-if="parseStructuredFeedback(review.comment).recommend">
+    <span>Recommendation</span>
+    <strong>{{ parseStructuredFeedback(review.comment).recommend }}</strong>
+  </div>
+</div>
+
+<p class="review-comment">
+  {{ parseStructuredFeedback(review.comment).comment || 'No written comment provided.' }}
+</p>
           <small>{{ formatDate(review.submittedAt) }}</small>
         </article>
 
@@ -127,6 +151,37 @@ function ratingPercent(score) {
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleString('en-MY') : ''
+}
+
+function parseStructuredFeedback(comment) {
+  const text = comment || ''
+
+  const result = {
+    environment: '',
+    atmosphere: '',
+    flow: '',
+    recommend: '',
+    comment: text,
+  }
+
+  const patterns = {
+    environment: /Environment:\s*(.+)/i,
+    atmosphere: /Atmosphere:\s*(.+)/i,
+    flow: /Event flow:\s*(.+)/i,
+    recommend: /Recommendation:\s*(.+)/i,
+  }
+
+  Object.entries(patterns).forEach(([key, pattern]) => {
+    const match = text.match(pattern)
+    if (match) result[key] = match[1].trim()
+  })
+
+  const generalMatch = text.match(/Comment:\s*([\s\S]*)/i)
+  if (generalMatch) {
+    result.comment = generalMatch[1].trim()
+  }
+
+  return result
 }
 </script>
 
@@ -252,6 +307,45 @@ function formatDate(value) {
 
 .review-card small {
   color: var(--muted);
+}
+
+.review-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.review-breakdown div {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+}
+
+.review-breakdown span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.review-breakdown strong {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.review-comment {
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .review-breakdown {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {

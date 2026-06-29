@@ -245,6 +245,10 @@ $app->get('/api/events/{id}/attendance/export', [new FeedbackController(), 'expo
     ->add(new RoleMiddleware(['organiser']))
     ->add(new JwtMiddleware());
 
+$app->get('/api/events/{id}/attendance', [new FeedbackController(), 'listAttendance'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
 
 // ============================================
 // Notification routes

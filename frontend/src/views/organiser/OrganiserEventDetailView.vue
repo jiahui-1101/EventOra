@@ -15,8 +15,8 @@
         <div
           class="poster-preview"
           :style="eventImage ? {
-            backgroundImage: `linear-gradient(rgba(49, 46, 129, 0.35), rgba(49, 46, 129, 0.55)), url(${eventImage})`
-          } : {}"
+  backgroundImage: `linear-gradient(rgba(49, 46, 129, 0.35), rgba(49, 46, 129, 0.55)), url('${eventImage}')`
+} : {}"
         >
           <div>
             <span :class="['badge', category === 'Sports' ? 'badge-yellow' : 'badge-blue']">
@@ -292,8 +292,44 @@ const status = computed(() => {
   return selectedEvent.value?.status || 'draft'
 })
 const category = computed(() => selectedEvent.value?.category || 'Academic')
-const eventImage = computed(() => selectedEvent.value?.posterImage || selectedEvent.value?.bannerImage)
 
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
+  .replace(/\/api\/?$/, '')
+
+function resolvePosterUrl(value) {
+  if (!value) return ''
+  if (/^(https?:|data:|blob:)/i.test(value)) return value
+  if (value.startsWith('/')) return `${apiOrigin}${value}`
+  return `${apiOrigin}/${value}`
+}
+
+const fallbackEventImages = [
+  'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1200&q=80',
+]
+
+function getFallbackEventImage(event) {
+  const key = String(event?.id || event?.title || 'event')
+  const hash = [...key].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  return fallbackEventImages[hash % fallbackEventImages.length]
+}
+
+const eventImage = computed(() => {
+  const event = selectedEvent.value
+
+  const uploadedImage =
+    event?.posterImage ||
+    event?.bannerImage ||
+    event?.posterUrl ||
+    event?.poster_url ||
+    ''
+
+  return resolvePosterUrl(uploadedImage) || getFallbackEventImage(event)
+})
 const description = computed(
   () => selectedEvent.value?.description || 'No description has been added for this event yet.'
 )

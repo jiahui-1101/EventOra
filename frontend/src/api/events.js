@@ -66,3 +66,7 @@ export function exportAttendanceCsvApi(id) {
 export function completeEventApi(id) {
   return apiClient.patch(`/events/${id}/complete`)
 }
+
+export function getOrganiserAttendanceApi(id) {
+  return apiClient.get(`/events/${id}/attendance`)
+}
