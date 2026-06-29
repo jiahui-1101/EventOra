@@ -144,6 +144,10 @@ $app->get('/api/dashboard/organiser/attendance', [new DashboardController(), 'or
     ->add(new RoleMiddleware(['organiser']))
     ->add(new JwtMiddleware());
 
+$app->get('/api/dashboard/faculty', [new DashboardController(), 'facultyDashboard'])
+    ->add(new RoleMiddleware(['faculty_admin']))
+    ->add(new JwtMiddleware());
+
 $app->get('/api/me/completed-events', [new AttendeeController(), 'completedEvents'])
     ->add(new JwtMiddleware());
 

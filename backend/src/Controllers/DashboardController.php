@@ -15,6 +15,54 @@ use PDO;
 // assume the caller is already authenticated and holds the organiser role.
 class DashboardController
 {
+    // GET /api/dashboard/faculty
+    // Faculty-wide activity snapshot for the admin Activity Monitoring
+    // panel. Unlike organiserDashboard(), this intentionally has no
+    // society filter because faculty admins monitor the whole faculty.
+    public function facultyDashboard(Request $request, Response $response): Response
+    {
+        $db = Database::getConnection();
+        $eventIds = $this->getAllEventIds($db);
+        $eventTotals = $this->getAllEventTotalsByStatus($db);
+        $totalSocieties = (int) $db->query('SELECT COUNT(*) FROM societies')->fetchColumn();
+
+        if (empty($eventIds)) {
+            return $this->successResponse($response, [
+                'event_totals' => $eventTotals,
+                'total_events' => 0,
+                'total_events_this_month' => 0,
+                'total_societies' => $totalSocieties,
+                'total_registrations' => 0,
+                'confirmed_registrations' => 0,
+                'attendance' => [
+                    'checked_in' => 0,
+                    'rate_percent' => null,
+                ],
+                'most_popular_category' => null,
+            ], null, 200);
+        }
+
+        $registrationStats = $this->getRegistrationStats($db, $eventIds);
+        $attendanceStats = $this->getAttendanceStats($db, $eventIds);
+
+        return $this->successResponse($response, [
+            'event_totals' => $eventTotals,
+            'total_events' => array_sum($eventTotals),
+            'total_events_this_month' => $this->getEventsThisMonth($db),
+            'total_societies' => $totalSocieties,
+            'total_registrations' => $registrationStats['total'],
+            'confirmed_registrations' => $registrationStats['confirmed'],
+            'attendance' => [
+                'checked_in' => $attendanceStats['checked_in'],
+                'rate_percent' => $this->getAttendanceRatePercent(
+                    $attendanceStats['checked_in'],
+                    $registrationStats['confirmed']
+                ),
+            ],
+            'most_popular_category' => $this->getMostPopularCategory($db),
+        ], null, 200);
+    }
+
     // GET /api/dashboard/organiser
     // Returns event totals, registration counts, attendance rate,
     // capacity use, and average rating - scoped ONLY to events belonging
@@ -216,6 +264,11 @@ class DashboardController
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
+    private function getAllEventIds(PDO $db): array
+    {
+        return $db->query('SELECT id FROM events')->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     // Finds every event belonging to the given societies, regardless of
     // status - the dashboard should show drafts and pending events too,
     // not just published ones, since the organiser needs visibility into
@@ -265,6 +318,42 @@ class DashboardController
         }
 
         return $totals;
+    }
+
+    private function getAllEventTotalsByStatus(PDO $db): array
+    {
+        $rows = $db->query(
+            'SELECT status, COUNT(*) AS total
+             FROM events
+             GROUP BY status'
+        )->fetchAll();
+
+        $totals = [
+            'draft' => 0,
+            'pending_approval' => 0,
+            'published' => 0,
+            'completed' => 0,
+            'rejected' => 0,
+            'cancelled' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            $totals[$row['status']] = (int) $row['total'];
+        }
+
+        return $totals;
+    }
+
+    private function getEventsThisMonth(PDO $db): int
+    {
+        $stmt = $db->query(
+            "SELECT COUNT(*) AS total
+             FROM events
+             WHERE start_datetime >= DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01')
+               AND start_datetime < DATE_ADD(DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01'), INTERVAL 1 MONTH)"
+        );
+
+        return (int) $stmt->fetch()['total'];
     }
 
     // Counts total and confirmed registrations across the given events.
@@ -361,6 +450,29 @@ class DashboardController
         $average = $stmt->fetch()['average_rating'];
 
         return $average === null ? null : round((float) $average, 1);
+    }
+
+    private function getMostPopularCategory(PDO $db): ?array
+    {
+        $stmt = $db->query(
+            "SELECT e.category, COUNT(*) AS registrations
+             FROM registrations r
+             JOIN events e ON e.id = r.event_id
+             WHERE r.status <> 'cancelled'
+             GROUP BY e.category
+             ORDER BY registrations DESC, e.category ASC
+             LIMIT 1"
+        );
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            return null;
+        }
+
+        return [
+            'category' => $row['category'],
+            'registrations' => (int) $row['registrations'],
+        ];
     }
 
     // Shared percentage helper. Returns null (not 0) when the

@@ -82,9 +82,7 @@
 
           <div>
             <dt>Public listing</dt>
-            <dd>
-              {{ status === 'published' ? 'Visible in public event list' : 'Hidden until Faculty Admin approval' }}
-            </dd>
+            <dd>{{ publicListingText }}</dd>
           </div>
 
           <div>
@@ -164,15 +162,19 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTicketingStore } from '@/stores/ticketing'
+import { getMyEventApi } from '@/api/events'
 
 const route = useRoute()
 const router = useRouter()
 const ticketingStore = useTicketingStore()
 
 const eventsStorageKey = 'eventora_society_events_v2'
+const backendEvent = ref(null)
+const backendEventLoaded = ref(false)
+const hasBackendToken = computed(() => Boolean(localStorage.getItem('eventora_token')))
 
 const defaultEvents = [
   {
@@ -244,12 +246,19 @@ const societyEvents = ref(
 const selectedEvent = computed(() => {
   const id = route.params.id || route.query.id
 
+  if (hasBackendToken.value && id) {
+    return backendEvent.value
+  }
+
   if (!id) return societyEvents.value[0] || null
 
   return societyEvents.value.find((ev) => String(ev.id) === String(id)) || null
 })
 
-const status = computed(() => selectedEvent.value?.status || 'draft')
+const status = computed(() => {
+  if (hasBackendToken.value && !backendEventLoaded.value) return 'loading'
+  return selectedEvent.value?.status || 'draft'
+})
 const category = computed(() => selectedEvent.value?.category || 'Academic')
 const eventImage = computed(() => selectedEvent.value?.posterImage || selectedEvent.value?.bannerImage)
 
@@ -286,18 +295,96 @@ function badgeForStatus(s) {
   if (s === 'pending_approval') return 'badge-yellow'
   if (s === 'completed') return 'badge-purple'
   if (s === 'rejected' || s === 'cancelled') return 'badge-red'
+  if (s === 'loading') return 'badge-gray'
   return 'badge-blue'
 }
 
 function statusLabel(s) {
+  if (s === 'loading') return 'loading'
   if (s === 'pending_approval') return 'pending approval'
   return s || 'draft'
+}
+
+function formatDateOnly(date) {
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function formatTimeOnly(date) {
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function toFrontendCategory(categoryValue) {
+  if (!categoryValue) return 'Academic'
+
+  return String(categoryValue)
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+}
+
+function normaliseBackendEvent(rawEvent) {
+  const start = rawEvent.startAt ? new Date(rawEvent.startAt) : null
+  const end = rawEvent.endAt ? new Date(rawEvent.endAt) : null
+
+  return {
+    id: rawEvent.id,
+    title: rawEvent.title,
+    category: toFrontendCategory(rawEvent.category),
+    society: rawEvent.society || rawEvent.society_name || 'Society not set',
+    location: rawEvent.location || rawEvent.venue || 'Venue not set',
+    description: rawEvent.description || '',
+    bannerImage: rawEvent.posterUrl || rawEvent.poster_url || '',
+    posterImage: rawEvent.posterUrl || rawEvent.poster_url || '',
+    eventDate: rawEvent.eventDate || (start && !Number.isNaN(start.getTime()) ? formatDateOnly(start) : 'Not set'),
+    startTime: rawEvent.startTime || (start && !Number.isNaN(start.getTime()) ? formatTimeOnly(start) : '--'),
+    endTime: rawEvent.endTime || (end && !Number.isNaN(end.getTime()) ? formatTimeOnly(end) : '--'),
+    registrationDeadline: rawEvent.registrationDeadline || '',
+    feeType: rawEvent.feeType === 'paid' ? 'Paid' : 'Free',
+    feeAmount: rawEvent.feeAmount || 0,
+    status: rawEvent.status === 'pending' ? 'pending_approval' : rawEvent.status || 'draft',
+    registrations: rawEvent.registrations ?? rawEvent.confirmedCount ?? 0,
+    checkedIn: rawEvent.checkedIn ?? 0,
+    capacity: rawEvent.capacity ?? 0,
+  }
+}
+
+async function loadBackendEvent() {
+  const id = route.params.id || route.query.id
+
+  if (!id || !hasBackendToken.value) return
+
+  try {
+    const response = await getMyEventApi(id)
+    const event = normaliseBackendEvent(response.data.data)
+    backendEvent.value = event
+    const existingIndex = societyEvents.value.findIndex((ev) => String(ev.id) === String(event.id))
+
+    if (existingIndex >= 0) {
+      societyEvents.value.splice(existingIndex, 1, event)
+    } else {
+      societyEvents.value = [event, ...societyEvents.value]
+    }
+  } catch (error) {
+    backendEvent.value = null
+    console.warn('Could not load backend organiser event detail:', error)
+  } finally {
+    backendEventLoaded.value = true
+  }
 }
 
 const approvalNoteClass = computed(() => {
   const map = {
     published: 'approval-note approval-published',
     pending_approval: 'approval-note approval-pending',
+    completed: 'approval-note approval-published',
     rejected: 'approval-note approval-rejected',
     cancelled: 'approval-note approval-cancelled',
   }
@@ -309,6 +396,7 @@ const approvalNoteTitle = computed(() => {
   const map = {
     published: 'Published',
     pending_approval: 'Pending approval',
+    completed: 'Completed',
     rejected: 'Rejected',
     cancelled: 'Cancelled',
   }
@@ -320,11 +408,25 @@ const approvalNoteText = computed(() => {
   const map = {
     published: 'This event is approved and visible in the public event list.',
     pending_approval: 'This event has been submitted and is waiting for Faculty Admin review.',
+    completed: 'This event has ended and is kept for attendance, feedback, and certificate records.',
     rejected: 'This event needs changes before it can be submitted again.',
     cancelled: 'This event has been cancelled and is no longer available for registration.',
   }
 
   return map[status.value] || 'This event is still editable. Submit it when all details are ready.'
+})
+
+const publicListingText = computed(() => {
+  const map = {
+    published: 'Visible in public event list',
+    completed: 'Archived after completion',
+    pending_approval: 'Hidden until Faculty Admin approval',
+    cancelled: 'Hidden because the event was cancelled',
+    rejected: 'Hidden until changes are resubmitted',
+    loading: 'Loading event visibility',
+  }
+
+  return map[status.value] || 'Hidden until submitted for approval'
 })
 
 function saveEvents() {
@@ -378,6 +480,8 @@ function handleAction(action) {
     router.push({ path: '/organiser/dashboard', query: { eventAction: 'cancelled' } })
   }
 }
+
+onMounted(loadBackendEvent)
 </script>
 
 <style scoped>

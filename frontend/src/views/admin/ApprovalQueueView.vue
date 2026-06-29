@@ -118,18 +118,35 @@
 
     <section class="page-section">
       <h2>Activity Monitoring</h2>
+      <p v-if="loadingActivity" class="muted-text">Loading activity metrics...</p>
+      <p v-else-if="activityError" class="auth-error">{{ activityError }}</p>
       <div class="stats-grid" style="margin-top:1rem;">
-        <div class="stat-card"><span>Total Events (This Month)</span><strong>18</strong></div>
-        <div class="stat-card"><span>Active Societies</span><strong>12</strong></div>
-        <div class="stat-card"><span>Total Registrations</span><strong>342</strong></div>
-        <div class="stat-card"><span>Attendance Rate</span><strong>74%</strong></div>
+        <div class="stat-card">
+          <span>Total Events (This Month)</span>
+          <strong>{{ activityMetrics.totalEventsThisMonth }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Active Societies</span>
+          <strong>{{ activityMetrics.totalSocieties }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Total Registrations</span>
+          <strong>{{ activityMetrics.totalRegistrations }}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Attendance Rate</span>
+          <strong>{{ activityMetrics.attendanceRateLabel }}</strong>
+        </div>
       </div>
 
       <div class="capacity-bar" style="margin: 1rem 0;">
-        <span style="width:74%"></span>
+        <span :style="{ width: activityMetrics.attendanceRateBar + '%' }"></span>
       </div>
 
-      <p>Most popular category: <strong>Academic</strong> (42% of registrations)</p>
+      <p>
+        Most popular category:
+        <strong>{{ activityMetrics.popularCategoryLabel }}</strong>
+      </p>
     </section>
 
     <div
@@ -191,15 +208,20 @@ import {
   updateApprovalEvent,
   getApprovalEventDetails,
 } from '@/stores/approvalEvents'
+import { getFacultyDashboardApi } from '@/api/dashboard'
 
 const showModal = ref(false)
 const selectedEvent = ref(null)
 const rejectReason = ref('')
 const modalError = ref('')
 const toast = ref({ message: '', type: 'success' })
+const activityStats = ref(null)
+const loadingActivity = ref(false)
+const activityError = ref('')
 
 onMounted(() => {
   loadApprovalEvents()
+  loadActivityMetrics()
 })
 
 const loadingEvents = loadingApprovalEvents
@@ -214,6 +236,24 @@ const sortedApprovalEvents = computed(() => {
   return [...approvalEvents.value].sort((a, b) => order[a.status] - order[b.status])
 })
 
+const activityMetrics = computed(() => {
+  const stats = activityStats.value || {}
+  const attendanceRate = Number(stats.attendance?.rate_percent ?? 0)
+  const popularCategory = stats.most_popular_category
+  const popularCategoryLabel = popularCategory?.category
+    ? `${formatCategory(popularCategory.category)} (${popularCategory.registrations} registrations)`
+    : 'No registrations yet'
+
+  return {
+    totalEventsThisMonth: stats.total_events_this_month ?? 0,
+    totalSocieties: stats.total_societies ?? 0,
+    totalRegistrations: stats.total_registrations ?? 0,
+    attendanceRateLabel: stats.attendance?.rate_percent == null ? 'N/A' : `${Math.round(attendanceRate)}%`,
+    attendanceRateBar: stats.attendance?.rate_percent == null ? 0 : Math.min(Math.max(attendanceRate, 0), 100),
+    popularCategoryLabel,
+  }
+})
+
 function eventExtra(event) {
   return getApprovalEventDetails(event)
 }
@@ -222,6 +262,28 @@ function statusText(status) {
   if (status === 'approved') return 'Approved'
   if (status === 'rejected') return 'Rejected'
   return 'Pending Review'
+}
+
+async function loadActivityMetrics() {
+  loadingActivity.value = true
+  activityError.value = ''
+
+  try {
+    const response = await getFacultyDashboardApi()
+    activityStats.value = response.data.data
+  } catch (error) {
+    activityError.value = 'Could not load activity metrics.'
+  } finally {
+    loadingActivity.value = false
+  }
+}
+
+function formatCategory(category) {
+  return String(category || '')
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
 }
 
 async function approveEvent(event) {
