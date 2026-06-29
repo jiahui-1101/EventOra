@@ -102,12 +102,20 @@
           </span>
 
           <router-link
-            v-if="status !== 'cancelled' && status !== 'completed'"
-            :to="`/organiser/create-event?edit=${selectedEvent?.id}`"
-            class="button button-secondary full-width"
-          >
-            Edit Event
-          </router-link>
+  v-if="status !== 'cancelled' && status !== 'completed'"
+  :to="`/organiser/create-event?edit=${selectedEvent?.id}`"
+  class="button button-secondary full-width"
+>
+  Edit Event
+</router-link>
+
+<router-link
+  v-else
+  :to="`/organiser/create-event?view=${selectedEvent?.id}`"
+  class="button button-secondary full-width"
+>
+  View Event
+</router-link>
 
           <router-link
     v-if="status === 'completed'"
