@@ -320,6 +320,42 @@ class DashboardController
         return $totals;
     }
 
+    private function getAllEventTotalsByStatus(PDO $db): array
+    {
+        $rows = $db->query(
+            'SELECT status, COUNT(*) AS total
+             FROM events
+             GROUP BY status'
+        )->fetchAll();
+
+        $totals = [
+            'draft' => 0,
+            'pending_approval' => 0,
+            'published' => 0,
+            'completed' => 0,
+            'rejected' => 0,
+            'cancelled' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            $totals[$row['status']] = (int) $row['total'];
+        }
+
+        return $totals;
+    }
+
+    private function getEventsThisMonth(PDO $db): int
+    {
+        $stmt = $db->query(
+            "SELECT COUNT(*) AS total
+             FROM events
+             WHERE start_datetime >= DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01')
+               AND start_datetime < DATE_ADD(DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01'), INTERVAL 1 MONTH)"
+        );
+
+        return (int) $stmt->fetch()['total'];
+    }
+
     // Counts total and confirmed registrations across the given events.
     // 'total' deliberately EXCLUDES cancelled registrations - a
     // cancelled registration isn't really "a registration" from the
