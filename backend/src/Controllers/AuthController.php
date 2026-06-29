@@ -93,7 +93,31 @@ class AuthController
             ]);
 
             $userId = (int) $db->lastInsertId();
+
+            $organiserRequest = null;
+            if ($role === 'organiser') {
+                $requestStmt = $db->prepare(
+                    'INSERT INTO organiser_society_requests (user_id, society_name, society_description)
+                     VALUES (:user_id, :society_name, :society_description)'
+                );
+                $requestStmt->execute([
+                    'user_id' => $userId,
+                    'society_name' => $societyName,
+                    'society_description' => $societyDescription,
+                ]);
+
+                $organiserRequest = [
+                    'id' => (int) $db->lastInsertId(),
+                    'society_name' => $societyName,
+                    'status' => 'pending',
+                ];
+            }
+
+            $db->commit();
         } catch (PDOException $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             return $this->errorResponse($response, 'DB_ERROR', 'Could not create account', [], 500);
         }
 
