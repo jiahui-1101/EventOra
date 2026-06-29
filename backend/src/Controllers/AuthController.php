@@ -131,6 +131,7 @@ class AuthController
                 'email' => $email,
                 'role' => $role,
             ],
+            'organiser_request' => $organiserRequest,
         ], 'Account created successfully', 201);
     }
 
