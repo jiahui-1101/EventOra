@@ -480,6 +480,8 @@ function handleAction(action) {
     router.push({ path: '/organiser/dashboard', query: { eventAction: 'cancelled' } })
   }
 }
+
+onMounted(loadBackendEvent)
 </script>
 
 <style scoped>
