@@ -187,6 +187,27 @@ $app->group('/api/events', function ($group) {
     ->add(new RoleMiddleware(['organiser']))
     ->add(new JwtMiddleware());
 
+    // ============================================
+// Favorites routes (Module 3) - JWT required
+// ============================================
+$app->group('/api/favorites', function ($group) {
+    $controller = new \App\Controllers\FavoriteController();
+    $group->get('', [$controller, 'listFavorites']);
+    $group->post('/{id}', [$controller, 'addFavorite']);
+    $group->delete('/{id}', [$controller, 'removeFavorite']);
+})->add(new JwtMiddleware());
+
+// ============================================
+// Organiser feedback view + CSV export (Module 7)
+// ============================================
+$app->get('/api/events/{id}/feedback', [new \App\Controllers\FeedbackController(), 'listFeedback'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
+$app->get('/api/events/{id}/attendance/export', [new \App\Controllers\FeedbackController(), 'exportAttendanceCsv'])
+    ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+    
 // ============================================
 // Notification routes
 // ============================================
