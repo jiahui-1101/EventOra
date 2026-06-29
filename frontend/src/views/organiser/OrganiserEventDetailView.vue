@@ -246,12 +246,19 @@ const societyEvents = ref(
 const selectedEvent = computed(() => {
   const id = route.params.id || route.query.id
 
+  if (hasBackendToken.value && id) {
+    return backendEvent.value
+  }
+
   if (!id) return societyEvents.value[0] || null
 
   return societyEvents.value.find((ev) => String(ev.id) === String(id)) || null
 })
 
-const status = computed(() => selectedEvent.value?.status || 'draft')
+const status = computed(() => {
+  if (hasBackendToken.value && !backendEventLoaded.value) return 'loading'
+  return selectedEvent.value?.status || 'draft'
+})
 const category = computed(() => selectedEvent.value?.category || 'Academic')
 const eventImage = computed(() => selectedEvent.value?.posterImage || selectedEvent.value?.bannerImage)
 
