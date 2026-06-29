@@ -241,9 +241,9 @@ import { loadNotifications as loadStoredNotifications } from '@/stores/notificat
 import {
   approveOrganiserRequestApi,
   getPendingOrganiserRequestsApi,
+  getSocietyOverviewApi,
   rejectOrganiserRequestApi,
 } from '@/api/admin'
-import axios from 'axios'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -262,28 +262,17 @@ onMounted(async () => {
   loadApprovalEvents()
   ticketingStore.loadSeedData()
   loadOrganiserRequests()
-
-  try {
-    const response = await axios.get('/mock/societies.json')
-    societies.value = response.data
-  } catch (err) {
-    loadError.value = 'Failed to load society data. Please try again later.'
-  } finally {
-    loadingSocieties.value = false
-  }
+  loadSocietyOverview()
 
   loadNotifications()
 })
 
-const activeSocietyCount = computed(() => societies.value.length || 12)
+const activeSocietyCount = computed(() => societies.value.length)
 const totalRegistrations = computed(() =>
-  ticketingStore.events.reduce((sum, event) => {
-    const summary = ticketingStore.getEventCapacitySummary(event.id)
-    return sum + (summary?.occupiedCount || 0) + (summary?.waitlistCount || 0)
-  }, 0)
+  societies.value.reduce((sum, society) => sum + Number(society.registered || 0), 0)
 )
 const totalCheckedIn = computed(() =>
-  ticketingStore.tickets.filter((ticket) => ticket.status === 'active' && ticket.checkedInAt).length
+  societies.value.reduce((sum, society) => sum + Number(society.attended || 0), 0)
 )
 const overallAttendanceRate = computed(() =>
   totalRegistrations.value ? Math.round((totalCheckedIn.value / totalRegistrations.value) * 100) : 0
@@ -345,6 +334,20 @@ async function loadOrganiserRequests() {
     organiserRequestError.value = 'Failed to load organiser requests.'
   } finally {
     loadingOrganiserRequests.value = false
+  }
+}
+
+async function loadSocietyOverview() {
+  loadingSocieties.value = true
+  loadError.value = ''
+
+  try {
+    const response = await getSocietyOverviewApi()
+    societies.value = response.data.data
+  } catch (error) {
+    loadError.value = 'Failed to load society data. Please try again later.'
+  } finally {
+    loadingSocieties.value = false
   }
 }
 

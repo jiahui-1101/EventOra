@@ -1,8 +1,7 @@
 -- EventOra Database Schema
 -- Generated to match PR1 Data Dictionary exactly (Section 7.1)
--- Phase 1: Must-Have core tables only (9 tables)
--- Remaining tables (feedback, certificates, notifications, favorites)
--- correspond to Should-Have features and will be added in a later migration
+-- Includes core PR1 tables plus deploy-ready organiser requests,
+-- feedback, and certificates. Notifications remain in create_notifications.sql.
 
 CREATE DATABASE IF NOT EXISTS eventora
   CHARACTER SET utf8mb4
@@ -230,4 +229,44 @@ CREATE TABLE check_ins (
     CONSTRAINT fk_checkins_checker
         FOREIGN KEY (checked_by) REFERENCES users(id)
         ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- ============================================
+-- 11. feedback
+-- ============================================
+CREATE TABLE feedback (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    user_id INT NOT NULL,
+    rating TINYINT NOT NULL,
+    comment TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_feedback_event
+        FOREIGN KEY (event_id) REFERENCES events(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_feedback_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_feedback_rating CHECK (rating BETWEEN 1 AND 5),
+    UNIQUE KEY uq_feedback_event_user (event_id, user_id),
+    INDEX idx_feedback_event (event_id)
+) ENGINE=InnoDB;
+
+-- ============================================
+-- 12. certificates
+-- ============================================
+CREATE TABLE certificates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    registration_id INT NOT NULL UNIQUE,
+    certificate_code VARCHAR(40) NOT NULL UNIQUE,
+    issued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_certificates_registration
+        FOREIGN KEY (registration_id) REFERENCES registrations(id)
+        ON DELETE CASCADE,
+
+    INDEX idx_certificates_code (certificate_code)
 ) ENGINE=InnoDB;

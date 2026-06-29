@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Slim\Factory\AppFactory;
 use Dotenv\Dotenv;
 use App\Controllers\AuthController;
+use App\Controllers\AttendeeController;
 use App\Controllers\AdminController;
 use App\Controllers\DashboardController;
 use App\Controllers\EventController;
@@ -25,10 +26,9 @@ $app = AppFactory::create();
 // Leave empty for local dev.
 // $app->setBasePath('/api');
 
-// Error middleware: displayErrorDetails is true for now so we can see
-// actual PHP errors while developing. MUST be set to false before
-// deploying for the demo, or it'll leak internal error details to the client.
-$app->addErrorMiddleware(true, true, true);
+// Deploy-safe error handling: do not expose stack traces or server paths
+// to API clients. Keep detailed errors in logs instead.
+$app->addErrorMiddleware(false, true, true);
 
 // Needed so $request->getParsedBody() actually works for JSON POST/PUT bodies
 $app->addBodyParsingMiddleware();
@@ -112,6 +112,10 @@ $app->group('/api/admin/events', function ($group) {
     ->add(new RoleMiddleware(['faculty_admin']))
     ->add(new JwtMiddleware());
 
+$app->get('/api/admin/societies/overview', [new AdminController(), 'societyOverview'])
+    ->add(new RoleMiddleware(['faculty_admin']))
+    ->add(new JwtMiddleware());
+
 $app->group('/api/admin/organiser-requests', function ($group) {
     $controller = new AdminController();
 
@@ -138,6 +142,15 @@ $app->get('/api/dashboard/organiser/participants', [new DashboardController(), '
 
 $app->get('/api/dashboard/organiser/attendance', [new DashboardController(), 'organiserAttendance'])
     ->add(new RoleMiddleware(['organiser']))
+    ->add(new JwtMiddleware());
+
+$app->get('/api/me/completed-events', [new AttendeeController(), 'completedEvents'])
+    ->add(new JwtMiddleware());
+
+$app->post('/api/events/{id}/feedback', [new AttendeeController(), 'submitFeedback'])
+    ->add(new JwtMiddleware());
+
+$app->post('/api/events/{id}/certificate', [new AttendeeController(), 'issueCertificate'])
     ->add(new JwtMiddleware());
 
 $app->get('/api/societies/mine', [new SocietyController(), 'listMine'])

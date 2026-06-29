@@ -20,6 +20,44 @@ use PDOException;
 // business logic of the approval workflow itself.
 class AdminController
 {
+    public function societyOverview(Request $request, Response $response): Response
+    {
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare(
+            'SELECT
+                s.id,
+                s.name,
+                COUNT(DISTINCT e.id) AS events,
+                COUNT(DISTINCT CASE WHEN r.status <> "cancelled" THEN r.id END) AS registered,
+                COUNT(DISTINCT ci.id) AS attended,
+                AVG(f.rating) AS average_rating
+             FROM societies s
+             LEFT JOIN events e ON e.society_id = s.id
+             LEFT JOIN registrations r ON r.event_id = e.id
+             LEFT JOIN tickets t ON t.registration_id = r.id
+             LEFT JOIN check_ins ci ON ci.ticket_id = t.id
+             LEFT JOIN feedback f ON f.event_id = e.id
+             GROUP BY s.id, s.name
+             ORDER BY events DESC, registered DESC, s.name ASC'
+        );
+        $stmt->execute();
+
+        $rows = array_map(
+            fn (array $row): array => [
+                'id' => (int) $row['id'],
+                'name' => $row['name'],
+                'events' => (int) $row['events'],
+                'registered' => (int) $row['registered'],
+                'attended' => (int) $row['attended'],
+                'averageRating' => $row['average_rating'] === null ? null : round((float) $row['average_rating'], 1),
+            ],
+            $stmt->fetchAll()
+        );
+
+        return $this->successResponse($response, $rows, null, 200);
+    }
+
     public function listPendingOrganiserRequests(Request $request, Response $response): Response
     {
         $db = Database::getConnection();

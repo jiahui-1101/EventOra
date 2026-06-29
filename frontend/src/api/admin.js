@@ -27,3 +27,7 @@ export function approveOrganiserRequestApi(id) {
 export function rejectOrganiserRequestApi(id, reason) {
   return apiClient.post(`/admin/organiser-requests/${id}/reject`, { reason })
 }
+
+export function getSocietyOverviewApi() {
+  return apiClient.get('/admin/societies/overview')
+}

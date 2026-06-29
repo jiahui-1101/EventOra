@@ -8,6 +8,7 @@
     </div>
 
     <div v-if="loading" style="padding: 60px; text-align: center;">Loading completed events...</div>
+    <p v-else-if="loadError" class="auth-error">{{ loadError }}</p>
 
     <section v-else class="event-grid">
       <article v-for="ev in myEvents" :key="ev.id" class="event-card">
@@ -54,7 +55,7 @@
     </section>
 
     <p
-      v-if="!loading && !myEvents.length"
+      v-if="!loading && !loadError && !myEvents.length"
       class="empty-state"
     >
       Completed events will appear here after your ticket has been checked in.
@@ -95,18 +96,20 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useTicketingStore } from '@/stores/ticketing'
+import {
+  getCompletedEventsApi,
+  issueCertificateApi,
+  submitFeedbackApi,
+} from '@/api/attendee'
 
 const loading = ref(true)
-const feedbacks = ref([])
+const completedEvents = ref([])
 const activeEvent = ref(null)
 const currentRating = ref(0)
 const currentComment = ref('')
+const loadError = ref('')
 
-const fbKey = 'eventora_feedbacks_v2'
 const authStore = useAuthStore()
-const ticketingStore = useTicketingStore()
-const attendeeEmail = computed(() => authStore.user?.email || '')
 const attendeeName = computed(() => {
   const user = authStore.user
   if (!user) return 'EventOra attendee'
@@ -114,51 +117,29 @@ const attendeeName = computed(() => {
 })
 
 onMounted(async () => {
-  feedbacks.value = JSON.parse(localStorage.getItem(fbKey) || '[]')
   try {
-    await ticketingStore.loadSeedData()
+    const response = await getCompletedEventsApi()
+    completedEvents.value = response.data.data
   } catch (e) {
-    console.error(e)
+    loadError.value = 'Failed to load completed events.'
   } finally {
     loading.value = false
   }
 })
 
 const myEvents = computed(() => {
-  const now = Date.now()
-
-  return ticketingStore
-    .getTicketsForAttendee(attendeeEmail.value)
-    .filter((ticket) =>
-      ticket.status === 'active'
-      && (ticket.checkedInAt || new Date(ticket.eventStartAt).getTime() < now)
-    )
-    .map((ticket) => {
-    const event = ticketingStore.getEventById(ticket.eventId) || {}
-    const fb = feedbacks.value.find((feedback) =>
-      feedback.eventId === ticket.eventId
-      && feedback.attendeeEmail === attendeeEmail.value
-    )
-
-    return {
-      id: ticket.eventId,
-      title: ticket.eventName,
-      societyName: event.societyName || 'EventOra Society',
-      category: event.category || 'event',
-      venue: ticket.venue,
-      startAt: ticket.eventStartAt,
-      checkedIn: Boolean(ticket.checkedInAt),
-      coverClass: event.coverClass || 'academic-cover',
-      badgeClass: event.badgeClass || 'badge-blue',
-      hasRated: !!fb,
-      myRating: fb ? fb.rating : 0
-    }
-  })
+  return completedEvents.value.map((event) => ({
+    ...event,
+    coverClass: `${event.category || 'academic'}-cover`,
+    badgeClass: categoryBadge(event.category),
+    hasRated: Boolean(event.feedback),
+    myRating: event.feedback?.rating || 0,
+  }))
 })
 
 function openRateModal(ev) {
   activeEvent.value = ev
-  const existing = feedbacks.value.find(f => f.eventId === ev.id)
+  const existing = ev.feedback
   currentRating.value = existing ? existing.rating : 5
   currentComment.value = existing ? existing.comment : ''
 }
@@ -169,33 +150,41 @@ function closeModal() {
   currentComment.value = ''
 }
 
-function submitFeedback() {
+async function submitFeedback() {
   if (!activeEvent.value) return
   const targetId = activeEvent.value.id
-  let list = [...feedbacks.value]
-  const idx = list.findIndex((feedback) =>
-    feedback.eventId === targetId
-    && feedback.attendeeEmail === attendeeEmail.value
-  )
-  
+
   const payload = {
-    eventId: targetId,
-    attendeeEmail: attendeeEmail.value,
     rating: currentRating.value,
-    comment: currentComment.value.trim() || 'No text comment provided.',
-    submittedAt: new Date().toISOString()
+    comment: currentComment.value.trim() || 'No text comment provided.'
   }
 
-  if (idx >= 0) list[idx] = payload
-  else list.push(payload)
-
-  feedbacks.value = list
-  localStorage.setItem(fbKey, JSON.stringify(list))
+  await submitFeedbackApi(targetId, payload)
+  completedEvents.value = completedEvents.value.map((event) =>
+    event.id === targetId
+      ? {
+          ...event,
+          feedback: {
+            rating: payload.rating,
+            comment: payload.comment,
+            submittedAt: new Date().toISOString(),
+          },
+        }
+      : event
+  )
   alert('✓ Feedback submitted successfully! Your E-Certificate is officially logged.')
   closeModal()
 }
 
-function downloadCert(ev) {
+async function downloadCert(ev) {
+  const response = await issueCertificateApi(ev.id)
+  const certificate = response.data.data
+  completedEvents.value = completedEvents.value.map((event) =>
+    event.id === ev.id
+      ? { ...event, certificate: { code: certificate.certificate_code, issuedAt: certificate.issued_at } }
+      : event
+  )
+
   const dateStr = new Date(ev.startAt).toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' })
   const win = window.open('', '_blank')
   win.document.write(`
@@ -226,7 +215,7 @@ function downloadCert(ev) {
         <p style="color: #475569; font-size: 1.1rem;">for verified attendance and active completion of</p>
         <div class="event-title">${ev.title}</div>
         <p style="color: #64748b; font-style: italic;">organized by ${ev.societyName} on ${dateStr}</p>
-        <div class="footer">ID: CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()} · Verified by EventOra attendance records</div>
+        <div class="footer">ID: ${certificate.certificate_code} · Verified by EventOra attendance records</div>
         <button class="print-btn" onclick="window.print()">🖨️ Save as PDF / Print</button>
       </div>
     </body>
@@ -236,6 +225,18 @@ function downloadCert(ev) {
 }
 
 function formatDate(d) { return new Date(d).toLocaleDateString('en-MY', { month: 'short', day: 'numeric', year: 'numeric' }) }
+
+function categoryBadge(category) {
+  const badges = {
+    academic: 'badge-blue',
+    workshop: 'badge-purple',
+    sports: 'badge-green',
+    cultural: 'badge-yellow',
+    religious: 'badge-blue',
+  }
+
+  return badges[category] || 'badge-blue'
+}
 </script>
 
 <style scoped>
