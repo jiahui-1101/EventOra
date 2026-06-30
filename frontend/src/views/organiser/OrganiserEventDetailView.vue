@@ -198,7 +198,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useTicketingStore } from '@/stores/ticketing'
 import {
   cancelEventApi,
   cancelSubmissionApi,
@@ -210,96 +209,18 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-const ticketingStore = useTicketingStore()
 
-const eventsStorageKey = 'eventora_society_events_v2'
 const backendEvent = ref(null)
 const backendEventLoaded = ref(false)
 const actionError = ref('')
 const hasBackendToken = computed(() => Boolean(localStorage.getItem('eventora_token')))
 
-const defaultEvents = [
-  {
-    id: 1,
-    title: 'Build Your First AI App',
-    category: 'Academic',
-    society: 'Computer Society UTM',
-    location: 'N28A Innovation Lab',
-    description:
-      'A practical evening workshop where students learn how to plan, working version, and present a simple AI-powered application.',
-    bannerImage: '',
-    posterImage: '',
-    eventDate: '12 Jun 2026',
-    startTime: '7:30 PM',
-    endTime: '9:30 PM',
-    feeType: 'Paid',
-    feeAmount: 8,
-    status: 'published',
-    registrations: 28,
-    checkedIn: 18,
-    capacity: 40,
-  },
-  {
-    id: 2,
-    title: 'Hackathon 2026',
-    category: 'Academic',
-    society: 'Computer Society UTM',
-    location: 'FAB Lab',
-    description:
-      'A full-day hackathon for student teams to build working software builds, receive mentor feedback, and present solutions.',
-    bannerImage: '',
-    posterImage: '',
-    eventDate: '5 Jul 2026',
-    startTime: '9:00 AM',
-    endTime: '6:00 PM',
-    feeType: 'Paid',
-    feeAmount: 15,
-    status: 'pending_approval',
-    registrations: 0,
-    checkedIn: 0,
-    capacity: 60,
-  },
-  {
-    id: 3,
-    title: 'Futsal Tournament',
-    category: 'Sports',
-    society: 'Sports Club UTM',
-    location: 'UTM Sports Hall',
-    description:
-      'A sports event for student teams to compete in an interfaculty futsal tournament at UTM Sports Hall.',
-    bannerImage: '',
-    posterImage: '',
-    eventDate: '28 Jun 2026',
-    startTime: '9:00 AM',
-    endTime: '1:00 PM',
-    feeType: 'Free',
-    feeAmount: 0,
-    status: 'published',
-    registrations: 40,
-    checkedIn: 32,
-    capacity: 40,
-  },
-]
-
-const societyEvents = ref(
-  JSON.parse(localStorage.getItem(eventsStorageKey) || 'null') || defaultEvents
-)
-
-const selectedEvent = computed(() => {
-  const id = route.params.id || route.query.id
-
-  if (hasBackendToken.value && id) {
-    return backendEvent.value
-  }
-
-  if (!id) return societyEvents.value[0] || null
-
-  return societyEvents.value.find((ev) => String(ev.id) === String(id)) || null
-})
+const selectedEvent = computed(() => backendEvent.value)
 
 const status = computed(() => {
+  if (!hasBackendToken.value) return 'auth_required'
   if (hasBackendToken.value && !backendEventLoaded.value) return 'loading'
-  return selectedEvent.value?.status || 'draft'
+  return selectedEvent.value?.status || 'not_found'
 })
 const category = computed(() => selectedEvent.value?.category || 'Academic')
 
@@ -437,22 +358,24 @@ function normaliseBackendEvent(rawEvent) {
 async function loadBackendEvent() {
   const id = route.params.id || route.query.id
 
-  if (!id || !hasBackendToken.value) return
+  if (!hasBackendToken.value) {
+    actionError.value = 'Please sign in with a backend organiser account to view this event.'
+    backendEventLoaded.value = true
+    return
+  }
+
+  if (!id) {
+    actionError.value = 'No event was selected.'
+    backendEventLoaded.value = true
+    return
+  }
 
   try {
     const response = await getMyEventApi(id)
-    const event = normaliseBackendEvent(response.data.data)
-    backendEvent.value = event
-    const existingIndex = societyEvents.value.findIndex((ev) => String(ev.id) === String(event.id))
-
-    if (existingIndex >= 0) {
-      societyEvents.value.splice(existingIndex, 1, event)
-    } else {
-      societyEvents.value = [event, ...societyEvents.value]
-    }
+    backendEvent.value = normaliseBackendEvent(response.data.data)
   } catch (error) {
     backendEvent.value = null
-    console.warn('Could not load backend organiser event detail:', error)
+    actionError.value = error.response?.data?.error?.message || 'Could not load this event from the backend.'
   } finally {
     backendEventLoaded.value = true
   }
@@ -502,57 +425,28 @@ const publicListingText = computed(() => {
     cancelled: 'Hidden because the event was cancelled',
     rejected: 'Hidden until changes are resubmitted',
     loading: 'Loading event visibility',
+    auth_required: 'Sign in required',
+    not_found: 'Event not found',
   }
 
   return map[status.value] || 'Hidden until submitted for approval'
 })
 
-function saveEvents() {
-  localStorage.setItem(eventsStorageKey, JSON.stringify(societyEvents.value))
-}
-
 async function handleAction(action) {
   const id = selectedEvent.value?.id
   actionError.value = ''
 
-  if (hasBackendToken.value && id) {
-    await handleBackendAction(action, id)
+  if (!hasBackendToken.value) {
+    actionError.value = 'Please sign in with a backend organiser account to update this event.'
     return
   }
 
-  if (action === 'submit') {
-    societyEvents.value = societyEvents.value.map((ev) =>
-      ev.id === id ? { ...ev, status: 'pending_approval' } : ev
-    )
-    saveEvents()
-    router.push({ path: '/organiser/dashboard', query: { eventAction: 'submitted' } })
+  if (!id) {
+    actionError.value = 'Could not find this event in the backend.'
+    return
   }
 
-  if (action === 'delete') {
-    societyEvents.value = societyEvents.value.filter((ev) => ev.id !== id)
-    saveEvents()
-    router.push({ path: '/organiser/dashboard', query: { eventAction: 'deleted' } })
-  }
-
-  if (action === 'cancel_submission') {
-    societyEvents.value = societyEvents.value.map((ev) =>
-      ev.id === id ? { ...ev, status: 'draft' } : ev
-    )
-    saveEvents()
-    router.push({ path: '/organiser/dashboard', query: { eventAction: 'submission_cancelled' } })
-  }
-
-  if (action === 'complete') {
-  try {
-    await completeEventApi(id)
-    backendEvent.value = {
-      ...selectedEvent.value,
-      status: 'completed',
-    }
-    router.push({ path: '/organiser/dashboard', query: { eventAction: 'completed' } })
-  } catch (error) {
-    alert(error.response?.data?.error?.message || 'Unable to mark event as completed.')
-  }
+  await handleBackendAction(action, id)
 }
 
 async function handleBackendAction(action, id) {
@@ -587,29 +481,6 @@ async function handleBackendAction(action, id) {
     }
   } catch (error) {
     actionError.value = error.response?.data?.error?.message || 'Action failed. Please try again.'
-  }
-}
-
-  if (action === 'cancel') {
-    societyEvents.value = societyEvents.value.map((ev) =>
-      ev.id === id ? { ...ev, status: 'cancelled' } : ev
-    )
-    const eventForTicketing = {
-      ...selectedEvent.value,
-      status: 'published',
-      title: selectedEvent.value?.title,
-      society: selectedEvent.value?.society,
-      category: selectedEvent.value?.category,
-      priceType: (selectedEvent.value?.feeType || '').toLowerCase() === 'paid' ? 'paid' : 'free',
-      price: selectedEvent.value?.feeAmount || 0,
-      date: selectedEvent.value?.date || selectedEvent.value?.startAt,
-      venue: selectedEvent.value?.location,
-      confirmedCount: selectedEvent.value?.registrations || 0,
-    }
-    ticketingStore.ensureEventAvailable(eventForTicketing)
-    ticketingStore.cancelEvent(id)
-    saveEvents()
-    router.push({ path: '/organiser/dashboard', query: { eventAction: 'cancelled' } })
   }
 }
 

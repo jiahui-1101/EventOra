@@ -384,8 +384,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { addApprovalEvent } from '@/stores/approvalEvents'
-import { addNotification } from '@/stores/notifications'
 import {
   createDraftEventApi,
   createEventApi,
@@ -398,94 +396,12 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-const eventsStorageKey = 'eventora_society_events_v2'
 
 const steps = [
   { key: 'basic', label: 'Basic Info' },
   { key: 'ticketing', label: 'Ticketing' },
   { key: 'details', label: 'Details' },
   { key: 'review', label: 'Review' },
-]
-
-const defaultEvents = [
-  {
-    id: 1,
-    title: 'Build Your First AI App',
-    category: 'Academic',
-    society: 'Computer Society UTM',
-    location: 'N28A Innovation Lab',
-    description:
-      'A practical evening workshop where students learn how to plan, working version, and present a simple AI-powered application.',
-    bannerImage: '',
-    posterImage: '',
-    eventDate: '12 Jun 2026',
-    startTime: '7:30 PM',
-    endTime: '9:30 PM',
-    registrationDeadline: '',
-    feeType: 'Paid',
-    feeAmount: 8,
-    waitlist: 'enabled',
-    contactName: '',
-    contactEmail: '',
-    instructions: '',
-    status: 'published',
-    registrations: 28,
-    checkedIn: 18,
-    avgRating: 4.5,
-    capacity: 40,
-  },
-  {
-    id: 2,
-    title: 'Hackathon 2026',
-    category: 'Academic',
-    society: 'Computer Society UTM',
-    location: 'FAB Lab',
-    description:
-      'A full-day hackathon for student teams to build working software builds, receive mentor feedback, and present solutions.',
-    bannerImage: '',
-    posterImage: '',
-    eventDate: '5 Jul 2026',
-    startTime: '9:00 AM',
-    endTime: '6:00 PM',
-    registrationDeadline: '',
-    feeType: 'Paid',
-    feeAmount: 15,
-    waitlist: 'enabled',
-    contactName: '',
-    contactEmail: '',
-    instructions: '',
-    status: 'pending_approval',
-    registrations: 0,
-    checkedIn: 0,
-    avgRating: null,
-    capacity: 60,
-  },
-  {
-    id: 3,
-    title: 'Futsal Tournament',
-    category: 'Sports',
-    society: 'Sports Club UTM',
-    location: 'UTM Sports Hall',
-    description:
-      'A sports event for student teams to compete in an interfaculty futsal tournament at UTM Sports Hall.',
-    bannerImage: '',
-    posterImage: '',
-    eventDate: '28 Jun 2026',
-    startTime: '9:00 AM',
-    endTime: '1:00 PM',
-    registrationDeadline: '',
-    feeType: 'Free',
-    feeAmount: 0,
-    waitlist: 'enabled',
-    contactName: '',
-    contactEmail: '',
-    instructions: '',
-    status: 'published',
-    registrations: 40,
-    checkedIn: 32,
-    avgRating: 4.2,
-    capacity: 40,
-  },
 ]
 
 const currentStep = ref(0)
@@ -578,33 +494,13 @@ onMounted(async () => {
 
   if (hasBackendToken()) {
     const loaded = await loadBackendEventForEdit(eventId)
-    if (loaded) return
+    if (!loaded) {
+      stepError.value = 'Could not load this event from the backend.'
+    }
+    return
   }
 
-  const storedEvents = JSON.parse(localStorage.getItem(eventsStorageKey) || 'null')
-  const events = storedEvents || defaultEvents
-  const event = events.find((ev) => String(ev.id) === String(eventId))
-
-  if (!event) return
-
-  editingEventId.value = event.id
-form.title = event.title || ''
-form.category = event.category || ''
-form.society = event.society || 'Computer Society UTM'
-form.location = event.location || ''
-form.description = event.description || ''
-form.bannerImage = resolvePosterUrl(event.bannerImage || event.posterImage || '')
-form.posterImage = resolvePosterUrl(event.posterImage || event.bannerImage || '')
-form.capacity = event.capacity || null
-form.deadline = toDateTimeLocal(event.registrationDeadline)
-form.feeType = event.feeType || 'Free'
-form.feeAmount = event.feeAmount || 0
-form.waitlist = event.waitlist || 'enabled'
-form.contactName = event.contactName || ''
-form.contactEmail = event.contactEmail || ''
-form.instructions = event.instructions || ''
-form.startDateTime = combineDateAndTime(event.eventDate, event.startTime)
-form.endDateTime = combineDateAndTime(event.eventDate, event.endTime)
+  stepError.value = 'Please sign in with a backend organiser account to edit events.'
 })
 
 function handleBannerUpload(event) {
@@ -689,69 +585,7 @@ async function submitEvent(action) {
     return
   }
 
-  const storedEvents = JSON.parse(localStorage.getItem(eventsStorageKey) || 'null')
-  const events = storedEvents || [...defaultEvents]
-  const existingEvent = events.find((ev) => String(ev.id) === String(editingEventId.value))
-
-  const eventPayload = {
-    id: editingEventId.value || Date.now(),
-    title: form.title,
-    category: form.category,
-    society: form.society,
-    location: form.location,
-    description: form.description,
-    bannerImage: form.bannerImage,
-    posterImage: form.posterImage,
-    eventDate: form.startDateTime
-      ? new Date(form.startDateTime).toLocaleDateString('en-GB', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })
-      : '',
-    startTime: form.startDateTime
-      ? new Date(form.startDateTime).toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-        })
-      : '',
-    endTime: form.endDateTime
-      ? new Date(form.endDateTime).toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-        })
-      : '',
-    registrationDeadline: form.deadline,
-    feeType: form.feeType,
-    feeAmount: form.feeType === 'Paid' ? form.feeAmount : 0,
-    waitlist: form.waitlist,
-    contactName: form.contactName,
-    contactEmail: form.contactEmail,
-    instructions: form.instructions,
-    status: action === 'draft' ? 'draft' : 'pending_approval',
-    registrations: existingEvent?.registrations || 0,
-    checkedIn: existingEvent?.checkedIn || 0,
-    avgRating: existingEvent?.avgRating || null,
-    capacity: form.capacity,
-  }
-
-  if (editingEventId.value) {
-    const updatedEvents = events.map((ev) =>
-      String(ev.id) === String(editingEventId.value) ? eventPayload : ev
-    )
-
-    localStorage.setItem(eventsStorageKey, JSON.stringify(updatedEvents))
-  } else {
-    events.unshift(eventPayload)
-    localStorage.setItem(eventsStorageKey, JSON.stringify(events))
-  }
-
-  if (action === 'submitted') {
-    addEventToApprovalQueue(eventPayload)
-    addSubmissionNotifications(eventPayload)
-  }
-
-  router.push({ path: '/organiser/dashboard', query: { eventSaved: action } })
+  stepError.value = 'Please sign in with a backend organiser account to save events.'
 }
 
 async function submitEventToBackend(action) {
@@ -868,54 +702,6 @@ async function loadBackendEventForEdit(id) {
   } catch (error) {
     return false
   }
-}
-
-function addSubmissionNotifications(event) {
-  addNotification({
-    audience: 'organiser',
-    type: 'Approval',
-    title: 'Event submitted for approval',
-    message: `${event.title} has been submitted and is waiting for Faculty Admin review.`,
-    badgeClass: 'badge-yellow',
-  })
-
-  addNotification({
-    audience: 'faculty_admin',
-    type: 'Approval',
-    title: 'New event pending approval',
-    message: `${event.title} submitted by ${event.society} is waiting for review.`,
-    badgeClass: 'badge-yellow',
-  })
-}
-
-function addEventToApprovalQueue(event) {
-  addApprovalEvent({
-    id: event.id,
-    society: event.society,
-    title: event.title,
-    date: event.eventDate,
-    category: event.category,
-    capacity: event.capacity,
-    details: {
-      submittedBy: event.contactName || 'Organiser',
-      submittedAt: 'just now',
-      displayDate: `${event.eventDate}, ${event.startTime} - ${event.endTime}`,
-      venue: event.location || 'TBC',
-      deadline: formattedDeadline.value,
-      price: event.feeType === 'Paid' ? `RM ${Number(event.feeAmount || 0).toFixed(2)}` : 'Free',
-      image: event.posterImage || event.bannerImage || '',
-      description:
-        event.description ||
-        'Event description preview. Admin can open full details to review the complete submission.',
-    },
-  })
-}
-
-function combineDateAndTime(dateText, timeText) {
-  if (!dateText || !timeText) return ''
-
-  const parsed = new Date(`${dateText} ${timeText}`)
-  return toDateTimeLocal(parsed)
 }
 
 function toDateTimeLocal(value) {
