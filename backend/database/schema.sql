@@ -187,8 +187,8 @@ CREATE TABLE registrations (
         FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE,
 
-    -- Enforces "duplicate registration prevention" (PR1 5.1 Ticketing Module)
-    -- at the database level, not just in application logic
+    -- Keeps one current registration record per attendee/event; the service
+    -- reuses cancelled rows when a user registers again.
     UNIQUE KEY uq_event_user (event_id, user_id),
 
     INDEX idx_registrations_status (status)
