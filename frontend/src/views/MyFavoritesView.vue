@@ -18,7 +18,7 @@
             {{ event.category }}
           </span>
           <span class="badge badge-gray seats-badge">
-            {{ event.seatsLeft }} seats left
+            {{ event.seatsLeft > 0 ? `${event.seatsLeft} seats left` : (event.waitlistEnabled ? 'Waitlist' : 'Full') }}
           </span>
         </div>
 
