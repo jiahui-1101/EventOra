@@ -271,7 +271,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useTicketingStore } from '@/stores/ticketing'
 import {
   getPublicEventApi,
   getFavoriteStatusApi,
@@ -288,7 +287,6 @@ import {
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const ticketingStore = useTicketingStore()
 const loading = ref(true)
 const event = ref(null)
 const favorites = ref([])
@@ -354,34 +352,7 @@ const paymentMethods = [
   },
 ]
 
-const backupAnnualTech = {
-  id: 'event-annual-tech-2026',
-  title: 'Annual Tech Symposium 2026',
-  societyName: 'Computer Society UTM',
-  category: 'academic',
-  price: 5,
-  priceType: 'paid',
-  startAt: '2026-07-15T09:00:00',
-  endAt: '2026-07-15T17:00:00',
-  registrationDeadline: '2026-07-10T23:59:00',
-  venue: 'Dewan Sultan Iskandar, UTM JB',
-  capacity: 120,
-  confirmedCount: 78,
-  status: 'published',
-  societyId: 'UTM-CS',
-  description: 'Annual Tech Symposium 2026 brings together students, organisers, and faculty members for a full-day technology event. The event includes tech talks, project showcase booths, student project showcases, and networking sessions.',
-  coverClass: 'academic-cover',
-  badgeClass: 'badge-blue',
-  waitlistEnabled: true
-}
-
 onMounted(async () => {
-  try {
-    await ticketingStore.loadSeedData()
-  } catch (error) {
-    console.warn('Ticketing seed unavailable; loading event detail directly:', error)
-  }
-
   try {
     event.value = await loadEventDetail(route.params.id)
     if (authStore.isLoggedIn) {
@@ -395,39 +366,18 @@ onMounted(async () => {
 
 async function loadEventDetail(eventId) {
   const id = String(eventId)
-  const isBackendId = /^\d+$/.test(id)
 
-  if (isBackendId) {
-    try {
-      const response = await getPublicEventApi(id)
-      return ticketingStore.ensureEventAvailable(response.data.data)
-    } catch (error) {
-      console.warn('Backend event detail failed, using fallback event data:', error)
-    }
+  if (!/^\d+$/.test(id)) {
+    return null
   }
-
-  return resolveFallbackEvent(id)
-}
-
-async function resolveFallbackEvent(eventId) {
-  const targetId = String(eventId)
-  let mockEvents = []
 
   try {
-    const res = await fetch('/mock/events.json')
-    mockEvents = await res.json()
+    const response = await getPublicEventApi(id)
+    return response.data.data
   } catch (error) {
-    console.warn('Mock event fallback unavailable:', error)
+    console.warn('Backend event detail failed:', error)
+    return null
   }
-
-  const candidates = [
-    ...ticketingStore.events,
-    ...mockEvents.filter((candidate) => candidate.status === 'published'),
-    backupAnnualTech,
-  ]
-  const target = candidates.find((candidate) => String(candidate.id) === targetId)
-
-  return target ? ticketingStore.ensureEventAvailable(target) : null
 }
 
 async function hydrateFavoriteStatus() {
@@ -447,18 +397,15 @@ async function refreshEventDetail() {
 
   try {
     const response = await getPublicEventApi(event.value.id)
-    event.value = ticketingStore.ensureEventAvailable(response.data.data)
+    event.value = response.data.data
   } catch (error) {
     console.warn('Unable to refresh event capacity after registration change:', error)
   }
 }
 
-const capacitySummary = computed(() =>
-  event.value ? ticketingStore.getEventCapacitySummary(event.value.id) : null
-)
-const registeredCount = computed(() => capacitySummary.value?.confirmedCount ?? event.value?.confirmedCount ?? 0)
+const registeredCount = computed(() => event.value?.occupiedCount ?? event.value?.confirmedCount ?? 0)
 const seatsLeft = computed(() =>
-  capacitySummary.value?.remainingSeats ?? (event.value ? Math.max(event.value.capacity - registeredCount.value, 0) : 0)
+  event.value?.seatsLeft ?? (event.value ? Math.max(event.value.capacity - registeredCount.value, 0) : 0)
 )
 const occupancyRate = computed(() =>
   event.value ? Math.min(Math.round((registeredCount.value / event.value.capacity) * 100), 100) : 0
@@ -555,16 +502,6 @@ function addToGoogleCalendar() {
   window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.value.title)}&dates=${s}/${e}&details=${encodeURIComponent(event.value.description)}&location=${encodeURIComponent(event.value.venue)}`, '_blank')
 }
 
-function attendeePayload() {
-  const user = authStore.user
-
-  return {
-    id: user?.matric || user?.email || 'attendee-student-demo',
-    name: user ? `${user.firstName} ${user.lastName}` : 'Student User',
-    email: user?.email || 'student@utm.my',
-  }
-}
-
 function setNotice(type, message) {
   registrationNotice.value = { type, message }
 }
@@ -588,14 +525,10 @@ async function hydrateExistingRegistration() {
       return
     }
   } catch (error) {
-    console.warn('Backend registration state unavailable, using local fallback:', error)
+    console.warn('Backend registration state unavailable:', error)
+    setNotice('error', 'Could not load your registration status. Please refresh and try again.')
+    return
   }
-
-  ticketingStore.expirePendingPayments()
-  const registration = ticketingStore.getActiveRegistrationForAttendee(event.value.id, attendeePayload())
-  if (!registration) return
-
-  applyRegistrationState(registration)
 }
 
 function applyRegistrationState(registration) {
@@ -615,9 +548,7 @@ function applyRegistrationState(registration) {
   }
 
   if (registration.status === 'confirmed') {
-    confirmedTicket.value = registration.ticket || ticketingStore
-      .getTicketsForAttendee(registration.attendeeEmail)
-      .find((ticket) => ticket.registrationId === registration.id) || null
+    confirmedTicket.value = registration.ticket || null
     if (confirmedTicket.value) {
       setNotice('success', 'You are already registered. Your QR ticket is ready in My Tickets.')
     }
@@ -670,40 +601,7 @@ async function reserveSeat() {
     return
   } catch (backendError) {
     const backendMessage = backendError.response?.data?.error?.message
-    if (backendMessage) {
-      setNotice('error', backendMessage)
-      return
-    }
-  }
-
-  try {
-    if (event.value.priceType === 'paid') {
-      const result = ticketingStore.beginPaidRegistration(event.value.id, attendeePayload())
-      if (result.payment === null) {
-        waitlistedRegistration.value = result.registration
-        setNotice('warning', `You have joined the waitlist at position #${result.registration.waitlistPosition}.`)
-        return
-      }
-
-      pendingRegistration.value = result.registration
-      holdExpiresAt.value = result.registration.paymentHoldExpiresAt
-        ? new Date(result.registration.paymentHoldExpiresAt)
-        : new Date(Date.now() + 10 * 60 * 1000)
-      paymentConsent.value = false
-      setNotice('info', 'Your seat is held while you complete payment.')
-      return
-    }
-
-    const result = ticketingStore.registerFreeEvent(event.value.id, attendeePayload())
-    if (result.ticket) {
-      confirmedTicket.value = result.ticket
-      setNotice('success', 'Registration confirmed. Your QR ticket has been issued.')
-    } else {
-      waitlistedRegistration.value = result.registration
-      setNotice('warning', `You have joined the waitlist at position #${result.registration.waitlistPosition}.`)
-    }
-  } catch (error) {
-    setNotice('error', error instanceof Error ? error.message : 'Registration failed.')
+    setNotice('error', backendMessage || 'Registration failed because the backend is unavailable.')
   }
 }
 
@@ -726,20 +624,7 @@ async function approvePayment() {
     return
   } catch (backendError) {
     const backendMessage = backendError.response?.data?.error?.message
-    if (backendMessage) {
-      setNotice('error', backendMessage)
-      return
-    }
-  }
-
-  try {
-    const result = ticketingStore.completeMockPayment(pendingRegistration.value.id)
-    confirmedTicket.value = result.ticket
-    pendingRegistration.value = null
-    holdExpiresAt.value = null
-    setNotice('success', 'Payment approved. Your QR ticket has been issued.')
-  } catch (error) {
-    setNotice('error', error instanceof Error ? error.message : 'Payment could not be completed.')
+    setNotice('error', backendMessage || 'Payment could not be completed because the backend is unavailable.')
   }
 }
 
@@ -756,20 +641,7 @@ async function declinePayment() {
     return
   } catch (backendError) {
     const backendMessage = backendError.response?.data?.error?.message
-    if (backendMessage) {
-      setNotice('error', backendMessage)
-      return
-    }
-  }
-
-  try {
-    ticketingStore.declineMockPayment(pendingRegistration.value.id)
-    pendingRegistration.value = null
-    holdExpiresAt.value = null
-    paymentConsent.value = false
-    setNotice('error', 'Payment cancelled. No ticket was issued.')
-  } catch (error) {
-    setNotice('error', error instanceof Error ? error.message : 'Payment could not be cancelled.')
+    setNotice('error', backendMessage || 'Payment could not be cancelled because the backend is unavailable.')
   }
 }
 
@@ -788,21 +660,7 @@ async function cancelCurrentRegistration() {
     return
   } catch (backendError) {
     const backendMessage = backendError.response?.data?.error?.message
-    if (backendMessage) {
-      setNotice('error', backendMessage)
-      return
-    }
-  }
-
-  try {
-    ticketingStore.cancelRegistration(registration.id)
-    pendingRegistration.value = null
-    waitlistedRegistration.value = null
-    holdExpiresAt.value = null
-    paymentConsent.value = false
-    setNotice('info', 'Your registration has been cancelled.')
-  } catch (error) {
-    setNotice('error', error instanceof Error ? error.message : 'Unable to cancel this registration.')
+    setNotice('error', backendMessage || 'Unable to cancel this registration because the backend is unavailable.')
   }
 }
 </script>
