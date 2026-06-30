@@ -148,7 +148,28 @@ CREATE TABLE event_approvals (
 ) ENGINE=InnoDB;
 
 -- ============================================
--- 7. registrations
+-- 7. favorites
+-- ============================================
+CREATE TABLE favorites (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    event_id INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE KEY uq_favorites_user_event (user_id, event_id),
+
+    CONSTRAINT fk_favorites_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_favorites_event
+        FOREIGN KEY (event_id) REFERENCES events(id)
+        ON DELETE CASCADE,
+
+    INDEX idx_favorites_user (user_id)
+) ENGINE=InnoDB;
+
+-- ============================================
+-- 8. registrations
 -- ============================================
 CREATE TABLE registrations (
     id INT AUTO_INCREMENT PRIMARY KEY,
