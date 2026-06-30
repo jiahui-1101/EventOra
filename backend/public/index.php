@@ -42,10 +42,19 @@ $app->addBodyParsingMiddleware();
 // reaches our routes - this is purely a browser-side security check,
 // not something PHP can see or control after the fact.
 $app->add(function ($request, $handler) {
-    $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'http://localhost:5173';
+    $configuredOrigins = $_ENV['FRONTEND_URL'] ?? 'http://localhost:5173';
+    $allowedOrigins = array_filter(array_map(
+        'trim',
+        explode(',', $configuredOrigins . ',capacitor://localhost,http://localhost,https://localhost')
+    ));
+    $requestOrigin = $request->getHeaderLine('Origin');
+    $responseOrigin = in_array($requestOrigin, $allowedOrigins, true)
+        ? $requestOrigin
+        : ($allowedOrigins[0] ?? 'http://localhost:5173');
+
     $response = $handler->handle($request);
     return $response
-        ->withHeader('Access-Control-Allow-Origin', $frontendUrl)
+        ->withHeader('Access-Control-Allow-Origin', $responseOrigin)
         ->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
 });
