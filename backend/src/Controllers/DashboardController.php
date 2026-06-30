@@ -39,6 +39,7 @@ class DashboardController
                     'rate_percent' => null,
                 ],
                 'most_popular_category' => null,
+                'popular_events' => [],
             ], null, 200);
         }
 
@@ -60,6 +61,7 @@ class DashboardController
                 ),
             ],
             'most_popular_category' => $this->getMostPopularCategory($db),
+            'popular_events' => $this->getMostPopularEvents($db),
         ], null, 200);
     }
 
@@ -525,6 +527,37 @@ class DashboardController
             'category' => $row['category'],
             'registrations' => (int) $row['registrations'],
         ];
+    }
+
+    private function getMostPopularEvents(PDO $db): array
+    {
+        $stmt = $db->query(
+            "SELECT
+                e.id,
+                e.title,
+                e.category,
+                e.start_datetime,
+                s.name AS society_name,
+                COUNT(DISTINCT r.id) AS registrations
+             FROM events e
+             JOIN societies s ON s.id = e.society_id
+             LEFT JOIN registrations r ON r.event_id = e.id AND r.status <> 'cancelled'
+             GROUP BY e.id, e.title, e.category, e.start_datetime, s.name
+             ORDER BY registrations DESC, e.start_datetime DESC
+             LIMIT 3"
+        );
+
+        return array_map(
+            fn (array $row): array => [
+                'id' => (int) $row['id'],
+                'title' => $row['title'],
+                'category' => $row['category'],
+                'society' => $row['society_name'],
+                'date' => $row['start_datetime'],
+                'registered' => (int) $row['registrations'],
+            ],
+            $stmt->fetchAll()
+        );
     }
 
     // Shared percentage helper. Returns null (not 0) when the

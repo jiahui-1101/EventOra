@@ -208,6 +208,10 @@
           </div>
 
           <div>
+            <p v-if="popularEvents.length === 0" class="empty-state">
+              No registration data yet.
+            </p>
+
             <article v-for="ev in popularEvents" :key="ev.rank" class="popular-event-card">
               <div class="popular-rank">{{ ev.rank }}</div>
 
@@ -232,7 +236,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useTicketingStore } from '@/stores/ticketing'
 import {
   approvalEvents,
   loadApprovalEvents,
@@ -244,12 +247,14 @@ import {
   getSocietyOverviewApi,
   rejectOrganiserRequestApi,
 } from '@/api/admin'
+import { getFacultyDashboardApi } from '@/api/dashboard'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const ticketingStore = useTicketingStore()
 
 const societies = ref([])
+const facultyStats = ref(null)
+const popularEvents = ref([])
 const loadingSocieties = ref(true)
 const loadError = ref('')
 const notifications = ref([])
@@ -260,40 +265,28 @@ const reviewingRequestId = ref(null)
 
 onMounted(async () => {
   loadApprovalEvents()
-  ticketingStore.loadSeedData()
   loadOrganiserRequests()
+  loadFacultyDashboard()
   loadSocietyOverview()
 
   loadNotifications()
 })
 
-const activeSocietyCount = computed(() => societies.value.length)
+const activeSocietyCount = computed(() => facultyStats.value?.total_societies ?? societies.value.length)
 const totalRegistrations = computed(() =>
-  societies.value.reduce((sum, society) => sum + Number(society.registered || 0), 0)
+  facultyStats.value?.total_registrations
+    ?? societies.value.reduce((sum, society) => sum + Number(society.registered || 0), 0)
 )
 const totalCheckedIn = computed(() =>
-  societies.value.reduce((sum, society) => sum + Number(society.attended || 0), 0)
+  facultyStats.value?.attendance?.checked_in
+    ?? societies.value.reduce((sum, society) => sum + Number(society.attended || 0), 0)
 )
 const overallAttendanceRate = computed(() =>
-  totalRegistrations.value ? Math.round((totalCheckedIn.value / totalRegistrations.value) * 100) : 0
-)
-
-const popularEvents = computed(() =>
-  ticketingStore.events
-    .map((event) => {
-      const summary = ticketingStore.getEventCapacitySummary(event.id)
-      return {
-        title: event.title,
-        society: event.societyName,
-        date: new Date(event.startAt).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }),
-        category: event.category,
-        badgeClass: event.badgeClass,
-        registered: (summary?.occupiedCount || 0) + (summary?.waitlistCount || 0),
-      }
-    })
-    .sort((first, second) => second.registered - first.registered)
-    .slice(0, 3)
-    .map((event, index) => ({ ...event, rank: index + 1 }))
+  facultyStats.value?.attendance?.rate_percent != null
+    ? Math.round(facultyStats.value.attendance.rate_percent)
+    : totalRegistrations.value
+      ? Math.round((totalCheckedIn.value / totalRegistrations.value) * 100)
+      : 0
 )
 
 const unreadCount = computed(() =>
@@ -351,6 +344,26 @@ async function loadSocietyOverview() {
   }
 }
 
+async function loadFacultyDashboard() {
+  try {
+    const response = await getFacultyDashboardApi()
+    const stats = response.data.data
+    facultyStats.value = stats
+    popularEvents.value = (stats.popular_events || []).map((event, index) => ({
+      rank: index + 1,
+      title: event.title,
+      society: event.society,
+      date: formatRequestDate(event.date),
+      category: toTitleCase(event.category),
+      badgeClass: badgeForCategory(event.category),
+      registered: Number(event.registered || 0),
+    }))
+  } catch (error) {
+    facultyStats.value = null
+    popularEvents.value = []
+  }
+}
+
 async function approveOrganiserRequest(request) {
   reviewingRequestId.value = request.id
   organiserRequestError.value = ''
@@ -390,6 +403,22 @@ function formatRequestDate(value) {
     month: 'short',
     year: 'numeric',
   })
+}
+
+function badgeForCategory(category) {
+  const normalized = String(category || '').toLowerCase()
+  if (normalized === 'sports') return 'badge-yellow'
+  if (normalized === 'cultural') return 'badge-purple'
+  if (normalized === 'religious') return 'badge-green'
+  return 'badge-blue'
+}
+
+function toTitleCase(value) {
+  return String(value || 'academic')
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
 }
 </script>
 

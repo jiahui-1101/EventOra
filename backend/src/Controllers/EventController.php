@@ -312,7 +312,8 @@ public function showPublic(Request $request, Response $response, array $args): R
     $stmt = $db->prepare(
         "SELECT e.*, s.name AS society_name,
             (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status = 'confirmed') AS confirmed_registrations,
-            (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status IN ('confirmed', 'pending_payment')) AS occupied_registrations
+            (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status IN ('confirmed', 'pending_payment')) AS occupied_registrations,
+            (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS registrations
          FROM events e
          JOIN societies s ON s.id = e.society_id
          WHERE e.id = :id AND e.status IN ('published', 'completed')"
