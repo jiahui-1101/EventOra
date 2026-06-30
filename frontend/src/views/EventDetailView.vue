@@ -1,12 +1,17 @@
 <template>
   <main class="app-shell">
+    <router-link to="/" class="return-tab" aria-label="Return to events">
+      <span aria-hidden="true">←</span>
+      Events
+    </router-link>
+
     <div v-if="loading" style="padding: 60px; text-align: center;">
       Loading event details...
     </div>
 
     <div v-else-if="!event" style="padding: 60px; text-align: center;">
       <h2>Event not found</h2>
-      <router-link to="/" class="button button-secondary">Back to Events</router-link>
+      <router-link to="/" class="return-tab">Events</router-link>
     </div>
 
     <section v-else class="detail-layout page-section" style="margin-top: 24px;">
@@ -79,7 +84,7 @@
         <div class="capacity-labels">
               <span>{{ registeredCount }} registered</span>
           <strong :style="{ color: seatsLeft === 0 ? '#ef4444' : 'inherit' }">
-            {{ seatsLeft === 0 ? 'Fully Booked' : `${seatsLeft} seats left` }}
+            {{ seatsLeft === 0 ? (event.waitlistEnabled ? 'Waitlist available' : 'Fully Booked') : `${seatsLeft} seats left` }}
           </strong>
         </div>
 
@@ -106,10 +111,49 @@
         >
           <div class="checkout-secure-header">
             <div>
-              <span>Secure checkout</span>
+              <span>Mock wallet checkout</span>
               <strong>{{ orderReference }}</strong>
             </div>
             <small>Seat held until {{ holdExpiryLabel }}</small>
+          </div>
+
+          <div class="wallet-summary">
+            <div>
+              <span>Total payment</span>
+              <strong>RM {{ event.price.toFixed(2) }}</strong>
+            </div>
+            <small>{{ event.title }}</small>
+          </div>
+
+          <div class="payment-methods" aria-label="Payment method">
+            <button
+              v-for="method in paymentMethods"
+              :key="method.id"
+              :class="{ active: paymentMethod === method.id }"
+              type="button"
+              @click="paymentMethod = method.id"
+            >
+              <span class="method-mark">{{ method.mark }}</span>
+              <span>
+                <strong>{{ method.label }}</strong>
+                <small>{{ method.description }}</small>
+              </span>
+            </button>
+          </div>
+
+          <div class="wallet-balance-card">
+            <span>Available mock balance</span>
+            <strong>RM 128.40</strong>
+          </div>
+
+          <div class="payment-reference-panel">
+            <label for="payment-reference">{{ selectedPaymentMethod.referenceLabel }}</label>
+            <input
+              id="payment-reference"
+              v-model="paymentReference"
+              type="text"
+              :placeholder="selectedPaymentMethod.placeholder"
+            />
           </div>
 
           <div class="checkout-row">
@@ -121,36 +165,16 @@
             <strong>RM 0.00</strong>
           </div>
           <div class="checkout-total">
-            <span>Total</span>
+            <span>You pay</span>
             <strong>RM {{ event.price.toFixed(2) }}</strong>
           </div>
-
-          <div class="payment-methods" aria-label="Payment method">
-            <button
-              v-for="method in paymentMethods"
-              :key="method.id"
-              :class="{ active: paymentMethod === method.id }"
-              type="button"
-              @click="paymentMethod = method.id"
-            >
-              {{ method.label }}
-            </button>
-          </div>
-
-          <label for="payment-reference">{{ selectedPaymentMethod.referenceLabel }}</label>
-          <input
-            id="payment-reference"
-            v-model="paymentReference"
-            type="text"
-            :placeholder="selectedPaymentMethod.placeholder"
-          />
 
           <label class="checkout-consent">
             <input
               v-model="paymentConsent"
               type="checkbox"
             />
-            <span>I confirm the payment details and agree to receive an EventOra QR ticket after payment approval.</span>
+            <span>I confirm this mock payment and agree to receive an EventOra QR ticket immediately after approval.</span>
           </label>
 
           <div class="checkout-actions">
@@ -160,7 +184,7 @@
               :disabled="!canSubmitPayment"
               @click="approvePayment"
             >
-              Pay now
+              Pay RM {{ event.price.toFixed(2) }}
             </button>
             <button
               class="button button-secondary full-width"
@@ -307,25 +331,28 @@ const paymentMethods = [
   {
     id: 'campus-card',
     label: 'Campus Card',
+    mark: 'MY',
+    description: 'Instant campus wallet',
     referenceLabel: 'Campus card number',
     placeholder: '4242 4242 4242 4242',
   },
   {
     id: 'online-banking',
     label: 'Online Banking',
+    mark: 'FPX',
+    description: 'Mock bank transfer',
     referenceLabel: 'Bank reference',
     placeholder: 'FPX reference number',
   },
   {
     id: 'ewallet',
     label: 'E-wallet',
+    mark: 'EW',
+    description: 'Mobile wallet style',
     referenceLabel: 'Wallet phone number',
     placeholder: '+60 12 345 6789',
   },
 ]
-
-const favKey = 'eventora_favs_v2'
-const societyEventsStorageKey = 'eventora_society_events_v2'
 
 const backupAnnualTech = {
   id: 'event-annual-tech-2026',
@@ -351,32 +378,80 @@ const backupAnnualTech = {
 onMounted(async () => {
   try {
     await ticketingStore.loadSeedData()
+  } catch (error) {
+    console.warn('Ticketing seed unavailable; loading event detail directly:', error)
+  }
 
-    const response = await getPublicEventApi(route.params.id)
-    event.value = ticketingStore.ensureEventAvailable(response.data.data)
-
+  try {
+    event.value = await loadEventDetail(route.params.id)
     if (authStore.isLoggedIn) {
-      const favResponse = await getFavoriteStatusApi(event.value.id)
-      favorites.value = favResponse.data.data.isFavorited ? [event.value.id] : []
+      await hydrateFavoriteStatus()
     }
-
-    await hydrateExistingRegistration()
-  } catch (e) {
-    console.error('Backend event detail failed, using mock fallback:', e)
-
-    const res = await fetch('/mock/events.json')
-    const all = await res.json()
-    const localEvents = loadPublishedSocietyEvents()
-
-    const target = [...all.filter((candidate) => candidate.status === 'published'), ...localEvents]
-      .find((candidate) => String(candidate.id) === String(route.params.id))
-
-    event.value = target ? ticketingStore.ensureEventAvailable(target) : null
     await hydrateExistingRegistration()
   } finally {
     loading.value = false
   }
 })
+
+async function loadEventDetail(eventId) {
+  const id = String(eventId)
+  const isBackendId = /^\d+$/.test(id)
+
+  if (isBackendId) {
+    try {
+      const response = await getPublicEventApi(id)
+      return ticketingStore.ensureEventAvailable(response.data.data)
+    } catch (error) {
+      console.warn('Backend event detail failed, using fallback event data:', error)
+    }
+  }
+
+  return resolveFallbackEvent(id)
+}
+
+async function resolveFallbackEvent(eventId) {
+  const targetId = String(eventId)
+  let mockEvents = []
+
+  try {
+    const res = await fetch('/mock/events.json')
+    mockEvents = await res.json()
+  } catch (error) {
+    console.warn('Mock event fallback unavailable:', error)
+  }
+
+  const candidates = [
+    ...ticketingStore.events,
+    ...mockEvents.filter((candidate) => candidate.status === 'published'),
+    backupAnnualTech,
+  ]
+  const target = candidates.find((candidate) => String(candidate.id) === targetId)
+
+  return target ? ticketingStore.ensureEventAvailable(target) : null
+}
+
+async function hydrateFavoriteStatus() {
+  if (!event.value) return
+
+  try {
+    const favResponse = await getFavoriteStatusApi(event.value.id)
+    favorites.value = favResponse.data.data.isFavorited ? [event.value.id] : []
+  } catch (error) {
+    console.warn('Favorite status unavailable; keeping event detail visible:', error)
+    favorites.value = []
+  }
+}
+
+async function refreshEventDetail() {
+  if (!event.value || !/^\d+$/.test(String(event.value.id))) return
+
+  try {
+    const response = await getPublicEventApi(event.value.id)
+    event.value = ticketingStore.ensureEventAvailable(response.data.data)
+  } catch (error) {
+    console.warn('Unable to refresh event capacity after registration change:', error)
+  }
+}
 
 const capacitySummary = computed(() =>
   event.value ? ticketingStore.getEventCapacitySummary(event.value.id) : null
@@ -480,17 +555,6 @@ function addToGoogleCalendar() {
   window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.value.title)}&dates=${s}/${e}&details=${encodeURIComponent(event.value.description)}&location=${encodeURIComponent(event.value.venue)}`, '_blank')
 }
 
-function loadPublishedSocietyEvents() {
-  try {
-    const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || '[]')
-    if (!Array.isArray(savedEvents)) return []
-
-    return savedEvents.filter((savedEvent) => savedEvent.status === 'published')
-  } catch (error) {
-    return []
-  }
-}
-
 function attendeePayload() {
   const user = authStore.user
 
@@ -588,17 +652,20 @@ async function reserveSeat() {
       pendingRegistration.value = registration
       holdExpiresAt.value = new Date(Date.now() + 10 * 60 * 1000)
       paymentConsent.value = false
+      await refreshEventDetail()
       setNotice('info', 'Your seat is held while you complete payment.')
       return
     }
 
     if (registration.status === 'waitlisted') {
       waitlistedRegistration.value = registration
+      await refreshEventDetail()
       setNotice('warning', `You have joined the waitlist at position #${registration.waitlistPosition}.`)
       return
     }
 
     confirmedTicket.value = result.ticket
+    await refreshEventDetail()
     setNotice('success', 'Registration confirmed. Your QR ticket has been issued.')
     return
   } catch (backendError) {
@@ -654,6 +721,7 @@ async function approvePayment() {
     confirmedTicket.value = result.ticket
     pendingRegistration.value = null
     holdExpiresAt.value = null
+    await refreshEventDetail()
     setNotice('success', 'Payment approved. Your QR ticket has been issued.')
     return
   } catch (backendError) {
@@ -675,8 +743,24 @@ async function approvePayment() {
   }
 }
 
-function declinePayment() {
+async function declinePayment() {
   if (!pendingRegistration.value) return
+
+  try {
+    await cancelRegistrationApi(pendingRegistration.value.id)
+    pendingRegistration.value = null
+    holdExpiresAt.value = null
+    paymentConsent.value = false
+    await refreshEventDetail()
+    setNotice('error', 'Payment cancelled. No ticket was issued.')
+    return
+  } catch (backendError) {
+    const backendMessage = backendError.response?.data?.error?.message
+    if (backendMessage) {
+      setNotice('error', backendMessage)
+      return
+    }
+  }
 
   try {
     ticketingStore.declineMockPayment(pendingRegistration.value.id)
@@ -699,6 +783,7 @@ async function cancelCurrentRegistration() {
     waitlistedRegistration.value = null
     holdExpiresAt.value = null
     paymentConsent.value = false
+    await refreshEventDetail()
     setNotice('info', 'Your registration has been cancelled.')
     return
   } catch (backendError) {
@@ -798,8 +883,9 @@ async function cancelCurrentRegistration() {
 }
 
 .checkout-card {
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
 }
 
 .checkout-secure-header {
@@ -827,6 +913,33 @@ async function cancelCurrentRegistration() {
   color: #0f172a;
 }
 
+.wallet-summary {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 16px;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.wallet-summary div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+}
+
+.wallet-summary span,
+.wallet-summary small {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.wallet-summary strong {
+  font-size: 1.45rem;
+}
+
 .checkout-row,
 .checkout-total {
   display: flex;
@@ -850,7 +963,12 @@ async function cancelCurrentRegistration() {
   font-weight: 800;
 }
 
-.checkout-card input {
+.payment-reference-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.checkout-card input[type='text'] {
   width: 100%;
   border: 1px solid #cbd5e1;
   border-radius: 12px;
@@ -860,26 +978,69 @@ async function cancelCurrentRegistration() {
 
 .payment-methods {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 10px;
 }
 
 .payment-methods button {
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 10px 8px;
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  padding: 12px;
   color: #475569;
   background: #ffffff;
   font: inherit;
-  font-size: 0.85rem;
-  font-weight: 800;
+  text-align: left;
   cursor: pointer;
 }
 
 .payment-methods button.active {
-  border-color: #4f46e5;
-  color: #3730a3;
-  background: #eef2ff;
+  border-color: #2563eb;
+  color: #0f172a;
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 1px #2563eb;
+}
+
+.method-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: #ffffff;
+  background: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.payment-methods strong,
+.payment-methods small {
+  display: block;
+}
+
+.payment-methods small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.wallet-balance-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.wallet-balance-card span {
+  color: #64748b;
+  font-weight: 800;
 }
 
 .checkout-consent {
