@@ -49,6 +49,13 @@ function writeStoredTicketingState(snapshot) {
   localStorage.setItem(TICKETING_STORAGE_KEY, JSON.stringify(snapshot))
 }
 
+function clearStoredTicketingState() {
+  if (!canUseLocalStorage()) return
+
+  localStorage.removeItem(TICKETING_STORAGE_KEY)
+  localStorage.removeItem('eventora_ticketing_v2')
+}
+
 function createRegistrationId(eventId, attendeeId) {
   return `registration-${eventId}-${attendeeId}-${Date.now()}`
 }
@@ -103,6 +110,7 @@ export const useTicketingStore = defineStore('ticketing', () => {
   const isLoading = ref(false)
   const loadError = ref('')
   const hasLoaded = ref(false)
+  let usingBackendData = false
 
   const publishedEvents = computed(() =>
     events.value.filter((event) => event.status === 'published')
@@ -166,9 +174,13 @@ export const useTicketingStore = defineStore('ticketing', () => {
     const pendingPaymentCount = registrations.value.filter((registration) =>
       registration.eventId === eventId && registration.status === 'pending_payment'
     ).length
-    const occupiedCount = confirmedCount + pendingPaymentCount
+    const seededOccupiedCount = Number(event.occupiedCount ?? confirmedCount)
+    const occupiedCount = Math.max(seededOccupiedCount, confirmedRegistrationsForEvent.length + pendingPaymentCount)
     const waitlistCount = getWaitlistedRegistrationsForEvent(eventId).length
-    const remainingSeats = Math.max(event.capacity - occupiedCount, 0)
+    const calculatedSeats = Math.max(event.capacity - occupiedCount, 0)
+    const remainingSeats = Number.isFinite(Number(event.seatsLeft))
+      ? Math.min(Math.max(Number(event.seatsLeft), 0), calculatedSeats)
+      : calculatedSeats
     const isFull = remainingSeats === 0
 
     return {
@@ -341,14 +353,17 @@ export const useTicketingStore = defineStore('ticketing', () => {
     }
   }
 
-  function applySnapshot(snapshot) {
+  function applySnapshot(snapshot, { fromBackend = false } = {}) {
     events.value = cloneCollection(snapshot.events)
     registrations.value = cloneCollection(snapshot.registrations)
     tickets.value = cloneCollection(snapshot.tickets)
     hasLoaded.value = true
+    usingBackendData = fromBackend
   }
 
   function persistState() {
+    if (usingBackendData) return
+
     writeStoredTicketingState(createSnapshot())
   }
 
@@ -405,6 +420,12 @@ export const useTicketingStore = defineStore('ticketing', () => {
     const sourceEvent = existingEvent
       ? mergeDefinedFields(existingEvent, eventPayload)
       : eventPayload
+    const confirmedCount = Number(sourceEvent.confirmedCount ?? 0)
+    const occupiedCount = Number(sourceEvent.occupiedCount ?? confirmedCount)
+    const seatsLeft = sourceEvent.seatsLeft === undefined ? undefined : Number(sourceEvent.seatsLeft)
+    const capacity = Number(sourceEvent.capacity ?? (
+      Number.isFinite(seatsLeft) ? occupiedCount + seatsLeft : 0
+    ))
     const normalisedEvent = {
       ...sourceEvent,
       title: sourceEvent.title,
@@ -420,10 +441,12 @@ export const useTicketingStore = defineStore('ticketing', () => {
       currency: pickDefined(sourceEvent.currency, 'MYR'),
       startAt: pickDefined(sourceEvent.startAt, sourceEvent.date, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
       endAt: pickDefined(sourceEvent.endAt, sourceEvent.date, sourceEvent.startAt, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
-      registrationDeadline: pickDefined(sourceEvent.registrationDeadline, sourceEvent.deadline, sourceEvent.date),
+      registrationDeadline: pickDefined(sourceEvent.registrationDeadline, sourceEvent.regDeadline, sourceEvent.reg_deadline, sourceEvent.deadline, sourceEvent.date),
       venue: pickDefined(sourceEvent.venue, sourceEvent.location, 'Venue not set'),
-      capacity: Number(sourceEvent.capacity || 0),
-      confirmedCount: Number(sourceEvent.confirmedCount ?? sourceEvent.registrations ?? 0),
+      capacity,
+      confirmedCount,
+      occupiedCount,
+      seatsLeft,
       waitlistEnabled: sourceEvent.waitlistEnabled ?? sourceEvent.waitlist !== 'disabled',
       status: pickDefined(sourceEvent.status, 'published'),
       coverClass: pickDefined(sourceEvent.coverClass, 'academic-cover'),
@@ -721,7 +744,8 @@ export const useTicketingStore = defineStore('ticketing', () => {
     }
 
     const cancelledAt = new Date().toISOString()
-    const wasConfirmed = registration.status === 'confirmed'
+    const previousStatus = registration.status
+    const heldSeat = ['confirmed', 'pending_payment'].includes(previousStatus)
     const ticket = registration.ticketId
       ? tickets.value.find((item) => item.id === registration.ticketId)
       : null
@@ -741,14 +765,14 @@ export const useTicketingStore = defineStore('ticketing', () => {
       ticket.cancelledAt = cancelledAt
     }
 
-    if (wasConfirmed) {
+    if (previousStatus === 'confirmed') {
       adjustConfirmedCount(registration.eventId, -1)
     }
 
-    const promoted = wasConfirmed
+    const promoted = heldSeat
       ? promoteNextWaitlistedRegistration(registration.eventId)
       : null
-    if (!wasConfirmed) {
+    if (!heldSeat) {
       renumberWaitlist(registration.eventId)
     }
 
@@ -816,19 +840,20 @@ export const useTicketingStore = defineStore('ticketing', () => {
     loadError.value = ''
 
     try {
+      const seed = await fetchTicketingSeed()
+
+      applySnapshot(seed, { fromBackend: true })
+      expirePendingPayments()
+      clearStoredTicketingState()
+    } catch (error) {
       const storedSnapshot = force ? null : readStoredTicketingState()
       if (storedSnapshot) {
-        applySnapshot(storedSnapshot)
+        applySnapshot(storedSnapshot, { fromBackend: false })
         expirePendingPayments()
+        loadError.value = ''
         return
       }
 
-      const seed = await fetchTicketingSeed()
-
-      applySnapshot(seed)
-      expirePendingPayments()
-      persistState()
-    } catch (error) {
       loadError.value = error instanceof Error
         ? error.message
         : 'Failed to load ticketing data.'
