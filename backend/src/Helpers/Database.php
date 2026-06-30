@@ -18,13 +18,14 @@ class Database
     {
         if (self::$instance === null) {
             $host = $_ENV['DB_HOST'];
+            $port = $_ENV['DB_PORT'] ?? '3306';
             $dbName = $_ENV['DB_NAME'];
             $user = $_ENV['DB_USER'];
             $pass = $_ENV['DB_PASS'];
 
             // charset=utf8mb4 matches the schema.sql database collation,
             // so multi-byte characters (e.g. event titles in Malay/Chinese) work correctly
-            $dsn = "mysql:host={$host};dbname={$dbName};charset=utf8mb4";
+            $dsn = "mysql:host={$host};port={$port};dbname={$dbName};charset=utf8mb4";
 
             try {
                 self::$instance = new PDO($dsn, $user, $pass, [
