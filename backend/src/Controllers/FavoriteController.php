@@ -54,6 +54,8 @@ class FavoriteController
                 s.name AS society_name,
                 (SELECT COUNT(*) FROM registrations r
                  WHERE r.event_id = e.id AND r.status = 'confirmed') AS confirmed_registrations,
+                (SELECT COUNT(*) FROM registrations r
+                 WHERE r.event_id = e.id AND r.status IN ('confirmed', 'pending_payment')) AS occupied_registrations,
                 f.created_at AS favorited_at
              FROM favorites f
              JOIN events e ON e.id = f.event_id
@@ -148,6 +150,7 @@ class FavoriteController
     private function formatFavoriteEvent(array $row): array
     {
         $confirmedCount = (int) ($row['confirmed_registrations'] ?? 0);
+        $occupiedCount = (int) ($row['occupied_registrations'] ?? $confirmedCount);
         $capacity       = (int) $row['capacity'];
 
         return [
@@ -162,7 +165,8 @@ class FavoriteController
             'registrationDeadline' => $row['reg_deadline'],
             'capacity'             => $capacity,
             'confirmedCount'       => $confirmedCount,
-            'seatsLeft'            => max($capacity - $confirmedCount, 0),
+            'occupiedCount'        => $occupiedCount,
+            'seatsLeft'            => max($capacity - $occupiedCount, 0),
             'feeType'              => $row['fee_type'],
             'feeAmount'            => (float) $row['fee_amount'],
             'priceType'            => $row['fee_type'],

@@ -108,6 +108,7 @@ class EventController
                 e.poster_url, e.cancellation_reason, e.contact_person, e.contact_email, e.special_instructions,
                 e.created_at, e.updated_at, s.name AS society_name,
                 (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status = 'confirmed') AS confirmed_registrations,
+                (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status IN ('confirmed', 'pending_payment')) AS occupied_registrations,
                 (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS registrations
              FROM events e
              JOIN societies s ON s.id = e.society_id
@@ -310,7 +311,8 @@ public function showPublic(Request $request, Response $response, array $args): R
 
     $stmt = $db->prepare(
         "SELECT e.*, s.name AS society_name,
-            (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status = 'confirmed') AS confirmed_registrations
+            (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status = 'confirmed') AS confirmed_registrations,
+            (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status IN ('confirmed', 'pending_payment')) AS occupied_registrations
          FROM events e
          JOIN societies s ON s.id = e.society_id
          WHERE e.id = :id AND e.status IN ('published', 'completed')"
@@ -814,6 +816,7 @@ public function showPublic(Request $request, Response $response, array $args): R
     {
         $formatted = $this->formatEventForFrontend($event);
         $confirmedCount = (int) ($event['confirmed_registrations'] ?? 0);
+        $occupiedCount = (int) ($event['occupied_registrations'] ?? $confirmedCount);
         $capacity = (int) $event['capacity'];
 
         return array_merge($formatted, [
@@ -822,7 +825,8 @@ public function showPublic(Request $request, Response $response, array $args): R
             'price' => (float) $event['fee_amount'],
             'date' => $event['start_datetime'],
             'confirmedCount' => $confirmedCount,
-            'seatsLeft' => max($capacity - $confirmedCount, 0),
+            'occupiedCount' => $occupiedCount,
+            'seatsLeft' => max($capacity - $occupiedCount, 0),
         ]);
     }
 
