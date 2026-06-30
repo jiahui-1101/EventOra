@@ -118,6 +118,21 @@
   color: #ffffff;
 }
 
+.return-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.return-tab:hover {
+  color: var(--primary);
+}
+
 .full-width {
   width: 100%;
 }
