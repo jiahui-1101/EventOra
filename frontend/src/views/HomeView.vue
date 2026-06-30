@@ -108,6 +108,15 @@
     </section>
 
     <section class="event-grid">
+      <div
+        v-if="loadError"
+        class="empty-state-card"
+      >
+        <span class="empty-icon">!</span>
+        <h3>Events could not be loaded</h3>
+        <p>{{ loadError }}</p>
+      </div>
+
       <article
         v-for="event in filteredEvents"
         :key="event.id"
@@ -177,7 +186,7 @@
       </article>
 
       <div
-        v-if="filteredEvents.length === 0"
+        v-if="!loadError && filteredEvents.length === 0"
         class="empty-state-card"
       >
         <span class="empty-icon">📭</span>
@@ -298,150 +307,20 @@ const unreadCount = computed(() =>
 
 const events = ref([])
 const loadingEvents = ref(true)
-
-const basePublicEvents = [
-  {
-    id: 'event-annual-tech-2026',
-    title: 'Annual Tech Symposium 2026',
-    society: 'Computer Society UTM',
-    category: 'academic',
-    price: 5,
-    priceType: 'paid',
-    date: '2026-07-15T09:00:00',
-    venue: 'Dewan Sultan Iskandar, UTM JB',
-    seatsLeft: 42,
-    coverClass: 'academic-cover',
-    badgeClass: 'badge-blue',
-  },
-  {
-    id: 'event-ai-app-2026',
-    title: 'Build Your First AI App',
-    society: 'UTM Computing Society',
-    category: 'academic',
-    price: 8,
-    priceType: 'paid',
-    date: '2026-07-10T19:30:00+08:00',
-    venue: 'N28A Innovation Lab',
-    seatsLeft: 12,
-    coverClass: 'academic-cover',
-    badgeClass: 'badge-blue',
-  },
-  {
-    id: 'event-cultural-night-2026',
-    title: 'Campus Cultural Night',
-    society: 'Campus Culture Club',
-    category: 'cultural',
-    price: 0,
-    priceType: 'free',
-    date: '2026-07-18T18:30:00+08:00',
-    venue: 'Dewan Sultan Iskandar',
-    seatsLeft: 54,
-    coverClass: 'culture-cover',
-    badgeClass: 'badge-purple',
-  },
-  {
-    id: 'event-hackathon-2026',
-    title: 'Hackathon 2026',
-    society: 'Computer Society UTM',
-    category: 'academic',
-    price: 15,
-    priceType: 'paid',
-    date: '2026-07-20T09:00:00+08:00',
-    venue: 'FAB Lab',
-    seatsLeft: 18,
-    coverClass: 'academic-cover',
-    badgeClass: 'badge-blue',
-  },
-  {
-    id: 'event-futsal-cup-2026',
-    title: 'Interfaculty Futsal Cup',
-    society: 'UTM Sports Club',
-    category: 'sports',
-    price: 0,
-    priceType: 'free',
-    date: '2026-07-25T09:00:00+08:00',
-    venue: 'UTM Sports Hall',
-    seatsLeft: 0,
-    coverClass: 'sports-cover',
-    badgeClass: 'badge-green',
-  },
-  {
-    id: 'event-traditional-dance-2026',
-    title: 'Traditional Dance Workshop',
-    society: 'Campus Culture Club',
-    category: 'cultural',
-    price: 5,
-    priceType: 'paid',
-    date: '2026-07-27T15:00:00+08:00',
-    venue: 'DK 1',
-    seatsLeft: 8,
-    coverClass: 'culture-cover',
-    badgeClass: 'badge-purple',
-  },
-  {
-    id: 'event-robotics-showcase-2026',
-    title: 'Robotics Showcase',
-    society: 'UTM Robotics Club',
-    category: 'academic',
-    price: 0,
-    priceType: 'free',
-    date: '2026-08-01T14:00:00+08:00',
-    venue: 'FAB Lab',
-    seatsLeft: 26,
-    coverClass: 'academic-cover',
-    badgeClass: 'badge-blue',
-  },
-  {
-    id: 'event-career-prep-2026',
-    title: 'Career Prep Clinic',
-    society: 'Computer Society UTM',
-    category: 'academic',
-    price: 0,
-    priceType: 'free',
-    date: '2026-08-08T10:00:00+08:00',
-    venue: 'N28 Seminar Room',
-    seatsLeft: 29,
-    coverClass: 'academic-cover',
-    badgeClass: 'badge-blue',
-  },
-  {
-    id: 'event-sustainability-day-2026',
-    title: 'Sustainability Volunteer Day',
-    society: 'Campus Culture Club',
-    category: 'cultural',
-    price: 0,
-    priceType: 'free',
-    date: '2026-08-15T08:30:00+08:00',
-    venue: 'UTM Lake Area',
-    seatsLeft: 36,
-    coverClass: 'culture-cover',
-    badgeClass: 'badge-purple',
-  },
-  {
-    id: 'event-startup-pitch-2026',
-    title: 'Startup Pitch Night',
-    society: 'Computer Society UTM',
-    category: 'academic',
-    price: 10,
-    priceType: 'paid',
-    date: '2026-08-21T20:00:00+08:00',
-    venue: 'Innovation Hub',
-    seatsLeft: 1,
-    coverClass: 'academic-cover',
-    badgeClass: 'badge-blue',
-  },
-]
+const loadError = ref('')
 
 onMounted(async () => {
   notifications.value = await loadNotifications()
 
   try {
+    loadError.value = ''
     const res = await apiClient.get('/events')
     const fetchedEvents = (res.data.data || []).map(toPublicEvent)
     events.value = fetchedEvents
   } catch (err) {
-    console.error('Unable to load events from backend, using local fallback', err)
-    events.value = [...basePublicEvents]
+    console.error('Unable to load events from backend:', err)
+    events.value = []
+    loadError.value = 'Please make sure the EventOra backend is running and try again.'
   } finally {
     loadingEvents.value = false
   }
