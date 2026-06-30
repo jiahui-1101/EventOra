@@ -183,6 +183,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import jsQR from 'jsqr'
 import { useAuthStore } from '@/stores/auth'
 import { getOrganiserEventsApi } from '@/api/dashboard'
 import { getCheckInTicketsApi, checkInTicketApi } from '@/api/ticketing'
@@ -197,6 +198,8 @@ const selectedEventTickets = ref([])
 const manualCode = ref('')
 const cameraMessage = ref('Camera scanner is ready. Start the scanner and place the QR code inside the frame.')
 const videoRef = ref(null)
+const scannerCanvas = document.createElement('canvas')
+const scannerContext = scannerCanvas.getContext('2d', { willReadFrequently: true })
 const scannerActive = ref(false)
 let scannerStream = null
 let scannerFrame = 0
@@ -300,44 +303,59 @@ async function requestCameraPermission() {
     return
   }
 
-  if (!('BarcodeDetector' in window)) {
-    cameraMessage.value = 'Camera permission is available, but QR detection is not supported here. Enter the ticket code manually.'
-    return
-  }
-
   try {
     stopScanner()
     scannerStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' },
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
     })
     videoRef.value.srcObject = scannerStream
+    await videoRef.value.play()
     scannerActive.value = true
     cameraMessage.value = 'Scanning QR ticket. Hold the code inside the frame.'
-    scanQrLoop(new window.BarcodeDetector({ formats: ['qr_code'] }))
+    scanQrLoop()
   } catch {
     cameraMessage.value = 'Camera permission was denied. Enter the ticket code manually.'
   }
 }
 
-async function scanQrLoop(detector) {
+function scanQrLoop() {
   if (!scannerActive.value || !videoRef.value) return
 
   try {
-    if (videoRef.value.readyState >= 2) {
-      const codes = await detector.detect(videoRef.value)
-      const firstCode = codes[0]
-      if (firstCode?.rawValue) {
-        processTicketCode(firstCode.rawValue)
-        stopScanner()
-        cameraMessage.value = 'QR ticket captured. Result is shown on the right.'
-        return
+    const video = videoRef.value
+
+    if (video.readyState >= 2 && scannerContext) {
+      const width = video.videoWidth
+      const height = video.videoHeight
+
+      if (width > 0 && height > 0) {
+        scannerCanvas.width = width
+        scannerCanvas.height = height
+        scannerContext.drawImage(video, 0, 0, width, height)
+
+        const imageData = scannerContext.getImageData(0, 0, width, height)
+        const qrCode = jsQR(imageData.data, width, height, {
+          inversionAttempts: 'attemptBoth',
+        })
+
+        if (qrCode?.data) {
+          const ticketPayload = qrCode.data
+          stopScanner()
+          cameraMessage.value = 'QR ticket captured. Result is shown on the right.'
+          processTicketCode(ticketPayload)
+          return
+        }
       }
     }
   } catch {
-    cameraMessage.value = 'Unable to read the QR code. Enter the ticket code manually.'
+    cameraMessage.value = 'Unable to read the QR code yet. Keep the ticket inside the frame or enter the code manually.'
   }
 
-  scannerFrame = requestAnimationFrame(() => scanQrLoop(detector))
+  scannerFrame = requestAnimationFrame(scanQrLoop)
 }
 
 function stopScanner() {
