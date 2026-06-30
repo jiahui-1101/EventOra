@@ -29,8 +29,8 @@ class TicketingService
         try {
             $db->beginTransaction();
 
-            $confirmedCount = $this->countConfirmedRegistrations($db, $eventId);
-            $hasSeat = $confirmedCount < (int) $event['capacity'];
+            $occupiedCount = $this->countOccupiedSeats($db, $eventId);
+            $hasSeat = $occupiedCount < (int) $event['capacity'];
 
             if (!$hasSeat && !(bool) $event['waitlist_enabled']) {
                 $db->rollBack();
@@ -42,18 +42,39 @@ class TicketingService
                 : 'waitlisted';
             $waitlistPosition = $status === 'waitlisted' ? $this->nextWaitlistPosition($db, $eventId) : null;
 
-            $stmt = $db->prepare(
-                'INSERT INTO registrations (event_id, user_id, status, waitlist_position)
-                 VALUES (:event_id, :user_id, :status, :waitlist_position)'
-            );
-            $stmt->execute([
-                'event_id' => $eventId,
-                'user_id' => $userId,
-                'status' => $status,
-                'waitlist_position' => $waitlistPosition,
-            ]);
+            $reusableRegistration = $this->findCancelledRegistration($db, $eventId, $userId);
+            if ($reusableRegistration !== null) {
+                $registrationId = (int) $reusableRegistration['id'];
+                $this->clearRegistrationArtifacts($db, $registrationId);
 
-            $registrationId = (int) $db->lastInsertId();
+                $stmt = $db->prepare(
+                    "UPDATE registrations
+                     SET status = :status,
+                         waitlist_position = :waitlist_position,
+                         registered_at = NOW(),
+                         cancelled_at = NULL
+                     WHERE id = :id AND user_id = :user_id"
+                );
+                $stmt->execute([
+                    'status' => $status,
+                    'waitlist_position' => $waitlistPosition,
+                    'id' => $registrationId,
+                    'user_id' => $userId,
+                ]);
+            } else {
+                $stmt = $db->prepare(
+                    'INSERT INTO registrations (event_id, user_id, status, waitlist_position)
+                     VALUES (:event_id, :user_id, :status, :waitlist_position)'
+                );
+                $stmt->execute([
+                    'event_id' => $eventId,
+                    'user_id' => $userId,
+                    'status' => $status,
+                    'waitlist_position' => $waitlistPosition,
+                ]);
+
+                $registrationId = (int) $db->lastInsertId();
+            }
             $payment = null;
             $ticket = null;
 
@@ -186,7 +207,11 @@ class TicketingService
         );
         $stmt->execute(['user_id' => $userId]);
 
-        $tickets = array_map([$this, 'formatTicket'], $stmt->fetchAll());
+        $tickets = array_values(array_filter(
+            array_map([$this, 'formatTicket'], $stmt->fetchAll()),
+            fn (array $ticket): bool => $ticket['status'] !== 'cancelled'
+                && $ticket['registrationStatus'] !== 'cancelled'
+        ));
         $now = time();
 
         return [
@@ -209,7 +234,7 @@ class TicketingService
         try {
             $db->beginTransaction();
 
-            $wasConfirmed = $registration['status'] === 'confirmed';
+            $heldSeat = in_array($registration['status'], ['confirmed', 'pending_payment'], true);
             $eventId = (int) $registration['event_id'];
 
             $stmt = $db->prepare(
@@ -224,7 +249,7 @@ class TicketingService
             );
             $ticketStmt->execute(['registration_id' => $registrationId]);
 
-            $promoted = $wasConfirmed ? $this->promoteNextWaitlisted($db, $eventId) : null;
+            $promoted = $heldSeat ? $this->promoteNextWaitlisted($db, $eventId) : null;
             $this->renumberWaitlist($db, $eventId);
 
             NotificationService::create(
@@ -351,6 +376,7 @@ class TicketingService
             'qrToken' => $row['qr_token'],
             'status' => $row['status'],
             'registrationId' => (int) $row['registration_id'],
+            'registrationStatus' => $row['registration_status'] ?? null,
             'eventId' => (int) $row['event_id'],
             'eventName' => $row['event_title'],
             'eventStartAt' => $row['start_datetime'],
@@ -420,6 +446,23 @@ class TicketingService
         return $registration ?: null;
     }
 
+    private function findCancelledRegistration(PDO $db, int $eventId, int $userId): ?array
+    {
+        $stmt = $db->prepare(
+            "SELECT *
+             FROM registrations
+             WHERE event_id = :event_id
+               AND user_id = :user_id
+               AND status = 'cancelled'
+             ORDER BY registered_at DESC
+             LIMIT 1"
+        );
+        $stmt->execute(['event_id' => $eventId, 'user_id' => $userId]);
+        $registration = $stmt->fetch();
+
+        return $registration ?: null;
+    }
+
     private function findRegistrationById(PDO $db, int $registrationId, int $userId): ?array
     {
         $stmt = $db->prepare(
@@ -464,12 +507,21 @@ class TicketingService
         return $ticket ?: null;
     }
 
-    private function countConfirmedRegistrations(PDO $db, int $eventId): int
+    private function clearRegistrationArtifacts(PDO $db, int $registrationId): void
+    {
+        $ticketStmt = $db->prepare('DELETE FROM tickets WHERE registration_id = :registration_id');
+        $ticketStmt->execute(['registration_id' => $registrationId]);
+
+        $paymentStmt = $db->prepare('DELETE FROM payments WHERE registration_id = :registration_id');
+        $paymentStmt->execute(['registration_id' => $registrationId]);
+    }
+
+    private function countOccupiedSeats(PDO $db, int $eventId): int
     {
         $stmt = $db->prepare(
             "SELECT COUNT(*)
              FROM registrations
-             WHERE event_id = :event_id AND status = 'confirmed'"
+             WHERE event_id = :event_id AND status IN ('confirmed', 'pending_payment')"
         );
         $stmt->execute(['event_id' => $eventId]);
 
