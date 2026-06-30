@@ -15,45 +15,16 @@ function readSavedNotifications() {
   }
 }
 
-function mergeNotifications(seedNotifications, savedNotifications) {
-  if (!Array.isArray(savedNotifications)) return seedNotifications
-
-  const seedIds = new Set(seedNotifications.map((notification) => String(notification.id)))
-  const savedById = new Map(
-    savedNotifications.map((notification) => [String(notification.id), notification])
-  )
-
-  const customNotifications = savedNotifications.filter(
-    (notification) => !seedIds.has(String(notification.id))
-  )
-
-  const mergedSeedNotifications = seedNotifications.map((notification) => ({
-    ...notification,
-    ...(savedById.get(String(notification.id)) || {}),
-  }))
-
-  return [...customNotifications, ...mergedSeedNotifications]
-}
-
 export async function loadNotifications() {
-  const savedNotifications = readSavedNotifications()
-
   try {
     if (hasBackendToken()) {
       const response = await getNotificationsApi()
       return response.data.data.map(formatBackendNotification)
     }
 
-    const response = await fetch('/mock/notifications.json')
-
-    if (!response.ok) {
-      return Array.isArray(savedNotifications) ? savedNotifications : []
-    }
-
-    const seedNotifications = await response.json()
-    return mergeNotifications(seedNotifications, savedNotifications)
+    return []
   } catch (err) {
-    return Array.isArray(savedNotifications) ? savedNotifications : []
+    return []
   }
 }
 
