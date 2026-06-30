@@ -3,11 +3,14 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
+import { clearObsoleteClientStorage } from './utils/storageCleanup'
 
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/components.css'
 import './styles/responsive.css'
+
+clearObsoleteClientStorage()
 
 const app = createApp(App)
 
