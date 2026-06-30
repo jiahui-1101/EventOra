@@ -22,7 +22,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 // Load environment variables from .env (DB credentials, JWT secret, etc.)
 $dotenv = Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
+$dotenv->safeLoad();
 
 $app = AppFactory::create();
 
