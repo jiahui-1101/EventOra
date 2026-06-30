@@ -218,7 +218,7 @@ async function loadWallet() {
       getMyRegistrationsApi(),
     ])
 
-    wallet.value = ticketsResponse.data.data
+    wallet.value = normaliseWallet(ticketsResponse.data.data)
     registrationCards.value = registrationsResponse.data.data.filter((registration) =>
       registration.status === 'pending_payment'
       || registration.status === 'waitlisted'
@@ -230,10 +230,27 @@ async function loadWallet() {
 }
 
 function formatDate(dateValue) {
+  if (!dateValue) return 'Not set'
+
+  const date = new Date(dateValue)
+  if (Number.isNaN(date.getTime())) return 'Not set'
+
   return new Intl.DateTimeFormat('en-MY', {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(dateValue))
+  }).format(date)
+}
+
+function normaliseWallet(data) {
+  const withoutCancelled = (tickets = []) => tickets.filter((ticket) =>
+    ticket.status !== 'cancelled' && ticket.registrationStatus !== 'cancelled'
+  )
+
+  return {
+    upcoming: withoutCancelled(data?.upcoming),
+    past: withoutCancelled(data?.past),
+    all: withoutCancelled(data?.all),
+  }
 }
 
 async function cancelTicket(ticket) {
