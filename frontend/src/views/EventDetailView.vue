@@ -193,7 +193,7 @@
           class="ticket-created-card"
         >
           <span>Ticket issued</span>
-          <strong>{{ confirmedTicket.id }}</strong>
+          <strong>{{ confirmedTicket.ticketCode || confirmedTicket.id }}</strong>
           <p>Your QR ticket is ready in My Tickets.</p>
           <router-link
             class="button button-secondary full-width"
@@ -402,7 +402,7 @@ const checkoutStep = computed(() => {
 })
 const orderReference = computed(() =>
   pendingRegistration.value
-    ? `EO-${pendingRegistration.value.id.slice(-8).toUpperCase()}`
+    ? `EO-${String(pendingRegistration.value.id).slice(-8).toUpperCase()}`
     : ''
 )
 const holdExpiryLabel = computed(() =>

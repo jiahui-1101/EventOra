@@ -314,6 +314,9 @@ class TicketingService
             'status' => $row['status'],
             'waitlistPosition' => $row['waitlist_position'] === null ? null : (int) $row['waitlist_position'],
             'registeredAt' => $row['registered_at'],
+            'paymentHoldExpiresAt' => $row['status'] === 'pending_payment'
+                ? date('Y-m-d H:i:s', strtotime($row['registered_at'] . ' +10 minutes'))
+                : null,
             'cancelledAt' => $row['cancelled_at'] ?? null,
             'event' => [
                 'id' => (int) $row['event_id'],
