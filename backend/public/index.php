@@ -170,6 +170,9 @@ $app->post('/api/events/{id}/feedback', [new AttendeeController(), 'submitFeedba
 $app->post('/api/events/{id}/certificate', [new AttendeeController(), 'issueCertificate'])
     ->add(new JwtMiddleware());
 
+$app->get('/api/events/{id}/certificate/download', [new AttendeeController(), 'downloadCertificate'])
+    ->add(new JwtMiddleware());
+
 $app->get('/api/societies/mine', [new SocietyController(), 'listMine'])
     ->add(new RoleMiddleware(['organiser']))
     ->add(new JwtMiddleware());

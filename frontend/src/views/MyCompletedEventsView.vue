@@ -144,8 +144,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import {
+  downloadCertificateApi,
   getCompletedEventsApi,
   issueCertificateApi,
   submitFeedbackApi,
@@ -179,13 +179,6 @@ const canSubmitFeedback = computed(() =>
   feedbackForm.value.flow &&
   feedbackForm.value.recommend
 )
-
-const authStore = useAuthStore()
-const attendeeName = computed(() => {
-  const user = authStore.user
-  if (!user) return 'EventOra attendee'
-  return user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
-})
 
 const completedFallbackPosters = {
   'event-annual-tech-2026': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=80',
@@ -324,43 +317,15 @@ async function downloadCert(ev) {
       : event
   )
 
-  const dateStr = new Date(ev.startAt).toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' })
-  const win = window.open('', '_blank')
-  win.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>E-Certificate - ${ev.title}</title>
-      <style>
-        body { font-family: 'Georgia', serif; background: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .cert-container { background: #ffffff; border: 12px solid #1e3a8a; width: 100%; max-width: 850px; padding: 50px 40px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; }
-        .cert-container::before { content: "UTM VERIFIED"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); font-size: 80px; color: rgba(30, 58, 138, 0.04); font-weight: 900; pointer-events: none; }
-        h1 { color: #1e3a8a; font-size: 2.6rem; margin: 0 0 10px 0; letter-spacing: 1px; }
-        .eyebrow { color: #64748b; font-size: 1rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 40px; }
-        .awardee { font-size: 2.2rem; color: #0f172a; font-weight: bold; border-bottom: 2px solid #cbd5e1; display: inline-block; padding-bottom: 4px; min-width: 350px; margin: 10px 0 20px 0; }
-        .event-title { font-size: 1.6rem; color: #1d4ed8; font-weight: bold; margin: 20px 0; }
-        .footer { margin-top: 50px; font-size: 0.85rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 20px; }
-        .print-btn { margin-top: 30px; background: #1e3a8a; color: white; border: none; padding: 12px 30px; font-size: 1rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
-        .print-btn:hover { background: #172554; }
-        @media print { .print-btn { display: none; } body { background: white; } .cert-container { border: 8px solid #1e3a8a; box-shadow: none; } }
-      </style>
-    </head>
-    <body>
-      <div class="cert-container">
-        <h1>CERTIFICATE OF PARTICIPATION</h1>
-        <div class="eyebrow">Universiti Teknologi Malaysia</div>
-        <p style="color: #475569; font-size: 1.1rem;">This is proudly presented to</p>
-        <div class="awardee">${attendeeName.value}</div>
-        <p style="color: #475569; font-size: 1.1rem;">for verified attendance and active completion of</p>
-        <div class="event-title">${ev.title}</div>
-        <p style="color: #64748b; font-style: italic;">organized by ${ev.societyName} on ${dateStr}</p>
-        <div class="footer">ID: ${certificate.certificate_code} · Verified by EventOra attendance records</div>
-        <button class="print-btn" onclick="window.print()">🖨️ Save as PDF / Print</button>
-      </div>
-    </body>
-    </html>
-  `)
-  win.document.close()
+  const downloadResponse = await downloadCertificateApi(ev.id)
+  const url = URL.createObjectURL(downloadResponse.data)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `eventora-certificate-${certificate.certificate_code}.html`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
 }
 
 function formatDate(d) { return new Date(d).toLocaleDateString('en-MY', { month: 'short', day: 'numeric', year: 'numeric' }) }

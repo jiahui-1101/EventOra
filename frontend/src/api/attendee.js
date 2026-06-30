@@ -11,3 +11,9 @@ export function submitFeedbackApi(eventId, payload) {
 export function issueCertificateApi(eventId) {
   return apiClient.post(`/events/${eventId}/certificate`)
 }
+
+export function downloadCertificateApi(eventId) {
+  return apiClient.get(`/events/${eventId}/certificate/download`, {
+    responseType: 'blob',
+  })
+}
