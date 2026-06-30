@@ -31,14 +31,14 @@
           />
         </div>
 
-        <div style="margin-top: 14px; display: flex; align-items: center; gap: 8px;">
+        <div v-if="highlightEvent" style="margin-top: 14px; display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">🔥 Highlight:</span>
           <router-link 
-            to="/event/event-ai-app-2026" 
+            :to="`/event/${highlightEvent.id}`"
             class="badge badge-blue" 
             style="text-decoration: none; font-size: 0.85rem; padding: 5px 10px; font-weight: 600; cursor: pointer;"
           >
-            Build Your First AI App &rarr;
+            {{ highlightEvent.title }} &rarr;
           </router-link>
         </div>
       </div>
@@ -132,7 +132,7 @@
     {{ event.seatsLeft }} seats left
   </span>
   <span v-else class="badge badge-yellow" style="position: absolute; top: 12px; right: 12px; z-index: 2;">
-    Full
+    {{ event.waitlistEnabled ? 'Waitlist' : 'Full' }}
   </span>
 
 </div>
@@ -286,7 +286,6 @@ const category = ref('all')
 const price = ref('all')
 const dateFilter = ref('all')
 
-const societyEventsStorageKey = 'eventora_society_events_v2'
 const notifications = ref([])
 
 const unreadCount = computed(() =>
@@ -439,7 +438,7 @@ onMounted(async () => {
   try {
     const res = await apiClient.get('/events')
     const fetchedEvents = (res.data.data || []).map(toPublicEvent)
-    events.value = mergePublicEvents(fetchedEvents, loadPublishedSocietyEvents())
+    events.value = fetchedEvents
   } catch (err) {
     console.error('Unable to load events from backend, using local fallback', err)
     events.value = [...basePublicEvents]
@@ -451,45 +450,40 @@ onMounted(async () => {
 function toPublicEvent(event) {
   const category = (event.category || 'academic').toLowerCase()
   const confirmed = event.confirmedCount ?? 0
+  const occupied = event.occupiedCount ?? confirmed
   const capacity = event.capacity ?? 0
+  const rawPrice = event.price ?? event.feeAmount ?? event.fee_amount ?? 0
+  const normalizedPrice = Number(rawPrice) || 0
+  const normalizedPriceType = event.priceType
+    ?? event.feeType
+    ?? event.fee_type
+    ?? (normalizedPrice > 0 ? 'paid' : 'free')
 
   return {
     id: event.id,
     title: event.title,
+    description: event.description || '',
     society: event.societyName || event.society || 'UTM Society',
     category,
-    price: event.price ?? 0,
-    priceType: event.priceType ?? 'free',
+    price: normalizedPrice,
+    priceType: normalizedPriceType,
     date: event.startAt || event.date || new Date().toISOString(),
+    startAt: event.startAt || event.date || new Date().toISOString(),
+    endAt: event.endAt || event.end_datetime || event.startAt || event.date || new Date().toISOString(),
+    registrationDeadline: event.registrationDeadline || event.regDeadline || event.reg_deadline || event.startAt || event.date,
     venue: event.venue || 'Venue not set',
-    seatsLeft: Math.max(capacity - confirmed, 0),
+    capacity: Number(capacity) || 0,
+    confirmedCount: Number(confirmed) || 0,
+    occupiedCount: Number(occupied) || 0,
+    waitlistEnabled: event.waitlistEnabled ?? event.waitlist_enabled ?? true,
+    status: event.status || 'published',
+    seatsLeft: Number.isFinite(Number(event.seatsLeft))
+      ? Number(event.seatsLeft)
+      : Math.max(capacity - occupied, 0),
     coverClass: event.coverClass || coverForCategory(category),
     badgeClass: event.badgeClass || badgeForCategory(category),
     posterImage: resolveEventPoster(event, category),
   }
-}
-
-function loadPublishedSocietyEvents() {
-  try {
-    const savedEvents = JSON.parse(localStorage.getItem(societyEventsStorageKey) || '[]')
-    if (!Array.isArray(savedEvents)) return []
-
-    return savedEvents
-      .filter((event) => event.status === 'published')
-      .map(toPublicEvent)
-  } catch (error) {
-    return []
-  }
-}
-
-function mergePublicEvents(...eventGroups) {
-  const merged = new Map()
-
-  eventGroups.flat().forEach((event) => {
-    merged.set(String(event.id), event)
-  })
-
-  return [...merged.values()]
 }
 
 function coverForCategory(categoryName) {
@@ -538,6 +532,7 @@ const filteredEvents = computed(() => {
   })
 })
 
+const highlightEvent = computed(() => filteredEvents.value[0] || events.value[0] || null)
 const freeCount = computed(() => filteredEvents.value.filter((e) => e.priceType === 'free').length)
 const thisWeekCount = computed(() => filteredEvents.value.filter((e) => isInDateRange(e.date, 'week')).length)
 
